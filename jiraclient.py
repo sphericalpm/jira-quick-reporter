@@ -26,19 +26,21 @@ class JiraClient:
         issues = []
         issues_search = self.client.search_issues(
                 'assignee = currentUser() and '
-                'status in ("in progress", "open")',
+                'status in ("in progress", "open", "selected for development")',
                 fields='key, summary, timetracking')
 
         for issue in issues_search:
-            issues_dict = dict(
-                key=issue.key,
-                title=getattr(issue.fields, 'summary', None),
-                time_estimated=getattr(issue.fields.timetracking,
-                                       'originalEstimate', None),
-                time_remaining=getattr(issue.fields.timetracking,
-                                       'remainingEstimate', None),
-                time_spent=getattr(issue.fields.timetracking,
-                                   'timeSpent', None),
-                link=issue.permalink())
+            timetracking = issue.fields.timetracking
+            issues_dict = {
+                "key": issue.key,
+                "title": getattr(issue.fields, 'summary', None),
+                "link": issue.permalink()
+            }
+            if timetracking.raw:
+                issues_dict.update({
+                    "time_estimated": getattr(timetracking, 'originalEstimate', None),
+                    "time_remaining": getattr(timetracking, 'remainingEstimate', None),
+                    "time_spent": getattr(timetracking, 'timeSpent', None)
+                })
             issues.append(issues_dict)
         return issues
