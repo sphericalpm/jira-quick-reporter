@@ -7,7 +7,8 @@ from PyQt5.QtWidgets import (
     QListWidgetItem,
     QVBoxLayout,
     QHBoxLayout,
-    QLabel
+    QLabel,
+    QPushButton
 )
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
@@ -23,32 +24,39 @@ class QCustomWidget(QWidget):
         super().__init__()
         self.issue = issue
 
-        self.timetracking_box = QVBoxLayout()
-        self.timetracking_box.setAlignment(Qt.AlignRight)
+        self.timetracking_box = QHBoxLayout()
         self.estimated_label = QLabel()
         self.spent_label = QLabel()
         self.remaining_label = QLabel()
+        self.logwork_btn = QPushButton('Log work')
+
         self.estimated_label.setMinimumWidth(200)
         self.spent_label.setMinimumWidth(200)
         self.remaining_label.setMinimumWidth(200)
+        self.logwork_btn.setFixedWidth(90)
+        self.logwork_btn.setStyleSheet('background-color:white')
+        self.logwork_btn.clicked.connect(self.open_timelog_window_click)
 
         self.timetracking_box.addWidget(self.estimated_label)
         self.timetracking_box.addWidget(self.spent_label)
         self.timetracking_box.addWidget(self.remaining_label)
+        self.timetracking_box.addWidget(self.logwork_btn)
 
-        hbox = QHBoxLayout()
+        self.issue_key_label = QLabel()
         self.issue_title_label = QLabel()
+        self.issue_title_label.setStyleSheet('font: bold')
         self.issue_title_label.setMaximumWidth(500)
         self.issue_title_label.setWordWrap(True)
-        hbox.addWidget(self.issue_title_label)
-        hbox.addLayout(self.timetracking_box)
+        self.issue_key_label.setOpenExternalLinks(True)
 
         vbox = QVBoxLayout()
-        self.issue_key_label = QLabel()
-        self.issue_key_label.setOpenExternalLinks(True)
         vbox.addWidget(self.issue_key_label)
-        vbox.addLayout(hbox)
+        vbox.addWidget(self.issue_title_label)
+        vbox.addLayout(self.timetracking_box)
         self.setLayout(vbox)
+
+    def open_timelog_window_click(self):
+        pass
 
     def set_issue_key(self, key, link):
         self.issue_key_label.setText(f'<a href={link}>{key}</a>')
@@ -71,7 +79,7 @@ class MainWindow(QWidget):
         self.initUI()
 
     def initUI(self):
-        self.resize(650, 450)
+        self.resize(800, 450)
         self.center()
         self.setWindowTitle('JIRA Quick Reporter')
         self.setWindowIcon(QIcon('logo.png'))
@@ -120,7 +128,6 @@ class MainWindow(QWidget):
             issue_list_widget_item.setSizeHint(issue_widget.sizeHint())
             issue_list_widget.addItem(issue_list_widget_item)
             issue_list_widget.setItemWidget(issue_list_widget_item, issue_widget)
-
 
 
 if __name__ == '__main__':
