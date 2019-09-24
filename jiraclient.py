@@ -11,8 +11,8 @@ class JiraClient:
     def __init__(self, email, token):
         """
         Initialization and user authentication
-        :param email: user email to authenticate
-        :param token: API token to authenticate
+        :param str email: user email to authenticate
+        :param str token: API token to authenticate
         """
         if not email and not token:
             raise ValueError('You need to specify email and token')

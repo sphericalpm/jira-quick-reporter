@@ -17,8 +17,12 @@ class QCustomWidget(QWidget):
     """
     Class for custom list item
     """
-    def __init__(self):
+    issue = None
+
+    def __init__(self, issue):
         super().__init__()
+        self.issue = issue
+
         self.timetracking_box = QVBoxLayout()
         self.timetracking_box.setAlignment(Qt.AlignRight)
         self.estimated_label = QLabel()
@@ -63,6 +67,7 @@ class MainWindow(QWidget):
 
     def __init__(self):
         super().__init__()
+        self.list_box = QVBoxLayout()
         self.initUI()
 
     def initUI(self):
@@ -71,6 +76,7 @@ class MainWindow(QWidget):
         self.setWindowTitle('JIRA Quick Reporter')
         self.setWindowIcon(QIcon('logo.png'))
         self.show_issues_list()
+        self.setLayout(self.list_box)
         self.show()
 
     def center(self):
@@ -83,23 +89,38 @@ class MainWindow(QWidget):
         """
         Show list of issues
         """
-        issue_list = self.jira_client.get_issues_list()
-        vbox = QVBoxLayout()
+        issues = self.jira_client.get_issues()
+        if not issues:
+            label_info = QLabel('You have no issues.')
+            label_info.setAlignment(Qt.AlignCenter)
+            self.list_box.addWidget(label_info)
+            return
+
         issue_list_widget = QListWidget(self)
-        vbox.addWidget(issue_list_widget)
-        for issue in issue_list:
-            issue_widget = QCustomWidget()
-            issue_widget.set_issue_key(issue['key'], issue['link'])
-            issue_widget.set_issue_title(issue['title'])
-            issue_widget.set_time(issue['time_estimated'],
-                                  issue['time_spent'],
-                                  issue['time_remaining'])
+        issue_list_widget.setStyleSheet(
+            'QListWidget::item { border-bottom: 1px solid lightgray }')
+        self.list_box.addWidget(issue_list_widget)
+
+        for issue in issues:
+            issue_widget = QCustomWidget(issue)
+            issue_widget.set_issue_key(issue.key, issue.permalink())
+            issue_widget.set_issue_title(issue.fields.summary)
+
+            if issue.fields.timetracking.raw:
+                timetracking = issue.fields.timetracking
+                issue_widget.set_time(
+                    getattr(timetracking, 'originalEstimate', '0m'),
+                    getattr(timetracking, 'remainingEstimate', '0m'),
+                    getattr(timetracking, 'timeSpent', '0m')
+                )
+            else:
+                issue_widget.set_time('0m', '0m', '0m')
+
             issue_list_widget_item = QListWidgetItem(issue_list_widget)
             issue_list_widget_item.setSizeHint(issue_widget.sizeHint())
             issue_list_widget.addItem(issue_list_widget_item)
-            issue_list_widget.setItemWidget(issue_list_widget_item,
-                                            issue_widget)
-        self.setLayout(vbox)
+            issue_list_widget.setItemWidget(issue_list_widget_item, issue_widget)
+
 
 
 if __name__ == '__main__':
