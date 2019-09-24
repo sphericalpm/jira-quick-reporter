@@ -23,24 +23,13 @@ class JiraClient:
         Get issues assigned to user in JIRA
         :return: list of issues
         """
-        issues = []
+        issues = {}
         issues_search = self.client.search_issues(
                 'assignee = currentUser() and '
                 'status in ("in progress", "open", "selected for development")',
                 fields='key, summary, timetracking')
-
+        
         for issue in issues_search:
-            timetracking = issue.fields.timetracking
-            issues_dict = {
-                "key": issue.key,
-                "title": getattr(issue.fields, 'summary', None),
-                "link": issue.permalink()
-            }
-            if timetracking.raw:
-                issues_dict.update({
-                    "time_estimated": getattr(timetracking, 'originalEstimate', None),
-                    "time_remaining": getattr(timetracking, 'remainingEstimate', None),
-                    "time_spent": getattr(timetracking, 'timeSpent', None)
-                })
-            issues.append(issues_dict)
+            issues[issue.key] = issue
+
         return issues
