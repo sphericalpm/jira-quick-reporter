@@ -75,16 +75,23 @@ class MainWindow(QWidget):
 
     def __init__(self):
         super().__init__()
+        self.main_box = QVBoxLayout()
         self.list_box = QVBoxLayout()
-        self.initUI()
+        self.btn_box = QHBoxLayout()
+        self.refresh_btn = QPushButton('Refresh')
+        self.init_ui()
 
-    def initUI(self):
+    def init_ui(self):
         self.resize(800, 450)
         self.center()
         self.setWindowTitle('JIRA Quick Reporter')
         self.setWindowIcon(QIcon('logo.png'))
+
+        self.main_box.addLayout(self.list_box)
+        self.main_box.addLayout(self.btn_box)
+        self.setLayout(self.main_box)
         self.show_issues_list()
-        self.setLayout(self.list_box)
+        self.set_refresh_button()
         self.show()
 
     def center(self):
@@ -106,7 +113,7 @@ class MainWindow(QWidget):
 
         issue_list_widget = QListWidget(self)
         issue_list_widget.setStyleSheet(
-            'QListWidget::item { border-bottom: 1px solid lightgray }')
+                'QListWidget::item { border-bottom: 1px solid lightgray }')
         self.list_box.addWidget(issue_list_widget)
 
         for issue in issues:
@@ -118,8 +125,8 @@ class MainWindow(QWidget):
                 timetracking = issue.fields.timetracking
                 issue_widget.set_time(
                     getattr(timetracking, 'originalEstimate', '0m'),
+                    getattr(timetracking, 'timeSpent', '0m'),
                     getattr(timetracking, 'remainingEstimate', '0m'),
-                    getattr(timetracking, 'timeSpent', '0m')
                 )
             else:
                 issue_widget.set_time('0m', '0m', '0m')
@@ -128,6 +135,16 @@ class MainWindow(QWidget):
             issue_list_widget_item.setSizeHint(issue_widget.sizeHint())
             issue_list_widget.addItem(issue_list_widget_item)
             issue_list_widget.setItemWidget(issue_list_widget_item, issue_widget)
+
+    def set_refresh_button(self):
+        self.refresh_btn.setFixedWidth(90)
+        self.refresh_btn.clicked.connect(self.refresh_click)
+        self.btn_box.addWidget(self.refresh_btn, alignment=Qt.AlignRight)
+
+    def refresh_click(self):
+        for i in range(self.list_box.count()):
+            self.list_box.itemAt(i).widget().setParent(None)
+        self.show_issues_list()
 
 
 if __name__ == '__main__':
