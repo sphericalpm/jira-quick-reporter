@@ -34,26 +34,28 @@ class QCustomWidget(QWidget):
 
         hbox = QHBoxLayout()
         self.issue_title_label = QLabel()
-        self.issue_title_label.setMaximumWidth(800)
+        self.issue_title_label.setMaximumWidth(500)
+        self.issue_title_label.setWordWrap(True)
         hbox.addWidget(self.issue_title_label)
         hbox.addLayout(self.timetracking_box)
 
         vbox = QVBoxLayout()
         self.issue_key_label = QLabel()
+        self.issue_key_label.setOpenExternalLinks(True)
         vbox.addWidget(self.issue_key_label)
         vbox.addLayout(hbox)
         self.setLayout(vbox)
 
-    def set_issue_key(self, key):
-        self.issue_key_label.setText(key)
+    def set_issue_key(self, key, link):
+        self.issue_key_label.setText(f'<a href={link}>{key}</a>')
 
     def set_issue_title(self, title):
         self.issue_title_label.setText(title)
 
     def set_time(self, estimated, spent, remaining):
-        self.estimated_label.setText('Estimated: ' + estimated)
-        self.spent_label.setText('Logged: ' + spent)
-        self.remaining_label.setText('Remaining: ' + remaining)
+        self.estimated_label.setText(f'Estimated: {estimated}')
+        self.spent_label.setText(f'Logged: {spent}')
+        self.remaining_label.setText(f'Remaining: {remaining}')
 
 
 class MainWindow(QWidget):
@@ -87,7 +89,7 @@ class MainWindow(QWidget):
         vbox.addWidget(issue_list_widget)
         for issue in issue_list:
             issue_widget = QCustomWidget()
-            issue_widget.set_issue_key(issue['key'])
+            issue_widget.set_issue_key(issue['key'], issue['link'])
             issue_widget.set_issue_title(issue['title'])
             issue_widget.set_time(issue['time_estimated'],
                                   issue['time_spent'],
