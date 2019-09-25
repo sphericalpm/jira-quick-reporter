@@ -13,35 +13,43 @@ from PyQt5.QtCore import Qt
 
 
 class QCustomWidget(QWidget):
-    """
-    Class for custom list item
+    """Custom list item
+    Displays the issue key, title and a shorthand
+    for the time estimated/spent/remaining
+
     """
     issue = None
     jira_client = None
 
     def __init__(self, issue, jira_client):
         super().__init__()
+
         self.issue = issue
         self.jira_client = jira_client
 
-        self.timetracking_box = QHBoxLayout()
         self.estimated_label = QLabel()
         self.spent_label = QLabel()
         self.remaining_label = QLabel()
         self.logwork_btn = QPushButton('Log work')
 
+        # style settings for timelog labels
         self.estimated_label.setMinimumWidth(200)
         self.spent_label.setMinimumWidth(200)
         self.remaining_label.setMinimumWidth(200)
         self.logwork_btn.setFixedWidth(90)
+
+        # button settings
         self.logwork_btn.setStyleSheet('background-color:white')
         self.logwork_btn.clicked.connect(self.open_timelog_window_click)
 
+        # create box layout for timelog labels
+        self.timetracking_box = QHBoxLayout()
         self.timetracking_box.addWidget(self.estimated_label)
         self.timetracking_box.addWidget(self.spent_label)
         self.timetracking_box.addWidget(self.remaining_label)
         self.timetracking_box.addWidget(self.logwork_btn)
 
+        # create labels for issue key and title
         self.issue_key_label = QLabel()
         self.issue_title_label = QLabel()
         self.issue_title_label.setStyleSheet('font: bold')
@@ -49,33 +57,56 @@ class QCustomWidget(QWidget):
         self.issue_title_label.setWordWrap(True)
         self.issue_key_label.setOpenExternalLinks(True)
 
+        # create main box layout
         vbox = QVBoxLayout()
         vbox.addWidget(self.issue_key_label)
         vbox.addWidget(self.issue_title_label)
         vbox.addLayout(self.timetracking_box)
         self.setLayout(vbox)
 
-    def open_timelog_window_click(self):
+    def open_timelog_window(self):
+        """ Log work button event handler
+        Open the timelog window for selected issue
+
+        """
         pass
 
     def set_issue_key(self, key, link):
+        """ Set a link to the web page of the task to issue_key label
+        :param key: issue key
+        :param link: issue link
+
+        """
         self.issue_key_label.setText(f'<a href={link}>{key}</a>')
 
     def set_issue_title(self, title):
+        """ Set issue title to issue_title label
+        :param title: issue title
+
+        """
         self.issue_title_label.setText(title)
 
     def set_time(self, estimated, spent, remaining):
+        """ Set the estimated/spent/remaining time values to appropriate labels
+        :param str estimated: estimated time
+        :param str spent: logged time
+        :param str remaining: remaining time
+
+        """
         self.estimated_label.setText(f'Estimated: {estimated}')
         self.spent_label.setText(f'Logged: {spent}')
         self.remaining_label.setText(f'Remaining: {remaining}')
 
 
 class MainWindow(QWidget):
+    """ Main window
+    Displays list with tasks assigned to current user in JIRA
+
+    """
     jira_client = None
 
     def __init__(self, jira_client):
         super().__init__()
-
         self.jira_client = jira_client
         self.main_box = QVBoxLayout()
         self.list_box = QVBoxLayout()
@@ -84,6 +115,8 @@ class MainWindow(QWidget):
         self.init_ui()
 
     def init_ui(self):
+        """ Show main window"""
+
         self.resize(800, 450)
         self.center()
         self.setWindowTitle('JIRA Quick Reporter')
@@ -103,9 +136,8 @@ class MainWindow(QWidget):
         self.move(qr.topLeft())
 
     def show_issues_list(self):
-        """
-        Show list of issues
-        """
+        """Display list of issues"""
+
         issues = self.jira_client.get_issues()
         if not issues:
             label_info = QLabel('You have no issues.')
@@ -113,16 +145,19 @@ class MainWindow(QWidget):
             self.list_box.addWidget(label_info)
             return
 
+        # create issue list widget
         issue_list_widget = QListWidget(self)
         issue_list_widget.setStyleSheet(
                 'QListWidget::item { border-bottom: 1px solid lightgray }')
         self.list_box.addWidget(issue_list_widget)
 
+        # create list of issues
         for issue in issues:
             issue_widget = QCustomWidget(issue, self.jira_client)
             issue_widget.set_issue_key(issue.key, issue.permalink())
             issue_widget.set_issue_title(issue.fields.summary)
 
+            # if the task was logged
             if issue.fields.timetracking.raw:
                 timetracking = issue.fields.timetracking
                 issue_widget.set_time(
@@ -133,17 +168,22 @@ class MainWindow(QWidget):
             else:
                 issue_widget.set_time('0m', '0m', '0m')
 
+            # add issue item to list
             issue_list_widget_item = QListWidgetItem(issue_list_widget)
             issue_list_widget_item.setSizeHint(issue_widget.sizeHint())
             issue_list_widget.addItem(issue_list_widget_item)
             issue_list_widget.setItemWidget(issue_list_widget_item, issue_widget)
 
     def set_refresh_button(self):
+        """ Refresh button settings """
+
         self.refresh_btn.setFixedWidth(90)
         self.refresh_btn.clicked.connect(self.refresh_click)
         self.btn_box.addWidget(self.refresh_btn, alignment=Qt.AlignRight)
 
     def refresh_click(self):
+        """ Refresh button event handler """
+
         for i in range(self.list_box.count()):
             self.list_box.itemAt(i).widget().setParent(None)
         self.show_issues_list()
