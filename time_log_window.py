@@ -1,8 +1,9 @@
-import sys
+from datetime import datetime
+from jira.exceptions import JIRAError
+
 from PyQt5.QtWidgets import (
     QWidget,
     QDesktopWidget,
-    QApplication,
     QPushButton,
     QLineEdit,
     QGridLayout,
@@ -11,20 +12,13 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QRadioButton
 )
-from PyQt5.QtGui import QIcon
-from jiraclient import JiraClient
-from jira.exceptions import JIRAError
-from datetime import datetime
-
-from my_jira_token import my_token, email
 
 
 class TimeLogWindow(QWidget):
-    """Time Tracking window
+    """Time Tracking popup window
 
     displays filds for time spent, date start and work description,
-    button 'Save': save/update new values in Jira,
-    button 'To my tasks': goes to window with list of tasks
+    button 'Save': save/update values in Jira
 
     """
 
@@ -37,14 +31,15 @@ class TimeLogWindow(QWidget):
         """
         Show time log window
         """
-        # main window characteristics
+        self.issue = issue
         self.jira = jira
-        self.resize(650, 450)
+
+        # main window characteristics
+        self.resize(600, 450)
         self.center()
         self.setWindowTitle('Log Work: %s' % issue)
-        self.setWindowIcon(QIcon('logo.png'))
 
-        # item description
+        # vbox elements description
         time_spent = QLabel('Time Spent (eg. 3w 4d 12h):')
         date_start = QLabel('Date Started (eg. 12-05-2019 13:15):')
 
@@ -92,9 +87,6 @@ class TimeLogWindow(QWidget):
         self.save_button = QPushButton('Save')
         self.save_button.setToolTip('save new time tracking values into Jira')
 
-        self.to_my_tasks_button = QPushButton('To my tasks')
-        self.to_my_tasks_button.setToolTip('go to personal Jira issue')
-
         # add elements to box
         vbox = QGridLayout()
 
@@ -115,13 +107,11 @@ class TimeLogWindow(QWidget):
         vbox.addWidget(work_description)
         vbox.addWidget(self.work_description_line)
         vbox.addWidget(self.save_button)
-        vbox.addWidget(self.to_my_tasks_button)
 
         self.setLayout(vbox)
 
-        # button settings, show command
+        # button settings, show window command
         self.save_button.clicked.connect(self.save_click)
-        self.to_my_tasks_button.clicked.connect(self.my_tasks_click)
 
         self.show()
 
@@ -142,70 +132,58 @@ class TimeLogWindow(QWidget):
 
         """
         time_spent = self.time_spent_line.text()
-        date_start = self.date_start_line.text()
+        date = self.date_start_line.text()
+        start_date = datetime.strptime(date, '%d-%m-%Y %H:%M')
         comment = self.work_description_line.toPlainText()
 
         new_estimate = self.new_remaining_estimate
 
         if not new_estimate:
-            try:
-                self.jira.client.add_worklog(
-                    issue=issue,
-                    timeSpent=time_spent,
-                    started=datetime.strptime(date_start, '%d-%m-%Y %H:%M'),
-                    comment=comment,
-                )
-                QMessageBox.about(self, 'Save', 'Successfully saved')
-
-            except JIRAError as e:
-                QMessageBox.about(self, "Error", e.text)
+            self.save_in_jira(time_spent, start_date, comment)
 
         elif new_estimate.get('name') == 'existing_estimate':
-            try:
-                self.jira.client.add_worklog(
-                    issue=issue,
-                    timeSpent=time_spent,
-                    adjustEstimate='new',
-                    newEstimate=new_estimate.get('value'),
-                    started=datetime.strptime(date_start, '%d-%m-%Y %H:%M'),
-                    comment=comment,
-                )
-                QMessageBox.about(self, 'Save', 'Successfully saved')
-            except JIRAError as e:
-                QMessageBox.about(self, "Error", e.text)
+            self.save_in_jira(
+                time_spent, start_date, comment,
+                adjust_estimate='new', new_estimate=new_estimate.get('value')
+            )
 
         elif new_estimate.get('name') == 'set_new_estimate':
-            try:
-                estimate = self.set_new_estimate_value.text()
-                self.jira.client.add_worklog(
-                    issue=issue,
-                    timeSpent=time_spent,
-                    adjustEstimate='new',
-                    newEstimate=estimate,
-                    started=datetime.strptime(date_start, '%d-%m-%Y %H:%M'),
-                    comment=comment,
-                )
-                QMessageBox.about(self, 'Save', 'Successfully saved')
-            except JIRAError as e:
-                QMessageBox.about(self, "Error", e.text)
+            estimate = self.set_new_estimate_value.text()
+            self.save_in_jira(
+                time_spent, start_date, comment,
+                adjust_estimate='new', new_estimate=estimate
+            )
 
         elif new_estimate.get('name') == 'reduce_estimate':
-            try:
-                estimate = self.reduce_estimate_value.text()
-                self.jira.client.add_worklog(
-                    issue=issue,
-                    timeSpent=time_spent,
-                    adjustEstimate='manual',
-                    reduceBy=estimate,
-                    started=datetime.strptime(date_start, '%d-%m-%Y %H:%M'),
-                    comment=comment,
-                )
-                QMessageBox.about(self, 'Save', 'Successfully saved')
-            except JIRAError as e:
-                QMessageBox.about(self, "Error", e.text)
+            estimate = self.reduce_estimate_value.text()
+
+            self.save_in_jira(
+                time_spent, start_date, comment,
+                adjust_estimate='manual', reduce_by=estimate,
+            )
 
         else:
             QMessageBox.about(self, "Error", "something went wrong")
+
+    def save_in_jira(
+        self, time_spent, start_date, comment,
+        adjust_estimate=None, new_estimate=None,
+        reduce_by=None,
+    ):
+        try:
+            self.jira.client.add_worklog(
+                issue=self.issue,
+                timeSpent=time_spent,
+                adjustEstimate=adjust_estimate,
+                newEstimate=new_estimate,
+                reduceBy=reduce_by,
+                started=start_date,
+                comment=comment,
+            )
+            QMessageBox.about(self, 'Save', 'Successfully saved')
+
+        except JIRAError as e:
+            QMessageBox.about(self, "Error", e.text)
 
     def radio_click(self):
         """Check which radio button was pressed
@@ -214,25 +192,3 @@ class TimeLogWindow(QWidget):
 
         if radioButton.isChecked():
             self.new_remaining_estimate = radioButton.value
-
-    def my_tasks_click(self):
-        """To my tasks event handler
-
-        goes to task list window
-        TODO: make transit to the task list window
-
-        """
-        pass
-
-
-if __name__ == '__main__':
-
-    jira = JiraClient(email, my_token)
-    issues = jira.get_issues_list()
-    issue = issues['INF-52']
-
-    app = QApplication(sys.argv)
-
-    me = TimeLogWindow(issue, jira)
-
-    sys.exit(app.exec_())
