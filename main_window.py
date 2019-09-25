@@ -11,6 +11,9 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
 
+from jiraclient import JiraClient
+from time_log_window import TimeLogWindow
+
 
 class QCustomWidget(QWidget):
     """Custom list item
@@ -23,7 +26,6 @@ class QCustomWidget(QWidget):
 
     def __init__(self, issue, jira_client):
         super().__init__()
-
         self.issue = issue
         self.jira_client = jira_client
 
@@ -67,23 +69,27 @@ class QCustomWidget(QWidget):
     def open_timelog_window(self):
         """ Log work button event handler
         Open the timelog window for selected issue
-
         """
-        pass
+
+        self.time_log_window = TimeLogWindow(
+            self.issue,
+            self.jira_client
+        )
+        self.time_log_window.show()
 
     def set_issue_key(self, key, link):
         """ Set a link to the web page of the task to issue_key label
         :param key: issue key
         :param link: issue link
-
         """
+
         self.issue_key_label.setText(f'<a href={link}>{key}</a>')
 
     def set_issue_title(self, title):
         """ Set issue title to issue_title label
         :param title: issue title
-
         """
+
         self.issue_title_label.setText(title)
 
     def set_time(self, estimated, spent, remaining):
@@ -91,8 +97,8 @@ class QCustomWidget(QWidget):
         :param str estimated: estimated time
         :param str spent: logged time
         :param str remaining: remaining time
-
         """
+
         self.estimated_label.setText(f'Estimated: {estimated}')
         self.spent_label.setText(f'Logged: {spent}')
         self.remaining_label.setText(f'Remaining: {remaining}')
@@ -101,8 +107,8 @@ class QCustomWidget(QWidget):
 class MainWindow(QWidget):
     """ Main window
     Displays list with tasks assigned to current user in JIRA
-
     """
+
     jira_client = None
 
     def __init__(self, jira_client):

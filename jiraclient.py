@@ -11,7 +11,6 @@ class JiraClient:
         """ Initialization and user authentication
         :param str email: user email to authenticate
         :param str token: API token to authenticate
-
         """
         if not email and not token:
             raise ValueError('You need to specify email and token')
@@ -24,7 +23,6 @@ class JiraClient:
     def get_issues(self):
         """ Get issues assigned to user in JIRA
         :return: list of issues
-
         """
         return self.client.search_issues(
                 'assignee = currentUser()',
