@@ -16,7 +16,11 @@ class JiraClient:
         """
         if not email and not token:
             raise ValueError('You need to specify email and token')
-        self.client = JIRA(self.options, basic_auth=(email, token))
+        self.client = JIRA(
+            self.options,
+            basic_auth=(email, token),
+            max_retries=1
+        )
 
     def get_issues(self):
         """
