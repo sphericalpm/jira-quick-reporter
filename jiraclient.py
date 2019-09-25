@@ -11,25 +11,18 @@ class JiraClient:
     def __init__(self, email, token):
         """
         Initialization and user authentication
-        :param email: user email to authenticate
-        :param token: API token to authenticate
+        :param str email: user email to authenticate
+        :param str token: API token to authenticate
         """
         if not email and not token:
             raise ValueError('You need to specify email and token')
         self.client = JIRA(self.options, basic_auth=(email, token))
 
-    def get_issues_list(self):
+    def get_issues(self):
         """
         Get issues assigned to user in JIRA
         :return: list of issues
         """
-        issues = {}
-        issues_search = self.client.search_issues(
-                'assignee = currentUser() and '
-                'status in ("in progress", "open", "selected for development")',
+        return self.client.search_issues(
+                'assignee = currentUser()',
                 fields='key, summary, timetracking')
-        
-        for issue in issues_search:
-            issues[issue.key] = issue
-
-        return issues
