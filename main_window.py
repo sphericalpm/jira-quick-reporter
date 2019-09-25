@@ -13,6 +13,10 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
 
+from jiraclient import JiraClient
+from time_log_window import TimeLogWindow
+from my_jira_token import my_token, email
+
 
 class QCustomWidget(QWidget):
     """
@@ -56,7 +60,11 @@ class QCustomWidget(QWidget):
         self.setLayout(vbox)
 
     def open_timelog_window_click(self):
-        pass
+        self.time_log_window = TimeLogWindow(
+            self.issue,
+            JiraClient(email, my_token)  # TODO change to JiraClient instance from authorisation window
+        )
+        self.time_log_window.show()
 
     def set_issue_key(self, key, link):
         self.issue_key_label.setText(f'<a href={link}>{key}</a>')
@@ -71,7 +79,7 @@ class QCustomWidget(QWidget):
 
 
 class MainWindow(QWidget):
-    jira_client = None
+    jira_client = JiraClient(email, my_token)
 
     def __init__(self):
         super().__init__()
@@ -104,7 +112,7 @@ class MainWindow(QWidget):
         """
         Show list of issues
         """
-        issues = self.jira_client.get_issues()
+        issues = self.jira_client.get_issues()  # TODO change to JiraClient instance from authorisation window
         if not issues:
             label_info = QLabel('You have no issues.')
             label_info.setAlignment(Qt.AlignCenter)
