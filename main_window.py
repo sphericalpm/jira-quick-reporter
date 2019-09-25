@@ -1,8 +1,6 @@
-import sys
 from PyQt5.QtWidgets import (
     QWidget,
     QDesktopWidget,
-    QApplication,
     QListWidget,
     QListWidgetItem,
     QVBoxLayout,
@@ -23,10 +21,12 @@ class QCustomWidget(QWidget):
     Class for custom list item
     """
     issue = None
+    jira_client = None
 
-    def __init__(self, issue):
+    def __init__(self, issue, jira_client):
         super().__init__()
         self.issue = issue
+        self.jira_client = jira_client
 
         self.timetracking_box = QHBoxLayout()
         self.estimated_label = QLabel()
@@ -81,8 +81,10 @@ class QCustomWidget(QWidget):
 class MainWindow(QWidget):
     jira_client = JiraClient(email, my_token)
 
-    def __init__(self):
+    def __init__(self, jira_client):
         super().__init__()
+
+        self.jira_client = jira_client
         self.main_box = QVBoxLayout()
         self.list_box = QVBoxLayout()
         self.btn_box = QHBoxLayout()
@@ -125,7 +127,7 @@ class MainWindow(QWidget):
         self.list_box.addWidget(issue_list_widget)
 
         for issue in issues:
-            issue_widget = QCustomWidget(issue)
+            issue_widget = QCustomWidget(issue, self.jira_client)
             issue_widget.set_issue_key(issue.key, issue.permalink())
             issue_widget.set_issue_title(issue.fields.summary)
 
@@ -153,10 +155,3 @@ class MainWindow(QWidget):
         for i in range(self.list_box.count()):
             self.list_box.itemAt(i).widget().setParent(None)
         self.show_issues_list()
-
-
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    app.setStyle('Fusion')
-    ex = MainWindow()
-    sys.exit(app.exec_())
