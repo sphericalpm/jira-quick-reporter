@@ -17,7 +17,6 @@ from main_window import MainWindow
 
 
 class LoginWindow(QWidget):
-
     def __init__(self):
         super().__init__()
         self.main_box = QVBoxLayout()
@@ -37,18 +36,22 @@ class LoginWindow(QWidget):
         label_title = QLabel('Login to your account in JIRA')
         label_title.setStyleSheet('font:18px')
 
+        # create email field
         self.email_field.setPlaceholderText('Enter your email')
         self.email_field.setFixedWidth(300)
         self.email_field.setFixedHeight(30)
 
+        # create token field
         self.token_field.setEchoMode(QLineEdit.Password)
         self.token_field.setPlaceholderText('Enter your token')
         self.token_field.setFixedWidth(300)
         self.token_field.setFixedHeight(30)
 
+        # create error field
         self.label_error.setStyleSheet('color:red')
         self.label_error.hide()
 
+        # field with a link to create API token
         token_get_link = QLabel(
             '<a href="https://id.atlassian.com/manage/api-tokens">'
             'Create API token</a>'
@@ -57,6 +60,7 @@ class LoginWindow(QWidget):
         token_get_link.setStyleSheet('font: 14px')
         token_get_link.setStyleSheet('margin-left: 35')
 
+        # create login button
         btn_login = QPushButton('Login')
         btn_login.setFixedSize(150, 30)
         btn_login.setStyleSheet('margin-right: 35')
@@ -64,6 +68,7 @@ class LoginWindow(QWidget):
         self.btn_box.addWidget(token_get_link)
         self.btn_box.addWidget(btn_login)
 
+        # add widgets to main box layout
         self.main_box.addWidget(label_title, alignment=Qt.AlignCenter)
         self.main_box.addWidget(self.email_field, alignment=Qt.AlignCenter)
         self.main_box.addWidget(self.token_field, alignment=Qt.AlignCenter)
@@ -80,7 +85,9 @@ class LoginWindow(QWidget):
     def login(self):
         email = self.email_field.text()
         token = self.token_field.text()
+
         QApplication.setOverrideCursor(Qt.WaitCursor)
+
         try:
             jira_client = JiraClient(email, token)
             self.open_main_window(jira_client)
@@ -103,5 +110,5 @@ class LoginWindow(QWidget):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    ex = LoginWindow()
+    login_window = LoginWindow()
     sys.exit(app.exec_())
