@@ -121,7 +121,7 @@ class LoginWindow(QWidget):
         QApplication.restoreOverrideCursor()
 
     def remember_me(self):
-        """Save emai and token into my_credentials.txt with 600 permission
+        """Save email and token into my_credentials.txt with 600 permission
         """
         email = self.email_field.text()
         token = self.token_field.text()
