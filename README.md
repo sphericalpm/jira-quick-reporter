@@ -1,4 +1,5 @@
-# JIRA Quick Reporter <img align="right" width="200" height="200" src="https://github.com/sphericalpm/JIRA-Quick-Reporter/blob/mf-inf-50/logo.png">
+# JIRA Quick Reporter
+
 
 
 -------------
