@@ -1,4 +1,6 @@
 import sys
+import stat
+import os
 from PyQt5.QtWidgets import (
     QWidget,
     QDesktopWidget,
@@ -7,7 +9,8 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QLineEdit,
-    QPushButton
+    QPushButton,
+    QMessageBox
 )
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
@@ -24,7 +27,19 @@ class LoginWindow(QWidget):
         self.email_field = QLineEdit()
         self.token_field = QLineEdit()
         self.label_error = QLabel('The email or token is incorrect.')
-        self.init_ui()
+
+        path = os.path.dirname(os.path.realpath(__file__))
+        my_credentials_path = os.path.join(path, "my_credentials.txt")
+
+        if os.path.exists(my_credentials_path):
+            with open(my_credentials_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                email, token = content.split(';')
+
+                jira_client = JiraClient(email, token)
+                self.open_main_window(jira_client)
+        else:
+            self.init_ui()
 
     def init_ui(self):
         self.setFixedSize(400, 230)
@@ -60,13 +75,16 @@ class LoginWindow(QWidget):
         token_get_link.setStyleSheet('font: 14px')
         token_get_link.setStyleSheet('margin-left: 35')
 
-        # create login button
-        btn_login = QPushButton('Login')
-        btn_login.setFixedSize(150, 30)
-        btn_login.setStyleSheet('margin-right: 35')
+        # create login, remember me buttons
+        btn_login = QPushButton('Log In')
+        btn_remember_me = QPushButton('Remember me')
+        btn_login.setFixedSize(100, 30)
+        btn_remember_me.setFixedSize(110, 30)
         btn_login.clicked.connect(self.login)
+        btn_remember_me.clicked.connect(self.remember_me)
         self.btn_box.addWidget(token_get_link)
         self.btn_box.addWidget(btn_login)
+        self.btn_box.addWidget(btn_remember_me)
 
         # add widgets to main box layout
         self.main_box.addWidget(label_title, alignment=Qt.AlignCenter)
@@ -101,6 +119,19 @@ class LoginWindow(QWidget):
             self.token_field.clear()
             self.email_field.clear()
         QApplication.restoreOverrideCursor()
+
+    def remember_me(self):
+        """Save emai and token into my_credentials.txt with 600 permission
+        """
+        email = self.email_field.text()
+        token = self.token_field.text()
+
+        with open('my_credentials.txt', 'w', encoding='utf-8') as f:
+            f.write("%s;%s" % (email, token))
+
+        os.chmod('my_credentials.txt', stat.S_IRUSR | stat.S_IWUSR)
+        QMessageBox.about(self, 'Saved', 'Successfully remembered')
+        self.login()
 
     def open_main_window(self, jira_client):
         self.main_window = MainWindow(jira_client)
