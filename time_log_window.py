@@ -43,12 +43,9 @@ class TimeLogWindow(QWidget):
         self.automatically_estimate.setChecked(True)
         self.automatically_estimate.value = "automatically_estimate"
         self.automatically_estimate.toggled.connect(self.radio_click)
-
-        try:
-            existing_estimate = issue.fields.timetracking.raw['remainingEstimate']
-        except AttributeError:
-            existing_estimate = "0m"
-
+      
+        existing_estimate = self.check_remaining_estimate()
+        
         self.existing_estimate = QRadioButton('Use existing estimate of %s' % existing_estimate)
         self.existing_estimate.value = {
             "name": "existing_estimate",
@@ -186,3 +183,10 @@ class TimeLogWindow(QWidget):
 
         if radioButton.isChecked():
             self.new_remaining_estimate = radioButton.value
+
+    def check_remaining_estimate(self):
+        try:
+            existing_estimate = self.issue.fields.timetracking.raw['remainingEstimate']
+        except (AttributeError, TypeError, KeyError):
+            existing_estimate = "0m"    
+        return existing_estimate
