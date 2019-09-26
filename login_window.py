@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (
     QLineEdit,
     QPushButton
 )
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtCore import Qt
 from jiraclient import JiraClient
 from jira import JIRAError
@@ -27,25 +27,27 @@ class LoginWindow(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        self.setFixedSize(400, 230)
+        self.setMinimumSize(400, 230)
         self.center()
         self.setWindowTitle('JIRA Quick Reporter')
         self.setWindowIcon(QIcon('logo.png'))
         self.setLayout(self.main_box)
 
         label_title = QLabel('Login to your account in JIRA')
-        label_title.setStyleSheet('font:18px')
+        font = QFont()
+        font.setPointSize(12)
+        label_title.setFont(font)
 
         # create email field
         self.email_field.setPlaceholderText('Enter your email')
-        self.email_field.setFixedWidth(300)
-        self.email_field.setFixedHeight(30)
+        self.email_field.setMinimumWidth(300)
+        self.email_field.setMinimumHeight(35)
 
         # create token field
         self.token_field.setEchoMode(QLineEdit.Password)
         self.token_field.setPlaceholderText('Enter your token')
-        self.token_field.setFixedWidth(300)
-        self.token_field.setFixedHeight(30)
+        self.token_field.setMinimumWidth(300)
+        self.token_field.setMinimumHeight(35)
 
         # create error field
         self.label_error.setStyleSheet('color:red')
@@ -57,12 +59,11 @@ class LoginWindow(QWidget):
             'Create API token</a>'
         )
         token_get_link.setOpenExternalLinks(True)
-        token_get_link.setStyleSheet('font: 14px')
         token_get_link.setStyleSheet('margin-left: 35')
 
         # create login button
         btn_login = QPushButton('Login')
-        btn_login.setFixedSize(150, 30)
+        btn_login.setMinimumSize(150, 35)
         btn_login.setStyleSheet('margin-right: 35')
         btn_login.clicked.connect(self.login)
         self.btn_box.addWidget(token_get_link)

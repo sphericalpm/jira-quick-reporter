@@ -33,7 +33,7 @@ class QCustomWidget(QWidget):
         self.estimated_label.setMinimumWidth(200)
         self.spent_label.setMinimumWidth(200)
         self.remaining_label.setMinimumWidth(200)
-        self.logwork_btn.setFixedWidth(90)
+        self.logwork_btn.setMinimumWidth(90)
 
         # button settings
         self.logwork_btn.setStyleSheet('background-color:white')
@@ -168,7 +168,7 @@ class MainWindow(QWidget):
             issue_list_widget.setItemWidget(issue_list_widget_item, issue_widget)
 
     def set_refresh_button(self):
-        self.refresh_btn.setFixedWidth(90)
+        self.refresh_btn.setMinimumWidth(90)
         self.refresh_btn.clicked.connect(self.refresh_click)
         self.btn_box.addWidget(self.refresh_btn, alignment=Qt.AlignRight)
 
