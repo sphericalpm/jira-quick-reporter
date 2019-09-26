@@ -105,18 +105,16 @@ class MainWindow(CenterWindow):
 
     def __init__(self, jira_client):
         super().__init__()
+        self.resize(800, 450)
+        self.center()
+        self.setWindowTitle('JIRA Quick Reporter')
+        self.setWindowIcon(QIcon('logo.png'))
+
         self.jira_client = jira_client
         self.main_box = QVBoxLayout()
         self.list_box = QVBoxLayout()
         self.btn_box = QHBoxLayout()
         self.refresh_btn = QPushButton('Refresh')
-        self.init_ui()
-
-    def init_ui(self):
-        self.resize(800, 450)
-        self.center()
-        self.setWindowTitle('JIRA Quick Reporter')
-        self.setWindowIcon(QIcon('logo.png'))
 
         self.main_box.addLayout(self.list_box)
         self.main_box.addLayout(self.btn_box)

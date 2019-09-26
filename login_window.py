@@ -20,18 +20,16 @@ from center_window import CenterWindow
 class LoginWindow(CenterWindow):
     def __init__(self):
         super().__init__()
+        self.resize(400, 230)
+        self.center()
+        self.setWindowTitle('JIRA Quick Reporter')
+        self.setWindowIcon(QIcon('logo.png'))
+
         self.main_box = QVBoxLayout()
         self.btn_box = QHBoxLayout()
         self.email_field = QLineEdit()
         self.token_field = QLineEdit()
         self.label_error = QLabel('The email or token is incorrect.')
-        self.init_ui()
-
-    def init_ui(self):
-        self.resize(400, 230)
-        self.center()
-        self.setWindowTitle('JIRA Quick Reporter')
-        self.setWindowIcon(QIcon('logo.png'))
         self.setLayout(self.main_box)
 
         label_title = QLabel('Login to your account in JIRA')
@@ -77,12 +75,6 @@ class LoginWindow(CenterWindow):
         self.main_box.addWidget(self.label_error, alignment=Qt.AlignCenter)
         self.main_box.addLayout(self.btn_box)
         self.show()
-
-    # def center(self):
-    #     qr = self.frameGeometry()
-    #     cp = QDesktopWidget().availableGeometry().center()
-    #     qr.moveCenter(cp)
-    #     self.move(qr.topLeft())
 
     def login(self):
         email = self.email_field.text()
