@@ -1,7 +1,6 @@
 import sys
+
 from PyQt5.QtWidgets import (
-    QWidget,
-    QDesktopWidget,
     QApplication,
     QLabel,
     QVBoxLayout,
@@ -11,12 +10,14 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtCore import Qt
-from jiraclient import JiraClient
+
 from jira import JIRAError
+from jiraclient import JiraClient
 from main_window import MainWindow
+from center_window import CenterWindow
 
 
-class LoginWindow(QWidget):
+class LoginWindow(CenterWindow):
     def __init__(self):
         super().__init__()
         self.main_box = QVBoxLayout()
@@ -27,7 +28,7 @@ class LoginWindow(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        self.setMinimumSize(400, 230)
+        self.resize(400, 230)
         self.center()
         self.setWindowTitle('JIRA Quick Reporter')
         self.setWindowIcon(QIcon('logo.png'))
@@ -77,11 +78,11 @@ class LoginWindow(QWidget):
         self.main_box.addLayout(self.btn_box)
         self.show()
 
-    def center(self):
-        qr = self.frameGeometry()
-        cp = QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
+    # def center(self):
+    #     qr = self.frameGeometry()
+    #     cp = QDesktopWidget().availableGeometry().center()
+    #     qr.moveCenter(cp)
+    #     self.move(qr.topLeft())
 
     def login(self):
         email = self.email_field.text()

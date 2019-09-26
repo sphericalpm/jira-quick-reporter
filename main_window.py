@@ -1,6 +1,5 @@
 from PyQt5.QtWidgets import (
     QWidget,
-    QDesktopWidget,
     QListWidget,
     QListWidgetItem,
     QVBoxLayout,
@@ -10,7 +9,9 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
+
 from time_log_window import TimeLogWindow
+from center_window import CenterWindow
 
 
 class QCustomWidget(QWidget):
@@ -99,7 +100,7 @@ class QCustomWidget(QWidget):
         self.remaining_label.setText(f'Remaining: {remaining}')
 
 
-class MainWindow(QWidget):
+class MainWindow(CenterWindow):
     """ Displays list with tasks assigned to current user in JIRA """
 
     def __init__(self, jira_client):
@@ -123,12 +124,6 @@ class MainWindow(QWidget):
         self.show_issues_list()
         self.set_refresh_button()
         self.show()
-
-    def center(self):
-        qr = self.frameGeometry()
-        cp = QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
 
     def show_issues_list(self):
         issues = self.jira_client.get_issues()
