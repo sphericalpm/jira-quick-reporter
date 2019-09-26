@@ -15,19 +15,13 @@ from PyQt5.QtWidgets import (
 
 
 class TimeLogWindow(QWidget):
-    """Time Tracking popup window
-
-    displays filds for time spent, date start and work description,
-    button 'Save': save/update values in Jira
-
-    """
 
     def __init__(self, issue, jira):
         super().__init__()
 
-        self.initUI(issue, jira)
+        self.show_time_log_window(issue, jira)
 
-    def initUI(self, issue, jira):
+    def show_time_log_window(self, issue, jira):
         """
         Show time log window
         """
