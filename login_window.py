@@ -17,8 +17,6 @@ from main_window import MainWindow
 
 
 class LoginWindow(QWidget):
-    """ Login window """
-
     def __init__(self):
         super().__init__()
         self.main_box = QVBoxLayout()
@@ -29,8 +27,6 @@ class LoginWindow(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        """ Show login window """
-
         self.setFixedSize(400, 230)
         self.center()
         self.setWindowTitle('JIRA Quick Reporter')
@@ -87,9 +83,6 @@ class LoginWindow(QWidget):
         self.move(qr.topLeft())
 
     def login(self):
-        """ User authorization """
-
-        # get data from fields
         email = self.email_field.text()
         token = self.token_field.text()
 
@@ -110,10 +103,6 @@ class LoginWindow(QWidget):
         QApplication.restoreOverrideCursor()
 
     def open_main_window(self, jira_client):
-        """ Open main window
-        :param jira_client: instance of JiraClient class
-        """
-
         self.main_window = MainWindow(jira_client)
         self.main_window.show()
         self.close()
@@ -121,5 +110,5 @@ class LoginWindow(QWidget):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    ex = LoginWindow()
+    login_window = LoginWindow()
     sys.exit(app.exec_())

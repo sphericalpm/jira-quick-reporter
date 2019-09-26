@@ -10,8 +10,6 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
-
-from jiraclient import JiraClient
 from time_log_window import TimeLogWindow
 
 
@@ -19,10 +17,7 @@ class QCustomWidget(QWidget):
     """Custom list item
     Displays the issue key, title and a shorthand
     for the time estimated/spent/remaining
-
     """
-    issue = None
-    jira_client = None
 
     def __init__(self, issue, jira_client):
         super().__init__()
@@ -42,7 +37,7 @@ class QCustomWidget(QWidget):
 
         # button settings
         self.logwork_btn.setStyleSheet('background-color:white')
-        self.logwork_btn.clicked.connect(self.open_timelog_window_click)
+        self.logwork_btn.clicked.connect(self.open_timelog_window)
 
         # create box layout for timelog labels
         self.timetracking_box = QHBoxLayout()
@@ -105,11 +100,7 @@ class QCustomWidget(QWidget):
 
 
 class MainWindow(QWidget):
-    """ Main window
-    Displays list with tasks assigned to current user in JIRA
-    """
-
-    jira_client = None
+    """ Displays list with tasks assigned to current user in JIRA """
 
     def __init__(self, jira_client):
         super().__init__()
@@ -121,8 +112,6 @@ class MainWindow(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        """ Show main window"""
-
         self.resize(800, 450)
         self.center()
         self.setWindowTitle('JIRA Quick Reporter')
@@ -142,8 +131,6 @@ class MainWindow(QWidget):
         self.move(qr.topLeft())
 
     def show_issues_list(self):
-        """Display list of issues"""
-
         issues = self.jira_client.get_issues()
         if not issues:
             label_info = QLabel('You have no issues.')
@@ -181,15 +168,11 @@ class MainWindow(QWidget):
             issue_list_widget.setItemWidget(issue_list_widget_item, issue_widget)
 
     def set_refresh_button(self):
-        """ Refresh button settings """
-
         self.refresh_btn.setFixedWidth(90)
         self.refresh_btn.clicked.connect(self.refresh_click)
         self.btn_box.addWidget(self.refresh_btn, alignment=Qt.AlignRight)
 
     def refresh_click(self):
-        """ Refresh button event handler """
-
         for i in range(self.list_box.count()):
             self.list_box.itemAt(i).widget().setParent(None)
         self.show_issues_list()
