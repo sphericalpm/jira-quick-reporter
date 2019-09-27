@@ -1,9 +1,6 @@
 from datetime import datetime
-from jira.exceptions import JIRAError
 
 from PyQt5.QtWidgets import (
-    QWidget,
-    QDesktopWidget,
     QPushButton,
     QLineEdit,
     QGridLayout,
@@ -13,8 +10,11 @@ from PyQt5.QtWidgets import (
     QRadioButton
 )
 
+from jira.exceptions import JIRAError
+from center_window import CenterWindow
 
-class TimeLogWindow(QWidget):
+
+class TimeLogWindow(CenterWindow):
 
     def __init__(self, issue, jira):
         super().__init__()
@@ -22,9 +22,6 @@ class TimeLogWindow(QWidget):
         self.show_time_log_window(issue, jira)
 
     def show_time_log_window(self, issue, jira):
-        """
-        Show time log window
-        """
         self.issue = issue
         self.jira = jira
 
@@ -110,22 +107,13 @@ class TimeLogWindow(QWidget):
 
         self.show()
 
-    def center(self):
-        """
-        Move window to the screen center
-        """
-        qr = self.frameGeometry()
-        cp = QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
-
     def save_click(self):
-        """Save button event handler
+        '''Save button event handler
 
         take user input values, save JIRAalues into Jira time tracking,
         show popup for successfully save or exception
+        '''
 
-        """
         time_spent = self.time_spent_line.text()
         date = self.date_start_line.text()
         start_date = datetime.strptime(date, '%d-%m-%Y %H:%M')
@@ -181,8 +169,6 @@ class TimeLogWindow(QWidget):
             QMessageBox.about(self, "Error", e.text)
 
     def radio_click(self):
-        """Check which radio button was pressed
-        """
         radioButton = self.sender()
 
         if radioButton.isChecked():
