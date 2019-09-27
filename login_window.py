@@ -20,33 +20,32 @@ from center_window import CenterWindow
 class LoginWindow(CenterWindow):
     def __init__(self):
         super().__init__()
-        self.resize(400, 230)
+        self.resize(380, 230)
         self.center()
         self.setWindowTitle('JIRA Quick Reporter')
         self.setWindowIcon(QIcon('logo.png'))
 
         self.main_box = QVBoxLayout()
-        self.btn_box = QHBoxLayout()
-        self.email_field = QLineEdit()
-        self.token_field = QLineEdit()
-        self.label_error = QLabel('The email or token is incorrect.')
         self.setLayout(self.main_box)
+        self.label_error = QLabel('The email or token is incorrect.')
 
         label_title = QLabel('Login to your account in JIRA')
-        font = QFont()
-        font.setPointSize(12)
-        label_title.setFont(font)
+        font16 = QFont()
+        font16.setPointSize(16)
+        label_title.setFont(font16)
 
         # create email field
+        self.email_field = QLineEdit()
         self.email_field.setPlaceholderText('Enter your email')
-        self.email_field.setMinimumWidth(300)
-        self.email_field.setMinimumHeight(35)
+        font14 = QFont()
+        font14.setPointSize(14)
+        self.email_field.setFont(font14)
 
         # create token field
+        self.token_field = QLineEdit()
         self.token_field.setEchoMode(QLineEdit.Password)
         self.token_field.setPlaceholderText('Enter your token')
-        self.token_field.setMinimumWidth(300)
-        self.token_field.setMinimumHeight(35)
+        self.token_field.setFont(font14)
 
         # create error field
         self.label_error.setStyleSheet('color:red')
@@ -58,20 +57,19 @@ class LoginWindow(CenterWindow):
             'Create API token</a>'
         )
         token_get_link.setOpenExternalLinks(True)
-        token_get_link.setStyleSheet('margin-left: 35')
 
         # create login button
+        self.btn_box = QHBoxLayout()
         btn_login = QPushButton('Login')
-        btn_login.setMinimumSize(150, 35)
-        btn_login.setStyleSheet('margin-right: 35')
+        btn_login.setFont(font14)
         btn_login.clicked.connect(self.login)
         self.btn_box.addWidget(token_get_link)
         self.btn_box.addWidget(btn_login)
 
         # add widgets to main box layout
         self.main_box.addWidget(label_title, alignment=Qt.AlignCenter)
-        self.main_box.addWidget(self.email_field, alignment=Qt.AlignCenter)
-        self.main_box.addWidget(self.token_field, alignment=Qt.AlignCenter)
+        self.main_box.addWidget(self.email_field, alignment=Qt.AlignBaseline)
+        self.main_box.addWidget(self.token_field, alignment=Qt.AlignBaseline)
         self.main_box.addWidget(self.label_error, alignment=Qt.AlignCenter)
         self.main_box.addLayout(self.btn_box)
         self.show()

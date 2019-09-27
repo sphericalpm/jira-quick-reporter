@@ -51,7 +51,6 @@ class QCustomWidget(QWidget):
         self.issue_key_label = QLabel()
         self.issue_title_label = QLabel()
         self.issue_title_label.setStyleSheet('font: bold')
-        self.issue_title_label.setMaximumWidth(500)
         self.issue_title_label.setWordWrap(True)
         self.issue_key_label.setOpenExternalLinks(True)
 
@@ -148,7 +147,6 @@ class MainWindow(CenterWindow):
             issue_list_widget.setItemWidget(issue_list_widget_item, issue_widget)
 
     def set_refresh_button(self):
-        self.refresh_btn.setMinimumWidth(90)
         self.refresh_btn.clicked.connect(self.refresh_click)
         self.btn_box.addWidget(self.refresh_btn, alignment=Qt.AlignRight)
 
