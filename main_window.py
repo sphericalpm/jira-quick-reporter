@@ -15,10 +15,10 @@ from center_window import CenterWindow
 
 
 class QCustomWidget(QWidget):
-    """Custom list item
+    ''' Custom list item
     Displays the issue key, title and a shorthand
     for the time estimated/spent/remaining
-    """
+    '''
 
     def __init__(self, issue, jira_client):
         super().__init__()
@@ -63,10 +63,6 @@ class QCustomWidget(QWidget):
         self.setLayout(vbox)
 
     def open_timelog_window(self):
-        """ Log work button event handler
-        Open the timelog window for selected issue
-        """
-
         self.time_log_window = TimeLogWindow(
             self.issue,
             self.jira_client
@@ -74,26 +70,17 @@ class QCustomWidget(QWidget):
         self.time_log_window.show()
 
     def set_issue_key(self, key, link):
-        """ Set a link to the web page of the task to issue_key label
-        :param key: issue key
-        :param link: issue link
-        """
+        ''' Set a link to the web page of the task to issue_key label '''
 
         self.issue_key_label.setText(f'<a href={link}>{key}</a>')
 
     def set_issue_title(self, title):
-        """ Set issue title to issue_title label
-        :param title: issue title
-        """
-
         self.issue_title_label.setText(title)
 
     def set_time(self, estimated, spent, remaining):
-        """ Set the estimated/spent/remaining time values to appropriate labels
-        :param str estimated: estimated time
-        :param str spent: logged time
-        :param str remaining: remaining time
-        """
+        ''' Set the estimated/spent/remaining
+        time values to appropriate labels
+        '''
 
         self.estimated_label.setText(f'Estimated: {estimated}')
         self.spent_label.setText(f'Logged: {spent}')
@@ -101,7 +88,7 @@ class QCustomWidget(QWidget):
 
 
 class MainWindow(CenterWindow):
-    """ Displays list with tasks assigned to current user in JIRA """
+    ''' Displays list with tasks assigned to current user in JIRA '''
 
     def __init__(self, jira_client):
         super().__init__()
