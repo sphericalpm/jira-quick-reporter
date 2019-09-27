@@ -109,7 +109,6 @@ class TimeLogWindow(CenterWindow):
 
     def save_click(self):
         '''Save button event handler
-
         take user input values, save JIRAalues into Jira time tracking,
         show popup for successfully save or exception
         '''
@@ -122,55 +121,42 @@ class TimeLogWindow(CenterWindow):
         new_estimate = self.new_remaining_estimate
 
         if not new_estimate:
-            self.save_in_jira(time_spent, start_date, comment)
-
+            log_work_params = dict()
         elif new_estimate.get('name') == 'existing_estimate':
-            self.save_in_jira(
-                time_spent, start_date, comment,
-                adjust_estimate='new', new_estimate=new_estimate.get('value')
+            log_work_params = dict(
+                adjust_estimate='new',
+                new_estimate=new_estimate.get('value')
             )
-
         elif new_estimate.get('name') == 'set_new_estimate':
             estimate = self.set_new_estimate_value.text()
-            self.save_in_jira(
-                time_spent, start_date, comment,
-                adjust_estimate='new', new_estimate=estimate
+            log_work_params = dict(
+                adjust_estimate='new',
+                new_estimate=estimate
             )
-
         elif new_estimate.get('name') == 'reduce_estimate':
             estimate = self.reduce_estimate_value.text()
-
-            self.save_in_jira(
-                time_spent, start_date, comment,
-                adjust_estimate='manual', reduce_by=estimate,
+            log_work_params = dict(
+                adjust_estimate='manual',
+                new_estimate=estimate
             )
-
         else:
             QMessageBox.about(self, "Error", "something went wrong")
-
-    def save_in_jira(
-        self, time_spent, start_date, comment,
-        adjust_estimate=None, new_estimate=None,
-        reduce_by=None,
-    ):
+            return
         try:
-            self.jira.client.add_worklog(
-                issue=self.issue,
-                timeSpent=time_spent,
-                adjustEstimate=adjust_estimate,
-                newEstimate=new_estimate,
-                reduceBy=reduce_by,
-                started=start_date,
-                comment=comment,
-            )
+            self.jira.log_work(
+                self.issue,
+                time_spent,
+                start_date,
+                comment,
+                **log_work_params)
             QMessageBox.about(self, 'Save', 'Successfully saved')
-
         except JIRAError as e:
             QMessageBox.about(self, "Error", e.text)
 
     def radio_click(self):
-        radioButton = self.sender()
+        '''Check which radio button was pressed'''
 
+        radioButton = self.sender()
         if radioButton.isChecked():
             self.new_remaining_estimate = radioButton.value
 
@@ -178,5 +164,5 @@ class TimeLogWindow(CenterWindow):
         try:
             existing_estimate = self.issue.fields.timetracking.raw['remainingEstimate']
         except (AttributeError, TypeError, KeyError):
-            existing_estimate = "0m"    
+            existing_estimate = "0m"
         return existing_estimate

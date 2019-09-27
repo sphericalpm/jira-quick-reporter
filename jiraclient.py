@@ -15,3 +15,23 @@ class JiraClient:
         return self.client.search_issues(
                 'assignee = currentUser()',
                 fields='key, summary, timetracking')
+
+    def log_work(
+            self,
+            issue,
+            time_spent,
+            start_date,
+            comment,
+            adjust_estimate=None,
+            new_estimate=None,
+            reduce_by=None
+    ):
+        self.client.add_worklog(
+            issue=issue,
+            timeSpent=time_spent,
+            adjustEstimate=adjust_estimate,
+            newEstimate=new_estimate,
+            reduceBy=reduce_by,
+            started=start_date,
+            comment=comment
+        )
