@@ -43,10 +43,12 @@ class TimeLogWindow(QWidget):
         self.automatically_estimate.setChecked(True)
         self.automatically_estimate.value = "automatically_estimate"
         self.automatically_estimate.toggled.connect(self.radio_click)
-      
+
         existing_estimate = self.check_remaining_estimate()
-        
-        self.existing_estimate = QRadioButton('Use existing estimate of %s' % existing_estimate)
+
+        self.existing_estimate = QRadioButton(
+            'Use existing estimate of %s' % existing_estimate
+        )
         self.existing_estimate.value = {
             "name": "existing_estimate",
             "value": existing_estimate
@@ -72,7 +74,9 @@ class TimeLogWindow(QWidget):
         work_description = QLabel('Work Description:')
 
         self.time_spent_line = QLineEdit()
-        self.date_start_line = QLineEdit(datetime.strftime(datetime.now(), '%d-%m-%Y %H:%M'))
+        self.date_start_line = QLineEdit(
+            datetime.strftime(datetime.now(), '%d-%m-%Y %H:%M')
+        )
         self.work_description_line = QTextEdit()
 
         self.save_button = QPushButton('Save')
