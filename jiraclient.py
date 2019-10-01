@@ -35,3 +35,13 @@ class JiraClient:
             started=start_date,
             comment=comment
         )
+
+    def get_remaining_estimate(self, issue):
+        try:
+            existing_estimate = issue.fields.timetracking.raw['remainingEstimate']
+        except (AttributeError, TypeError, KeyError):
+            existing_estimate = "0m"
+        return existing_estimate
+
+    def issue(self, key):
+        return self.client.issue(key)

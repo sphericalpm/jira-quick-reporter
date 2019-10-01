@@ -1,7 +1,3 @@
-import sys
-import stat
-import os
-
 from PyQt5.QtWidgets import (
     QApplication,
     QLabel,
@@ -9,21 +5,18 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLineEdit,
     QPushButton,
-    QMessageBox,
     QCheckBox
 )
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtCore import Qt
 
-from jira import JIRAError
-from jiraclient import JiraClient
-from main_window import MainWindow
 from center_window import CenterWindow
 
 
 class LoginWindow(CenterWindow):
-    def __init__(self):
+    def __init__(self, controller):
         super().__init__()
+        self.controller = controller
         self.resize(380, 230)
         self.center()
         self.setWindowTitle('JIRA Quick Reporter')
@@ -66,7 +59,7 @@ class LoginWindow(CenterWindow):
         self.btn_box = QHBoxLayout()
         btn_login = QPushButton('Login')
         btn_login.setFont(font14)
-        btn_login.clicked.connect(self.login)
+        btn_login.clicked.connect(self.controller.login)
 
         # create remember me checkbox
         self.cb_remember_me = QCheckBox('Remember me')
@@ -85,61 +78,25 @@ class LoginWindow(CenterWindow):
         self.main_box.addLayout(self.btn_box)
         self.show()
 
-    def login(self):
-        email = self.email_field.text()
-        token = self.token_field.text()
+    def email(self):
+        return self.email_field.text()
 
+    def token(self):
+        return self.token_field.text()
+
+    def set_wait_cursor(self):
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
-        try:
-            jira_client = JiraClient(email, token)
-            if self.cb_remember_me.checkState() == Qt.Checked:
-                self.remember_me(email, token)
-            self.open_main_window(jira_client)
-        except JIRAError:
-            self.label_error.setText('The email or token is incorrect.')
-            self.label_error.show()
-            self.token_field.clear()
-        except UnicodeEncodeError:
-            self.label_error.setText('English letters only')
-            self.label_error.show()
-            self.token_field.clear()
-            self.email_field.clear()
+    def stop_wait_cursor(self):
         QApplication.restoreOverrideCursor()
 
-    def remember_me(self, email, token):
-        ''' Save email and token into my_credentials.txt with 600 permission
-        '''
+    def remember_cb_state(self):
+        if self.cb_remember_me.checkState() == Qt.Checked:
+            return 1
+        else:
+            return 0
 
-        with open('my_credentials.txt', 'w', encoding='utf-8') as f:
-            f.write(f'{email};{token}')
-
-        os.chmod('my_credentials.txt', stat.S_IRUSR | stat.S_IWUSR)
-        QMessageBox.about(self, 'Saved', 'Successfully remembered')
-
-    def open_main_window(self, jira_client):
-        self.main_window = MainWindow(jira_client)
-        self.main_window.show()
-        self.close()
-
-
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-
-    path = os.path.dirname(os.path.realpath(__file__))
-    my_credentials_path = os.path.join(path, "my_credentials.txt")
-
-    if os.path.exists(my_credentials_path):
-        with open(my_credentials_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-            try:
-                email, token = content.split(';')
-                jira_client = JiraClient(email, token)
-                main_window = MainWindow(jira_client)
-            except (ValueError, JIRAError):
-                os.remove(my_credentials_path)
-                login_window = LoginWindow()
-    else:
-        login_window = LoginWindow()
-
-    sys.exit(app.exec_())
+    def set_error_to_label(self, text):
+        self.label_error.setText(text)
+        self.label_error.show()
+        self.token_field.clear()
