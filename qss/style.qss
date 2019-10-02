@@ -6,7 +6,7 @@ QPushButton#logwork_btn{
     background-color: white;
 }
 
-QListWidget::item{
+QListWidget#issue_list::item{
     border-bottom: 1px solid lightgray
 }
 

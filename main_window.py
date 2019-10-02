@@ -6,7 +6,8 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
-    QGridLayout
+    QGridLayout,
+    QLineEdit
 )
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
@@ -93,22 +94,38 @@ class MainWindow(CenterWindow):
             self.setStyleSheet(qss_file.read())
 
         self.controller = controller
-        self.selected_issue_key = None
         self.resize(800, 450)
         self.center()
         self.setWindowTitle('JIRA Quick Reporter')
         self.setWindowIcon(QIcon('logo.png'))
 
         self.main_box = QVBoxLayout()
+        self.hbox = QHBoxLayout()
         self.list_box = QVBoxLayout()
+        self.create_filter_box = QHBoxLayout()
+        self.my_filters_list = QListWidget()
+        self.my_filters_list.itemSelectionChanged.connect(self.controller.filter_selected)
+
+        self.hbox.addWidget(self.my_filters_list)
+        self.hbox.addLayout(self.list_box, Qt.AlignCenter)
+
         self.btn_box = QHBoxLayout()
 
-        self.main_box.addLayout(self.list_box)
+        filter_label = QLabel('Create filter: ')
+        self.filter_field = QLineEdit()
+        self.filter_button = QPushButton('Save')
+        self.filter_button.clicked.connect(self.controller.save_filter)
+        self.create_filter_box.addWidget(filter_label)
+        self.create_filter_box.addWidget(self.filter_field)
+        self.create_filter_box.addWidget(self.filter_button)
+
+        self.main_box.addLayout(self.create_filter_box)
+        self.main_box.addLayout(self.hbox)
         self.main_box.addLayout(self.btn_box)
         self.setLayout(self.main_box)
 
         self.refresh_btn = QPushButton('Refresh')
-        self.refresh_btn.clicked.connect(self.controller.refresh_issue_list)
+        self.refresh_btn.clicked.connect(self.controller.filter_selected)
         self.btn_box.addWidget(self.refresh_btn, alignment=Qt.AlignRight)
 
     def show_issues_list(self, issues_list):
@@ -124,6 +141,7 @@ class MainWindow(CenterWindow):
 
         # create issue list widget
         issue_list_widget = QListWidget(self)
+        issue_list_widget.setObjectName('issue_list')
         self.list_box.addWidget(issue_list_widget)
 
         # create list of issues
@@ -148,3 +166,21 @@ class MainWindow(CenterWindow):
             issue_list_widget.setItemWidget(
                 issue_list_widget_item, issue_widget
             )
+
+    def show_filters(self, filters_dict):
+        for key, filter in filters_dict.items():
+            self.my_filters_list.addItem(key)
+        self.my_filters_list.setCurrentItem(self.my_filters_list.item(0))
+        self.my_filters_list.setMaximumWidth(
+            self.my_filters_list.sizeHintForColumn(0) + 10
+        )
+
+    def get_current_filter(self):
+        return self.my_filters_list.currentItem().text()
+
+    def get_new_filter(self):
+        return self.filter_field.text()
+
+    def set_filter_jql_to_field(self, jql):
+        self.filter_field.setText(jql)
+

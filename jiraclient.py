@@ -11,9 +11,9 @@ class JiraClient:
             max_retries=1
         )
 
-    def get_issues(self):
+    def get_issues(self, jql=''):
         return self.client.search_issues(
-                'assignee = currentUser()',
+                jql,
                 fields='key, summary, timetracking')
 
     def log_work(
