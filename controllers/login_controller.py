@@ -32,8 +32,10 @@ class LoginController:
         self.view.stop_wait_cursor()
 
     def remember_me(self, email, token):
-        ''' Save email and token into my_credentials.txt with 600 permission
-        '''
+        """
+        Save email and token into my_credentials.txt
+        with 600 permission
+        """
 
         with open('my_credentials.txt', 'w', encoding='utf-8') as file:
             file.write('{email};{token}'.format(email=email, token=token))

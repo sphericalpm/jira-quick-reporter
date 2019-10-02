@@ -5,47 +5,48 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
-    QPushButton
+    QPushButton,
+    QGridLayout
 )
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
 
 from center_window import CenterWindow
+from config import QSS_PATH
 
 
 class QCustomWidget(QWidget):
-    ''' Custom list item
+    """ Custom list item
     Displays the issue key, title and a shorthand
     for the time estimated/spent/remaining
-    '''
+    """
 
     def __init__(self):
         super().__init__()
 
+        with open(QSS_PATH, "r") as qss_file:
+            self.setStyleSheet(qss_file.read())
+
         self.estimated_label = QLabel()
+        self.estimated_label.setObjectName('estimated_label')
         self.spent_label = QLabel()
+        self.spent_label.setObjectName('spent_label')
         self.remaining_label = QLabel()
+        self.remaining_label.setObjectName('remaining_label')
         self.logwork_btn = QPushButton('Log work')
+        self.logwork_btn.setObjectName('logwork_btn')
+        self.logwork_btn.setMaximumSize(self.logwork_btn.size())
 
-        # style settings for timelog labels
-        self.estimated_label.setMinimumWidth(200)
-        self.spent_label.setMinimumWidth(200)
-        self.remaining_label.setMinimumWidth(200)
-
-        self.logwork_btn.setStyleSheet('background-color:white')
-
-        # create box layout for timelog labels
-        self.timetracking_box = QHBoxLayout()
-        self.timetracking_box.addWidget(self.estimated_label)
-        self.timetracking_box.addWidget(self.spent_label)
-        self.timetracking_box.addWidget(self.remaining_label)
-        self.timetracking_box.addStretch()
-        self.timetracking_box.addWidget(self.logwork_btn)
+        timetracking_grid = QGridLayout()
+        timetracking_grid.addWidget(self.estimated_label, 0, 0)
+        timetracking_grid.addWidget(self.spent_label, 0, 1)
+        timetracking_grid.addWidget(self.remaining_label, 0, 2)
+        timetracking_grid.addWidget(self.logwork_btn, 0, 3, Qt.AlignRight)
 
         # create labels for issue key and title
         self.issue_key_label = QLabel()
         self.issue_title_label = QLabel()
-        self.issue_title_label.setStyleSheet('font: bold')
+        self.issue_title_label.setObjectName('issue_title_label')
         self.issue_title_label.setWordWrap(True)
         self.issue_key_label.setOpenExternalLinks(True)
 
@@ -53,21 +54,27 @@ class QCustomWidget(QWidget):
         vbox = QVBoxLayout()
         vbox.addWidget(self.issue_key_label)
         vbox.addWidget(self.issue_title_label)
-        vbox.addLayout(self.timetracking_box)
+        vbox.addLayout(timetracking_grid)
         self.setLayout(vbox)
 
     def set_issue_key(self, key, link):
-        ''' Set a link to the web page of the task to issue_key label '''
+        """
+        Set a link to the web page of the task
+        to issue_key label
+        """
 
-        self.issue_key_label.setText(f'<a href={link}>{key}</a>')
+        self.issue_key_label.setText(
+            '<a href={link}>{key}</a>'.format(link=link, key=key)
+        )
 
     def set_issue_title(self, title):
         self.issue_title_label.setText(title)
 
     def set_time(self, estimated, spent, remaining):
-        ''' Set the estimated/spent/remaining
+        """
+        Set the estimated/spent/remaining
         time values to appropriate labels
-        '''
+        """
 
         self.estimated_label.setText('Estimated: {}'.format(estimated))
         self.spent_label.setText('Logged: {}'.format(spent))
@@ -75,10 +82,15 @@ class QCustomWidget(QWidget):
 
 
 class MainWindow(CenterWindow):
-    ''' Displays list with tasks assigned to current user in JIRA '''
-
+    """
+    Displays list with tasks assigned to current user in JIRA
+    """
     def __init__(self, controller):
         super().__init__()
+
+        with open('qss/style.qss', "r") as qss_file:
+            self.setStyleSheet(qss_file.read())
+
         self.controller = controller
         self.selected_issue_key = None
         self.resize(800, 450)
@@ -111,8 +123,6 @@ class MainWindow(CenterWindow):
 
         # create issue list widget
         issue_list_widget = QListWidget(self)
-        issue_list_widget.setStyleSheet(
-                'QListWidget::item { border-bottom: 1px solid lightgray }')
         self.list_box.addWidget(issue_list_widget)
 
         # create list of issues

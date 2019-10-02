@@ -14,10 +14,10 @@ class TimeLogController:
         self.view.show()
 
     def save_click(self):
-        '''Save button event handler
+        """Save button event handler
         take user input values, save JIRAalues into Jira time tracking,
         show popup for successfully save or exception
-        '''
+        """
 
         time_spent = self.view.time_spent()
         start_date = self.view.date_start()

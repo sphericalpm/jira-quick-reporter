@@ -113,8 +113,8 @@ class TimeLogWindow(CenterWindow):
         return self.work_description_line.toPlainText()
 
     def radio_click(self):
-        '''Check which radio button was pressed'''
+        """ Check which radio button was pressed """
 
-        radioButton = self.sender()
-        if radioButton.isChecked():
-            self.new_remaining_estimate = radioButton.value
+        radio_button = self.sender()
+        if radio_button.isChecked():
+            self.new_remaining_estimate = radio_button.value
