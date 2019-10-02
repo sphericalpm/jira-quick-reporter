@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
+from functools import partial
 
 from center_window import CenterWindow
 from config import QSS_PATH
@@ -137,7 +138,7 @@ class MainWindow(CenterWindow):
             )
 
             issue_widget.logwork_btn.clicked.connect(
-                lambda: self.controller.open_timelog_window(issue['key'])
+                partial(self.controller.open_timelog_window, issue['key'])
             )
 
             # add issue item to list
