@@ -9,17 +9,18 @@ from PyQt5.QtWidgets import (
     QRadioButton
 )
 
+from PyQt5.QtCore import QEvent
 from center_window import CenterWindow
+from config import QSS_PATH
 
 
 class TimeLogWindow(CenterWindow):
-
     def __init__(self, controller, issue_key):
         super().__init__()
         self.controller = controller
         self.issue_key = issue_key
-
         # main window characteristics
+        self.setStyleSheet(open(QSS_PATH, 'r').read())
         self.resize(600, 450)
         self.center()
         self.setWindowTitle('Log Work: {issue}'.format(issue=issue_key))
@@ -62,6 +63,8 @@ class TimeLogWindow(CenterWindow):
         self.date_start_line = QLineEdit(
             datetime.strftime(datetime.now(), '%d-%m-%Y %H:%M')
         )
+        self.date_start_line.installEventFilter(self)
+        self.date_start = self.get_date_from_line()
         self.work_description_line = QTextEdit()
 
         self.save_button = QPushButton('Save')
@@ -105,9 +108,25 @@ class TimeLogWindow(CenterWindow):
     def time_spent(self):
         return self.time_spent_line.text()
 
-    def date_start(self):
+    def get_date_from_line(self):
         date = self.date_start_line.text()
         return datetime.strptime(date, '%d-%m-%Y %H:%M')
+
+    def eventFilter(self, obj, event):
+        if obj == self.date_start_line:
+            if event.type() == QEvent.FocusOut:
+                try:
+                    self.date_start = self.get_date_from_line()
+                    self.date_start_line.setObjectName('')
+                    self.date_start_line.setStyleSheet('')
+                except ValueError:
+                    self.set_error_date()
+
+        return False
+
+    def set_error_date(self):
+        self.date_start_line.setObjectName('error_field')
+        self.date_start_line.setStyleSheet('error_field')
 
     def comment(self):
         return self.work_description_line.toPlainText()

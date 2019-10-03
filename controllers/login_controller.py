@@ -41,7 +41,6 @@ class LoginController:
             file.write('{email};{token}'.format(email=email, token=token))
 
         os.chmod('my_credentials.txt', stat.S_IRUSR | stat.S_IWUSR)
-        QMessageBox.about(self.view, 'Saved', 'Successfully remembered')
 
     def open_main_window(self):
         main_controller = MainController(self.jira_client)

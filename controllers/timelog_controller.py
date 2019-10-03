@@ -1,11 +1,13 @@
 from jira import JIRAError
 from PyQt5.QtWidgets import QMessageBox
 
+
 from time_log_window import TimeLogWindow
 
 
 class TimeLogController:
-    def __init__(self, jira_client, issue_key):
+    def __init__(self, jira_client, issue_key, main_controller):
+        self.main_controller = main_controller
         self.jira_client = jira_client
         self.issue = jira_client.issue(issue_key)
         self.view = TimeLogWindow(self, issue_key)
@@ -20,7 +22,7 @@ class TimeLogController:
         """
 
         time_spent = self.view.time_spent()
-        start_date = self.view.date_start()
+        start_date = self.view.date_start
         comment = self.view.comment()
         remaining_estimate = self.view.new_remaining_estimate
 
@@ -53,6 +55,7 @@ class TimeLogController:
                 start_date,
                 comment,
                 **log_work_params)
-            QMessageBox.about(self.view, 'Save', 'Successfully saved')
+            self.view.close()
+            self.main_controller.refresh_issue_list()
         except JIRAError as e:
             QMessageBox.about(self.view, "Error", e.text)
