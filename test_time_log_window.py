@@ -1,34 +1,30 @@
-from PyQt5.QtWidgets import QApplication
-
-from time_log_window import TimeLogWindow
 from jiraclient import JiraClient
-from my_jira_token import my_token, email
 import sys
-
+import unittest
 from types import SimpleNamespace as sn
 
-app = QApplication(sys.argv)
-jira = JiraClient(email, my_token)
-issues = jira.get_issues()
 
-
-def test_check_remaining_estimate():
-    w = TimeLogWindow(issues[0], jira)
-
-    w.issue = sn(
-        fields=sn(
-            timetracking=sn(
-                raw={}
+class Test(unittest.TestCase):
+    def test_get_remaining_estimate_empty(self):
+        issue = sn(
+            fields=sn(
+                timetracking=sn(
+                    raw={}
+                )
             )
         )
-    )
-    assert w.check_remaining_estimate() == '0m'
+        self.assertEqual(JiraClient.get_remaining_estimate(issue), '0m')
 
-    w.issue = sn(
-        fields=sn(
-            timetracking=sn(
-                raw={'remainingEstimate': '1h'}
+    def test_get_remaining_estimate(self):
+        issue = sn(
+            fields=sn(
+                timetracking=sn(
+                    raw={'remainingEstimate': '1h'}
+                )
             )
         )
-    )
-    assert w.check_remaining_estimate() == '1h'
+        self.assertEqual(JiraClient.get_remaining_estimate(issue), '1h')
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -2,7 +2,7 @@ import os
 import stat
 
 from jira import JIRAError
-from PyQt5.QtWidgets import QMessageBox
+from config import CREDENTIALS_PATH
 
 from login_window import LoginWindow
 from controllers.main_controller import MainController
@@ -37,10 +37,11 @@ class LoginController:
         with 600 permission
         """
 
-        with open('my_credentials.txt', 'w', encoding='utf-8') as file:
+        with open(CREDENTIALS_PATH, 'w', encoding='utf-8') as file:
             file.write('{email};{token}'.format(email=email, token=token))
 
-        os.chmod('my_credentials.txt', stat.S_IRUSR | stat.S_IWUSR)
+        if os.name == 'posix':
+            os.chmod(CREDENTIALS_PATH, stat.S_IRUSR | stat.S_IWUSR)
 
     def open_main_window(self):
         main_controller = MainController(self.jira_client)

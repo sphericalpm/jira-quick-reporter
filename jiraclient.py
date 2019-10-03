@@ -36,7 +36,8 @@ class JiraClient:
             comment=comment
         )
 
-    def get_remaining_estimate(self, issue):
+    @staticmethod
+    def get_remaining_estimate(issue):
         try:
             existing_estimate = issue.fields.timetracking.raw['remainingEstimate']
         except (AttributeError, TypeError, KeyError):

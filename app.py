@@ -22,7 +22,6 @@ if __name__ == '__main__':
                 jira_client = JiraClient(email, token)
                 main_controller = MainController(jira_client)
             except (ValueError, JIRAError):
-                os.remove(my_credentials_path)
                 login_controller = LoginController()
     else:
         login_controller = LoginController()

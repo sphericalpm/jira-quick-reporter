@@ -122,7 +122,6 @@ class TimeLogWindow(CenterWindow):
                 except ValueError:
                     self.date_start = None
                     self.set_error_date()
-
         return False
 
     def set_error_date(self):
