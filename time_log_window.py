@@ -120,6 +120,7 @@ class TimeLogWindow(CenterWindow):
                     self.date_start_line.setObjectName('')
                     self.date_start_line.setStyleSheet('')
                 except ValueError:
+                    self.date_start = None
                     self.set_error_date()
 
         return False

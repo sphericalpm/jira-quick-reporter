@@ -23,6 +23,8 @@ class TimeLogController:
 
         time_spent = self.view.time_spent()
         start_date = self.view.date_start
+        if not start_date:
+            return
         comment = self.view.comment()
         remaining_estimate = self.view.new_remaining_estimate
 
