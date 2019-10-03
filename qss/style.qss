@@ -22,3 +22,22 @@ QLabel#label_title{
 QLineEdit#error_field{
     border: 1px solid red;
 }
+
+QLabel#time_label{
+    font-size: 26pt;
+}
+
+QProgressBar{
+    height: 10pt;
+    border: 2px solid darkgray;
+    border-radius: 5px;
+}
+
+QProgressBar::chunk {
+    background-color: darkred;
+}
+
+QLabel#issue_label{
+    font-size: 20pt;
+    color: darkred;
+}
