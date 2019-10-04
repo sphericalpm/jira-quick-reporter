@@ -95,7 +95,6 @@ class MainWindow(CenterWindow):
         self.controller = controller
         self.selected_issue_key = None
         self.resize(800, 450)
-        self.center()
         self.setWindowTitle('JIRA Quick Reporter')
         self.setWindowIcon(QIcon('logo.png'))
 
