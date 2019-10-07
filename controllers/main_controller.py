@@ -1,5 +1,6 @@
 from main_window import MainWindow
 from controllers.timelog_controller import TimeLogController
+from pomodoro_window import PomodoroWindow
 
 
 class MainController:
@@ -42,5 +43,19 @@ class MainController:
         issues_list = self.get_issue_list()
         self.view.show_issues_list(issues_list)
 
-    def open_timelog_window(self, issue_key):
+    def open_pomodoro_window(self, issue_key, issue_title):
+        self.view.pomodoro_window = PomodoroWindow(self, issue_key, issue_title)
+        self.view.pomodoro_window.show()
+
+    def open_timelog_from_pomodoro(self, issue_key):
+        h, m = self.view.pomodoro_window.get_past_pomodoros_time().split(':')
+        if h == '0':
+            past_time = '{}m'.format(m)
+        elif m == '0':
+            past_time = '{}h'.format(h)
+        else:
+            past_time = '{}h {}m'.format(h, m)
+        time_log_controller = TimeLogController(self.jira_client, issue_key, self, past_time)
+
+    def open_timelog(self, issue_key):
         time_log_controller = TimeLogController(self.jira_client, issue_key, self)

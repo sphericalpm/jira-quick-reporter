@@ -24,7 +24,7 @@ QLineEdit#error_field{
 }
 
 QLabel#time_label{
-    font-size: 40pt;
+    font-size: 30pt;
 }
 
 QProgressBar{
@@ -41,12 +41,29 @@ QProgressBar::chunk#break {
     background-color: green;
 }
 
+#br{
+    color: green;
+}
+
 QLabel#issue_label{
-    font-size: 22pt;
+    font-size: 18pt;
     color: darkred;
+}
+
+QLabel#issue_label_break{
+    font-size: 18pt;
+    color: green;
 }
 
 QPushButton#cur_break_btn{
     border-color: green;
     background-color: green;
+}
+
+QLabel#pomodoros_count{
+    font-size:16pt;
+}
+
+QLabel#break_label{
+    font-size: 16pt;
 }

@@ -25,24 +25,27 @@ class QCustomWidget(QWidget):
     def __init__(self):
         super().__init__()
 
-        with open(QSS_PATH, "r") as qss_file:
-            self.setStyleSheet(qss_file.read())
-
         self.estimated_label = QLabel()
         self.estimated_label.setObjectName('estimated_label')
         self.spent_label = QLabel()
         self.spent_label.setObjectName('spent_label')
         self.remaining_label = QLabel()
         self.remaining_label.setObjectName('remaining_label')
+
         self.logwork_btn = QPushButton('Log work')
         self.logwork_btn.setObjectName('logwork_btn')
         self.logwork_btn.setMaximumSize(self.logwork_btn.size())
+
+        self.pomodoro_btn = QPushButton('Start pomodoro')
+        self.pomodoro_btn.setObjectName('logwork_btn')
+        self.pomodoro_btn.setMaximumSize(self.pomodoro_btn.size())
 
         timetracking_grid = QGridLayout()
         timetracking_grid.addWidget(self.estimated_label, 0, 0)
         timetracking_grid.addWidget(self.spent_label, 0, 1)
         timetracking_grid.addWidget(self.remaining_label, 0, 2)
         timetracking_grid.addWidget(self.logwork_btn, 0, 3, Qt.AlignRight)
+        timetracking_grid.addWidget(self.pomodoro_btn, 0, 4, Qt.AlignRight)
 
         # create labels for issue key and title
         self.issue_key_label = QLabel()
@@ -89,10 +92,11 @@ class MainWindow(CenterWindow):
     def __init__(self, controller):
         super().__init__()
 
-        with open('qss/style.qss', "r") as qss_file:
+        with open(QSS_PATH, "r") as qss_file:
             self.setStyleSheet(qss_file.read())
 
         self.controller = controller
+        self.pomodoro_window = None
         self.selected_issue_key = None
         self.resize(800, 450)
         self.setWindowTitle('JIRA Quick Reporter')
@@ -136,8 +140,14 @@ class MainWindow(CenterWindow):
                 issue['remaining']
             )
 
+            issue_widget.pomodoro_btn.clicked.connect(
+                partial(self.controller.open_pomodoro_window,
+                        issue['key'], issue['title'])
+            )
+
             issue_widget.logwork_btn.clicked.connect(
-                partial(self.controller.open_timelog_window, issue['key'])
+                partial(self.controller.open_timelog,
+                        issue['key'])
             )
 
             # add issue item to list

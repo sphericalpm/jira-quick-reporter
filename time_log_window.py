@@ -104,6 +104,9 @@ class TimeLogWindow(CenterWindow):
             'value': existing_estimate
         }
 
+    def set_time_spent(self, time):
+        self.time_spent_line.setText(time)
+
     def time_spent(self):
         return self.time_spent_line.text()
 

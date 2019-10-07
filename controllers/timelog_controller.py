@@ -6,13 +6,15 @@ from time_log_window import TimeLogWindow
 
 
 class TimeLogController:
-    def __init__(self, jira_client, issue_key, main_controller):
+    def __init__(self, jira_client, issue_key, main_controller, logged_time=None):
         self.main_controller = main_controller
         self.jira_client = jira_client
         self.issue = jira_client.issue(issue_key)
         self.view = TimeLogWindow(self, issue_key)
         existing_estimate = self.jira_client.get_remaining_estimate(self.issue)
         self.view.set_existing_estimate(existing_estimate)
+        if logged_time:
+            self.view.set_time_spent(logged_time)
         self.view.show()
 
     def save_click(self):
