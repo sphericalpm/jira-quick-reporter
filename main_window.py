@@ -104,7 +104,9 @@ class MainWindow(CenterWindow):
         self.list_box = QVBoxLayout()
         self.create_filter_box = QHBoxLayout()
         self.my_filters_list = QListWidget()
-        self.my_filters_list.itemSelectionChanged.connect(self.controller.filter_selected)
+        self.my_filters_list.itemSelectionChanged.connect(
+            self.controller.filter_selected
+        )
 
         self.hbox.addWidget(self.my_filters_list)
         self.hbox.addLayout(self.list_box, Qt.AlignCenter)
@@ -168,12 +170,15 @@ class MainWindow(CenterWindow):
             )
 
     def show_filters(self, filters_dict):
-        for key, filter in filters_dict.items():
+        for key in filters_dict.keys():
             self.my_filters_list.addItem(key)
         self.my_filters_list.setCurrentItem(self.my_filters_list.item(0))
         self.my_filters_list.setMaximumWidth(
             self.my_filters_list.sizeHintForColumn(0) + 10
         )
+
+    def add_filter(self, filter):
+        self.my_filters_list.addItem(filter)
 
     def get_current_filter(self):
         return self.my_filters_list.currentItem().text()
@@ -183,4 +188,3 @@ class MainWindow(CenterWindow):
 
     def set_filter_jql_to_field(self, jql):
         self.filter_field.setText(jql)
-

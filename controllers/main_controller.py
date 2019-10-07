@@ -79,7 +79,8 @@ class MainController:
 
     def set_section(self):
         self.config[self.section] = {
-            'my open issues': 'assignee = currentUser() AND resolution = Unresolved'
+            'my open issues': 'assignee = currentUser() '
+            'AND resolution = Unresolved'
         }
 
     def write_to_ini(self):
@@ -103,16 +104,33 @@ class MainController:
                         'Input Dialog',
                         'Enter filter name:'
                     )
-                    #TODO: check if name valid
+                    if any(c in [':', '=', '#'] for c in name):
+                        QMessageBox.about(
+                            self.view, 'Error',
+                            'The name is incorrect. Try again'
+                        )
                     if ok and not name:
-                        QMessageBox.about(self.view, 'Error', 'Please, enter a filter name')
+                        QMessageBox.about(
+                            self.view, 'Error',
+                            'Please, enter a filter name'
+                        )
                     elif ok and name not in self.items:
                         self.config[self.section][name] = jql
                         self.write_to_ini()
-                        # TODO: update config and list with filters
+                        self.set_items()
+                        self.view.add_filter(name)
                     elif ok:
-                        QMessageBox.about(self.view, 'Error', 'A filter with this name already exists')
+                        QMessageBox.about(
+                            self.view, 'Error',
+                            'A filter with this name already exists'
+                        )
                 else:
-                    QMessageBox.about(self.view, 'Error', 'A filter with this jql already exists')
+                    QMessageBox.about(
+                        self.view, 'Error',
+                        'A filter with this jql already exists'
+                    )
             except JIRAError:
-                QMessageBox.about(self.view, 'Error', 'The jql line is incorrect')
+                QMessageBox.about(
+                    self.view, 'Error',
+                    'The jql query is incorrect'
+                )
