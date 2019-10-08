@@ -13,7 +13,7 @@ from PyQt5.QtCore import Qt
 from functools import partial
 
 from center_window import CenterWindow
-from config import QSS_PATH
+from config import QSS_PATH, LOGO_PATH
 
 
 class QCustomWidget(QWidget):
@@ -92,7 +92,7 @@ class MainWindow(CenterWindow):
     def __init__(self, controller):
         super().__init__()
 
-        with open(QSS_PATH, "r") as qss_file:
+        with open(QSS_PATH, 'r') as qss_file:
             self.setStyleSheet(qss_file.read())
 
         self.controller = controller
@@ -100,7 +100,7 @@ class MainWindow(CenterWindow):
         self.selected_issue_key = None
         self.resize(800, 450)
         self.setWindowTitle('JIRA Quick Reporter')
-        self.setWindowIcon(QIcon('logo.png'))
+        self.setWindowIcon(QIcon(LOGO_PATH))
 
         self.main_box = QVBoxLayout()
         self.list_box = QVBoxLayout()
@@ -146,7 +146,7 @@ class MainWindow(CenterWindow):
             )
 
             issue_widget.logwork_btn.clicked.connect(
-                partial(self.controller.open_timelog,
+                partial(self.controller.open_timelog_window,
                         issue['key'])
             )
 

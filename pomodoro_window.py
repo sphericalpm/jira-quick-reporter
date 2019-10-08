@@ -6,13 +6,14 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QDialog,
-    QSizePolicy
+    QSizePolicy,
+    QMessageBox
 )
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import QTimer, QTime, Qt
 
 from center_window import CenterWindow
-from config import QSS_PATH, RINGING_SOUND_PATH
+from config import QSS_PATH, RINGING_SOUND_PATH, POMODORO_MARK_PATH
 
 SHORT_BREAK = 'short'
 LONG_BREAK = 'long'
@@ -34,7 +35,8 @@ class CustomDialog(QDialog):
         self.main_box = QVBoxLayout()
         self.setLayout(self.main_box)
         self.message_label = QLabel(
-            'Your pomodoro is over. \nIt is time for a {} break.'.format(self.cur_break)
+            'Your pomodoro is over. '
+            '\nIt is time for a {} break.'.format(self.cur_break)
         )
         self.message_label.setAlignment(Qt.AlignCenter)
         self.message_label.setObjectName('break_label')
@@ -98,7 +100,9 @@ class PomodoroWindow(CenterWindow):
         self.issue_label.setAlignment(Qt.AlignCenter)
         self.issue_label.setObjectName('issue_label')
         self.issue_label.setWordWrap(True)
-        self.issue_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.issue_label.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Fixed
+        )
 
         self.pbar = QProgressBar()
         self.pbar.setMaximum(self.time_in_seconds)
@@ -117,7 +121,7 @@ class PomodoroWindow(CenterWindow):
         self.timer_btn.clicked.connect(self.toggle_timer)
 
         self.reset_btn = QPushButton('Reset')
-        self.reset_btn.clicked.connect(self.reset_btn_click)
+        self.reset_btn.clicked.connect(self.reset)
 
         self.logwork_btn = QPushButton('Log work')
         self.logwork_btn.clicked.connect(
@@ -158,6 +162,7 @@ class PomodoroWindow(CenterWindow):
             self.stop_timer()
             QSound.play(RINGING_SOUND_PATH)
             if self.cur_time_name is POMODORO:
+                self.logwork_btn.setEnabled(True)
                 self.log_time()
             self.set_timer()
 
@@ -176,7 +181,6 @@ class PomodoroWindow(CenterWindow):
         self.timer.stop()
         self.timer_btn.setText('Start')
         self.reset_btn.setEnabled(True)
-        self.logwork_btn.setEnabled(True)
 
         # change style after a break
         self.issue_label.setObjectName('issue_label')
@@ -188,10 +192,10 @@ class PomodoroWindow(CenterWindow):
         """
         Set pomodoro mark and number of past pomodoros
         """
-        
+
         self.clear_pomodoros()
         label = QLabel()
-        pixmap = QPixmap('tomato2.png')
+        pixmap = QPixmap(POMODORO_MARK_PATH)
         label.setPixmap(pixmap)
         self.pomodoros_box.addWidget(self.pomodoros_count_label)
         self.pomodoros_count_label.setSizePolicy(
@@ -202,7 +206,7 @@ class PomodoroWindow(CenterWindow):
 
     def set_pomodoro_mark(self):
         label = QLabel()
-        pixmap = QPixmap('tomato2.png')
+        pixmap = QPixmap(POMODORO_MARK_PATH)
         label.setPixmap(pixmap)
         if self.pomodoros_count > 1:
             self.pomodoros_box.itemAt(
@@ -237,7 +241,7 @@ class PomodoroWindow(CenterWindow):
         self.past_pomodoros_time = self.past_pomodoros_time.addSecs(cur_time_sec)
         print(self.past_pomodoros_time)
 
-    def reset_btn_click(self):
+    def reset(self):
         self.pomodoros_count = 0
         self.past_pomodoros_time.setHMS(0, 0, 0)
         self.logwork_btn.setEnabled(False)
@@ -282,3 +286,19 @@ class PomodoroWindow(CenterWindow):
 
     def get_past_pomodoros_time(self):
         return self.past_pomodoros_time.toString('h:m')
+
+    def closeEvent(self, event):
+        if self.pomodoros_count:
+            reply = QMessageBox.question(
+                self, 'Message',
+                'You did not log your work. \nAre you sure you want to exit?',
+                QMessageBox.Yes, QMessageBox.No
+            )
+
+            if reply == QMessageBox.Yes:
+                self.controller.close_pomodoro()
+                event.accept()
+            else:
+                event.ignore()
+        else:
+            event.accept()
