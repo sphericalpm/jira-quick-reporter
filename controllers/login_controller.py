@@ -42,6 +42,28 @@ class LoginController:
 
         if os.name is 'posix':
             os.chmod(CREDENTIALS_PATH, stat.S_IRUSR | stat.S_IWUSR)
+        elif os.name is 'nt':
+            import win32security
+            import win32api
+            import ntsecuritycon as con
+
+            user, dom, t = win32security.LookupAccountName('', win32api.GetUserName())
+            sd = win32security.GetFileSecurity(
+                CREDENTIALS_PATH,
+                win32security.DACL_SECURITY_INFORMATION
+            )
+            dacl = sd.GetSecurityDescriptorDacl()
+            count = dacl.GetAceCount()
+            for i in range(count):
+                dacl.DeleteAce(0)
+
+            dacl.AddAccessAllowedAce(
+                win32security.ACL_REVISION,
+                con.FILE_GENERIC_READ | con.FILE_GENERIC_WRITE,
+                user
+            )
+            sd.SetSecurityDescriptorDacl(1, dacl, 0)
+            win32security.SetFileSecurity(CREDENTIALS_PATH, win32security.DACL_SECURITY_INFORMATION, sd)
 
     def open_main_window(self):
         main_controller = MainController(self.jira_client)

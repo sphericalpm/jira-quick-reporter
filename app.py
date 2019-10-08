@@ -1,7 +1,8 @@
 import sys
 import os
 
-from PyQt5.QtWidgets import QApplication
+import requests
+from PyQt5.QtWidgets import QApplication, QMessageBox
 from jira import JIRAError
 
 from jiraclient import JiraClient
@@ -24,6 +25,12 @@ if __name__ == '__main__':
                 main_controller = MainController(jira_client)
             except (ValueError, JIRAError):
                 login_controller = LoginController()
+            except requests.exceptions.ConnectionError as e:
+                QMessageBox.warning(
+                    None,
+                    'Connection error',
+                    'Check your internet connection and try again'
+                )
     else:
         login_controller = LoginController()
 
