@@ -16,8 +16,8 @@ class LoginController:
         self.jira_client = None
 
     def login(self):
-        email = self.view.email()
-        token = self.view.token()
+        email = self.view.email_field.text()
+        token = self.view.token_field.text()
 
         self.view.set_wait_cursor()
         try:
@@ -40,7 +40,7 @@ class LoginController:
         with open(CREDENTIALS_PATH, 'w', encoding='utf-8') as file:
             file.write('{email};{token}'.format(email=email, token=token))
 
-        if os.name == 'posix':
+        if os.name is 'posix':
             os.chmod(CREDENTIALS_PATH, stat.S_IRUSR | stat.S_IWUSR)
 
     def open_main_window(self):

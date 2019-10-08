@@ -20,7 +20,8 @@ class TimeLogWindow(CenterWindow):
         self.controller = controller
         self.issue_key = issue_key
         # main window characteristics
-        self.setStyleSheet(open(QSS_PATH, 'r').read())
+        with open(QSS_PATH, 'r') as qss_file:
+            self.setStyleSheet(qss_file.read())
         self.resize(600, 450)
         self.center()
         self.setWindowTitle('Log Work: {issue}'.format(issue=issue_key))

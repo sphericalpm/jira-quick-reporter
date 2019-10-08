@@ -13,7 +13,7 @@ from PyQt5.QtCore import Qt
 from functools import partial
 
 from center_window import CenterWindow
-from config import QSS_PATH
+from config import QSS_PATH, LOGO_PATH
 
 
 class QCustomWidget(QWidget):
@@ -24,10 +24,6 @@ class QCustomWidget(QWidget):
 
     def __init__(self):
         super().__init__()
-
-        with open(QSS_PATH, "r") as qss_file:
-            self.setStyleSheet(qss_file.read())
-
         self.estimated_label = QLabel()
         self.estimated_label.setObjectName('estimated_label')
         self.spent_label = QLabel()
@@ -89,7 +85,7 @@ class MainWindow(CenterWindow):
     def __init__(self, controller):
         super().__init__()
 
-        with open('qss/style.qss', "r") as qss_file:
+        with open(QSS_PATH, 'r') as qss_file:
             self.setStyleSheet(qss_file.read())
 
         self.controller = controller
@@ -97,7 +93,7 @@ class MainWindow(CenterWindow):
         self.resize(800, 450)
         self.center()
         self.setWindowTitle('JIRA Quick Reporter')
-        self.setWindowIcon(QIcon('logo.png'))
+        self.setWindowIcon(QIcon(LOGO_PATH))
 
         self.main_box = QVBoxLayout()
         self.list_box = QVBoxLayout()
