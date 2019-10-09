@@ -162,7 +162,6 @@ class PomodoroWindow(CenterWindow):
             self.stop_timer()
             QSound.play(RINGING_SOUND_PATH)
             if self.cur_time_name is POMODORO:
-                self.logwork_btn.setEnabled(True)
                 self.log_time()
             self.set_timer()
 
@@ -181,6 +180,7 @@ class PomodoroWindow(CenterWindow):
         self.timer.stop()
         self.timer_btn.setText('Start')
         self.reset_btn.setEnabled(True)
+        self.logwork_btn.setEnabled(True)
 
         # change style after a break
         self.issue_label.setObjectName('issue_label')
@@ -234,12 +234,15 @@ class PomodoroWindow(CenterWindow):
             self.timer_btn.setText('Stop')
         else:
             self.stop_timer()
-            self.set_pomodoro_timer()
+            if self.cur_time_name is POMODORO:
+                self.log_time()
+            else:
+                self.set_pomodoro_timer()
 
     def log_time(self):
-        cur_time_sec = QTime(0, 0, 0).secsTo(TIME[POMODORO])
-        self.past_pomodoros_time = self.past_pomodoros_time.addSecs(cur_time_sec)
-        print(self.past_pomodoros_time)
+        cur_time_secs = QTime(0, 0, 0).secsTo(self.time)
+        spent_time = TIME[POMODORO].addSecs(-cur_time_secs)
+        self.past_pomodoros_time = spent_time
 
     def reset(self):
         self.pomodoros_count = 0
@@ -285,7 +288,11 @@ class PomodoroWindow(CenterWindow):
             self.set_pomodoro_timer()
 
     def get_past_pomodoros_time(self):
-        return self.past_pomodoros_time.toString('h:m')
+        if self.past_pomodoros_time.second():
+            print('yes')
+            return self.past_pomodoros_time.addSecs(60).toString('h:m')
+        else:
+            return self.past_pomodoros_time.toString('h:m')
 
     def closeEvent(self, event):
         if self.pomodoros_count:
@@ -296,7 +303,6 @@ class PomodoroWindow(CenterWindow):
             )
 
             if reply == QMessageBox.Yes:
-                self.controller.close_pomodoro()
                 event.accept()
             else:
                 event.ignore()
