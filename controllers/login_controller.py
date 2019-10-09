@@ -47,7 +47,7 @@ class LoginController:
             import win32api
             import ntsecuritycon as con
 
-            user, dom, t = win32security.LookupAccountName('', win32api.GetUserName())
+            user, domain, type = win32security.LookupAccountName('', win32api.GetUserName())
             sd = win32security.GetFileSecurity(
                 CREDENTIALS_PATH,
                 win32security.DACL_SECURITY_INFORMATION
