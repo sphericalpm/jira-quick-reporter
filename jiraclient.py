@@ -8,7 +8,7 @@ class JiraClient:
         self.client = JIRA(
             server=server,
             basic_auth=(email, token),
-            max_retries=1,
+            max_retries=0,
             timeout=4,
         )
 
