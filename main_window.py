@@ -124,6 +124,7 @@ class MainWindow(CenterWindow):
         if not load_more:
             for i in range(self.list_box.count()):
                 self.list_box.itemAt(0).widget().setParent(None)
+            self.issue_list_widget.clear()
 
         if not issues_list and not load_more:
             label_info = QLabel('You have no issues.')
