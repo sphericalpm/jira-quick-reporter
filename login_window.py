@@ -76,13 +76,7 @@ class LoginWindow(CenterWindow):
         self.form.addRow(self.btn_box)
         self.form.setAlignment(Qt.AlignCenter)
 
-    def set_wait_cursor(self):
-        QApplication.setOverrideCursor(Qt.WaitCursor)
-
-    def stop_wait_cursor(self):
-        QApplication.restoreOverrideCursor()
-
-    def remember_cb_state(self):
+    def is_remember_me(self):
         return 1 if self.cb_remember_me.isChecked() else 0
 
     def set_error_to_label(self, text):

@@ -15,20 +15,20 @@ class MainController:
     def get_issue_list(self):
         issues_list = []
         issues = self.jira_client.get_issues(self.issues_count)
-        cur_issues_count = len(issues)
-        self.issues_count += cur_issues_count
-        if cur_issues_count < DEFAULT_ISSUES_COUNT:
+        current_issues_count = len(issues)
+        self.issues_count += current_issues_count
+        if current_issues_count < DEFAULT_ISSUES_COUNT:
             self.view.load_more_issues_btn.hide()
         else:
             self.view.load_more_issues_btn.show()
 
         # create list of issues
         for issue in issues:
-            issues_dict = dict(
-                title=issue.fields.summary,
-                key=issue.key,
-                link=issue.permalink()
-            )
+            issues_dict = {
+                'title': issue.fields.summary,
+                'key': issue.key,
+                'link': issue.permalink()
+            }
 
             # if the task was logged
             if issue.fields.timetracking.raw:

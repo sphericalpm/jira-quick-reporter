@@ -29,24 +29,24 @@ class TimeLogController:
         remaining_estimate = self.view.new_remaining_estimate
 
         if not remaining_estimate:
-            log_work_params = dict()
+            log_work_params = {}
         elif remaining_estimate.get('name') == 'existing_estimate':
-            log_work_params = dict(
-                adjust_estimate='new',
-                new_estimate=remaining_estimate.get('value')
-            )
+            log_work_params = {
+                'adjust_estimate': 'new',
+                'new_estimate': remaining_estimate.get('value')
+            }
         elif remaining_estimate.get('name') == 'set_new_estimate':
             estimate = self.view.set_new_estimate_value.text()
-            log_work_params = dict(
-                adjust_estimate='new',
-                new_estimate=estimate
-            )
+            log_work_params = {
+                'adjust_estimate': 'new',
+                'new_estimate': estimate
+            }
         elif remaining_estimate.get('name') == 'reduce_estimate':
             estimate = self.view.reduce_estimate_value.text()
-            log_work_params = dict(
-                adjust_estimate='manual',
-                new_estimate=estimate
-            )
+            log_work_params = {
+                'adjust_estimate': 'manual',
+                'new_estimate': estimate
+            }
         else:
             QMessageBox.about(self.view, 'Error', 'something went wrong')
             return
