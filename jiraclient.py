@@ -8,7 +8,8 @@ class JiraClient:
         self.client = JIRA(
             server=server,
             basic_auth=(email, token),
-            max_retries=1
+            max_retries=1,
+            timeout=4,
         )
 
     def get_issues(self, start_at):
