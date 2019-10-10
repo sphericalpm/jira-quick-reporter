@@ -31,6 +31,7 @@ if __name__ == '__main__':
                     'Connection error',
                     'Check your internet connection and try again'
                 )
+                sys.exit()
     else:
         login_controller = LoginController()
 
