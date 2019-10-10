@@ -1,5 +1,6 @@
 from main_window import MainWindow
 from controllers.timelog_controller import TimeLogController
+from controllers.workflow_controller import WorkflowController
 
 DEFAULT_ISSUES_COUNT = 50
 
@@ -55,3 +56,6 @@ class MainController:
 
     def open_timelog_window(self, issue_key):
         time_log_controller = TimeLogController(self.jira_client, issue_key, self)
+
+    def open_workflow_window(self, issue_key):
+        time_log_controller = WorkflowController(self.jira_client, issue_key, self)
