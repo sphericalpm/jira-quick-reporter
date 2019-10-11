@@ -1,3 +1,5 @@
+from PyQt5.QtWidgets import QMessageBox
+
 from main_window import MainWindow
 from controllers.timelog_controller import TimeLogController
 
@@ -66,7 +68,12 @@ class MainController:
 
     def change_workflow(self, workflow, issue_obj, status):
         status_id = workflow.get(status)
-        self.jira_client.client.transition_issue(
-            issue_obj,
-            transition=status_id
-        )
+
+        if status_id:
+            self.jira_client.client.transition_issue(
+                issue_obj,
+                transition=status_id
+            )
+
+        else:
+            QMessageBox.about(self.view, 'Error', 'Please try again')
