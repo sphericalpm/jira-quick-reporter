@@ -54,4 +54,4 @@ class MainController:
         self.view.show_issues_list(issues_list, load_more)
 
     def open_timelog_window(self, issue_key):
-        time_log_controller = TimeLogController(self.jira_client, issue_key, self)
+        TimeLogController(self.jira_client, issue_key, self)

@@ -6,8 +6,7 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
-    QGridLayout,
-    QSizePolicy
+    QGridLayout
 )
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt

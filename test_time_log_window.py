@@ -1,5 +1,4 @@
 from jiraclient import JiraClient
-import sys
 import unittest
 from types import SimpleNamespace as sn
 

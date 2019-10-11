@@ -8,8 +8,8 @@ from PyQt5.QtWidgets import (
     QTextEdit,
     QRadioButton
 )
-
 from PyQt5.QtCore import QEvent
+
 from center_window import CenterWindow
 from config import QSS_PATH
 
@@ -34,10 +34,8 @@ class TimeLogWindow(CenterWindow):
 
         self.automatically_estimate = QRadioButton('Adjust automatically')
         self.automatically_estimate.setChecked(True)
-        self.automatically_estimate.value = "automatically_estimate"
+        self.automatically_estimate.value = {'name': 'automatically_estimate'}
         self.automatically_estimate.toggled.connect(self.radio_click)
-
-        # existing_estimate = self.check_remaining_estimate()
 
         self.existing_estimate = QRadioButton()
         self.existing_estimate.toggled.connect(self.radio_click)
@@ -106,28 +104,22 @@ class TimeLogWindow(CenterWindow):
             'value': existing_estimate
         }
 
-    def time_spent(self):
-        return self.time_spent_line.text()
-
     def get_date_from_line(self):
         date = self.date_start_line.text()
         return datetime.strptime(date, '%d-%m-%Y %H:%M')
 
     def eventFilter(self, obj, event):
-        if obj == self.date_start_line:
-            if event.type() == QEvent.FocusOut:
+        if event.type() == QEvent.FocusOut:
+            if obj is self.date_start_line:
                 try:
                     self.date_start = self.get_date_from_line()
                     self.date_start_line.setObjectName('')
                     self.date_start_line.setStyleSheet('')
                 except ValueError:
                     self.date_start = None
-                    self.set_error_date()
+                    self.date_start_line.setObjectName('error_field')
+                    self.date_start_line.setStyleSheet('error_field')
         return False
-
-    def set_error_date(self):
-        self.date_start_line.setObjectName('error_field')
-        self.date_start_line.setStyleSheet('error_field')
 
     def comment(self):
         return self.work_description_line.toPlainText()

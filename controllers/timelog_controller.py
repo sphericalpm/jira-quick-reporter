@@ -1,7 +1,6 @@
 from jira import JIRAError
 from PyQt5.QtWidgets import QMessageBox
 
-
 from time_log_window import TimeLogWindow
 
 
@@ -11,8 +10,8 @@ class TimeLogController:
         self.jira_client = jira_client
         self.issue = jira_client.issue(issue_key)
         self.view = TimeLogWindow(self, issue_key)
-        existing_estimate = self.jira_client.get_remaining_estimate(self.issue)
-        self.view.set_existing_estimate(existing_estimate)
+        self.existing_estimate = self.jira_client.get_remaining_estimate(self.issue)
+        self.view.set_existing_estimate(self.existing_estimate)
         self.view.show()
 
     def save_click(self):
@@ -21,15 +20,17 @@ class TimeLogController:
         show popup for successfully save or exception
         """
 
-        time_spent = self.view.time_spent()
+        time_spent = self.view.time_spent_line.text()
         start_date = self.view.date_start
         if not start_date:
             return
         comment = self.view.comment()
         remaining_estimate = self.view.new_remaining_estimate
 
-        if not remaining_estimate:
+        if not remaining_estimate or \
+                remaining_estimate.get('name') == 'automatically_estimate':
             log_work_params = {}
+
         elif remaining_estimate.get('name') == 'existing_estimate':
             log_work_params = {
                 'adjust_estimate': 'new',
