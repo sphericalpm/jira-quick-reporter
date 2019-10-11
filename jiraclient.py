@@ -1,5 +1,5 @@
 from jira import JIRA
-
+from config import MAX_RETRIES
 
 class JiraClient:
     def __init__(self, email, token, server='https://spherical.atlassian.net'):
@@ -8,7 +8,7 @@ class JiraClient:
         self.client = JIRA(
             server=server,
             basic_auth=(email, token),
-            max_retries=0,
+            max_retries=MAX_RETRIES,
             timeout=4,
         )
 
