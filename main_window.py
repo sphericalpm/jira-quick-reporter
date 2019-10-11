@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (
     QLabel,
     QPushButton,
     QGridLayout,
-    QSizePolicy
+    QComboBox
 )
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
@@ -36,16 +36,14 @@ class QCustomWidget(QWidget):
         self.logwork_btn.setObjectName('logwork_btn')
         self.logwork_btn.setMaximumSize(self.logwork_btn.size())
 
-        self.status_btn = QPushButton('Status')
-        self.status_btn.setObjectName('status_btn')
-        self.status_btn.setMaximumSize(self.status_btn.size())
+        self.set_workflow = QComboBox(self)
 
         timetracking_grid = QGridLayout()
         timetracking_grid.addWidget(self.estimated_label, 0, 0)
         timetracking_grid.addWidget(self.spent_label, 0, 1)
         timetracking_grid.addWidget(self.remaining_label, 0, 2)
         timetracking_grid.addWidget(self.logwork_btn, 0, 3, Qt.AlignRight)
-        timetracking_grid.addWidget(self.status_btn, 1, 3, Qt.AlignRight)
+        timetracking_grid.addWidget(self.set_workflow, 1, 3, Qt.AlignRight)
 
         # create labels for issue key and title
         self.issue_key_label = QLabel()
@@ -151,14 +149,25 @@ class MainWindow(CenterWindow):
                 issue['logged'],
                 issue['remaining']
             )
-
             issue_widget.logwork_btn.clicked.connect(
                 partial(self.controller.open_timelog_window, issue['key'])
             )
 
-            issue_widget.status_btn.clicked.connect(
-                partial(self.controller.open_workflow_status_window, issue['key'])
-            )            
+            current_workflow = issue['issue_obj'].fields.status
+            possible_workflows = [key for key in issue['workflow'].keys()]
+            possible_workflows.insert(0, current_workflow.name)  # insert because of
+            # setCurrentIndex() can have only positive value
+
+            issue_widget.set_workflow.addItems(possible_workflows)
+            issue_widget.set_workflow.setCurrentIndex(0)
+
+            issue_widget.set_workflow.activated[str].connect(
+                partial(
+                    self.controller.change_workflow,
+                    issue['workflow'],
+                    issue['issue_obj']
+                )
+            )
 
             # add issue item to list
             issue_list_widget_item = QListWidgetItem(self.issue_list_widget)
