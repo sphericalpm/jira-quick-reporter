@@ -154,7 +154,7 @@ class MainWindow(CenterWindow):
             )
 
             current_workflow = issue['issue_obj'].fields.status
-            possible_workflows = [key for key in issue['workflow'].keys()]
+            possible_workflows = list(issue['workflow'].keys())
             possible_workflows.insert(0, current_workflow.name)  # insert because of
             # setCurrentIndex() can have only positive value
 
