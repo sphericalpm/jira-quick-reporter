@@ -1,6 +1,5 @@
 from main_window import MainWindow
 from controllers.timelog_controller import TimeLogController
-from controllers.workflow_controller import WorkflowController
 
 DEFAULT_ISSUES_COUNT = 50
 
@@ -25,10 +24,14 @@ class MainController:
 
         # create list of issues
         for issue in issues:
+            workflow = self.jira_client.client.transitions(issue)
+            possible_workflow = {w['name']: w['id'] for w in workflow}
             issues_dict = dict(
                 title=issue.fields.summary,
                 key=issue.key,
-                link=issue.permalink()
+                link=issue.permalink(),
+                issue_obj=issue,
+                workflow=possible_workflow
             )
 
             # if the task was logged
@@ -55,7 +58,15 @@ class MainController:
         self.view.show_issues_list(issues_list, load_more)
 
     def open_timelog_window(self, issue_key):
-        time_log_controller = TimeLogController(self.jira_client, issue_key, self)
+        time_log_controller = TimeLogController(
+            self.jira_client,
+            issue_key,
+            self
+        )
 
-    def open_workflow_window(self, issue_key):
-        time_log_controller = WorkflowController(self.jira_client, issue_key, self)
+    def change_workflow(self, workflow, issue_obj, status):
+        status_id = workflow.get(status)
+        self.jira_client.client.transition_issue(
+            issue_obj,
+            transition=status_id
+        )
