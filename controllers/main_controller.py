@@ -27,7 +27,7 @@ class MainController:
         # create list of issues
         for issue in issues:
             workflow = self.jira_client.client.transitions(issue)
-            possible_workflow = {w['name']: w['id'] for w in workflow}
+            possible_workflow = {status['name']: status['id'] for status in workflow}
             issues_dict = dict(
                 title=issue.fields.summary,
                 key=issue.key,
