@@ -26,7 +26,6 @@ class MainController:
 
         # create list of issues
         for issue in issues:
-<<<<<<< HEAD
             workflow = self.jira_client.client.transitions(issue)
             possible_workflow = {w['name']: w['id'] for w in workflow}
             issues_dict = dict(
@@ -36,13 +35,6 @@ class MainController:
                 issue_obj=issue,
                 workflow=possible_workflow
             )
-=======
-            issues_dict = {
-                'title': issue.fields.summary,
-                'key': issue.key,
-                'link': issue.permalink()
-            }
->>>>>>> ecfde62828424e83bef5d0465cf405dbfd863977
 
             # if the task was logged
             if issue.fields.timetracking.raw:
