@@ -25,7 +25,7 @@ if __name__ == '__main__':
                 main_controller = MainController(jira_client)
             except (ValueError, JIRAError):
                 login_controller = LoginController()
-            except requests.exceptions.ConnectionError as e:
+            except requests.exceptions.ConnectionError:
                 QMessageBox.warning(
                     None,
                     'Connection error',
