@@ -24,7 +24,7 @@ class LoginController:
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
             self.jira_client = JiraClient(email, token)
-            if self.view.is_remember_me():
+            if self.view.remember_me_btn.isChecked():
                 self.remember_me(email, token)
             self.open_main_window()
 
@@ -46,5 +46,5 @@ class LoginController:
         os.chmod(CREDENTIALS_PATH, stat.S_IRUSR | stat.S_IWUSR)
 
     def open_main_window(self):
-        main_controller = MainController(self.jira_client)
+        MainController(self.jira_client)
         self.view.close()
