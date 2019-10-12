@@ -1,0 +1,24 @@
+QLabel#issue_title_label{
+    font-weight: bold;
+}
+
+QPushButton#logwork_btn{
+    background-color: white;
+}
+
+QListWidget::item{
+    border-bottom: 1px solid lightgray
+}
+
+QLabel#label_error{
+    color: red;
+}
+
+QLabel#label_title{
+    font-size: 14pt;
+    margin: 10%;
+}
+
+QLineEdit#error_field{
+    border: 1px solid red;
+}
