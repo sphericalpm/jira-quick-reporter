@@ -5,6 +5,10 @@
 -------------
 JIRA Quick Reporter (JQR, pronounced "zheeker") is a small utility that helps automate your time management and reporting. In the base version, it will do the following:
 
+## How to build an executable application:
+------------
+You should run build_app.py: ```python3 build_app.py```
+
 
 ## Main window
 -------------
