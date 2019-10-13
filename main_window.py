@@ -6,7 +6,10 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
-    QGridLayout
+    QGridLayout,
+    QSystemTrayIcon,
+    QMenu,
+    QAction
 )
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
@@ -114,6 +117,19 @@ class MainWindow(CenterWindow):
         self.refresh_btn.clicked.connect(self.controller.refresh_issue_list)
         self.btn_box.addWidget(self.refresh_btn, alignment=Qt.AlignRight)
 
+        self.tray_icon = QSystemTrayIcon(self)
+        self.tray_icon.setIcon(QIcon(LOGO_PATH))
+
+        self.tray_menu = QMenu()
+        self.action_open = QAction('Open JQR', self)
+        self.action_quit = QAction('Quit JQR', self)
+        self.tray_menu.addAction(self.action_open)
+        self.action_open.triggered.connect(self.show)
+        self.tray_menu.addAction(self.action_quit)
+        self.action_quit.triggered.connect(self.controller.quit_app)
+        self.tray_icon.setContextMenu(self.tray_menu)
+        self.tray_icon.show()
+
     def show_issues_list(self, issues_list):
         # clear listbox
         for i in range(self.list_box.count()):
@@ -157,3 +173,7 @@ class MainWindow(CenterWindow):
             issue_list_widget.setItemWidget(
                 issue_list_widget_item, issue_widget
             )
+
+    def closeEvent(self, QCloseEvent):
+        QCloseEvent.ignore()
+        self.hide()

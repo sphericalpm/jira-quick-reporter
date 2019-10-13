@@ -14,7 +14,7 @@ class JiraClient:
     def get_issues(self):
         return self.client.search_issues(
                 'assignee = currentUser()',
-                fields='key, summary, timetracking', maxResults=200)
+                fields='key, summary, timetracking')
 
     def log_work(
             self,

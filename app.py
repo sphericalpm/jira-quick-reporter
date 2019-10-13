@@ -11,6 +11,7 @@ from controllers.login_controller import LoginController
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
 
     path = os.path.dirname(os.path.realpath(__file__))
     my_credentials_path = os.path.join(path, "my_credentials.txt")
@@ -24,7 +25,7 @@ if __name__ == '__main__':
                 main_controller = MainController(jira_client)
             except (ValueError, JIRAError):
                 login_controller = LoginController()
-            except requests.exceptions.ConnectionError as e:
+            except requests.exceptions.ConnectionError:
                 QMessageBox.warning(
                     None,
                     'Connection error',
@@ -32,5 +33,4 @@ if __name__ == '__main__':
                 )
     else:
         login_controller = LoginController()
-
     sys.exit(app.exec_())

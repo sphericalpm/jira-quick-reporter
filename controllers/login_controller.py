@@ -2,8 +2,8 @@ import os
 import stat
 
 from jira import JIRAError
-from config import CREDENTIALS_PATH
 
+from config import CREDENTIALS_PATH
 from login_window import LoginWindow
 from controllers.main_controller import MainController
 from jiraclient import JiraClient
@@ -40,31 +40,8 @@ class LoginController:
         with open(CREDENTIALS_PATH, 'w', encoding='utf-8') as file:
             file.write('{email};{token}'.format(email=email, token=token))
 
-        if os.name == 'posix':
-            os.chmod(CREDENTIALS_PATH, stat.S_IRUSR | stat.S_IWUSR)
-        elif os.name is 'nt':
-            import win32security
-            import win32api
-            import ntsecuritycon as con
-
-            user, dom, t = win32security.LookupAccountName('', win32api.GetUserName())
-            sd = win32security.GetFileSecurity(
-                CREDENTIALS_PATH,
-                win32security.DACL_SECURITY_INFORMATION
-            )
-            dacl = sd.GetSecurityDescriptorDacl()
-            count = dacl.GetAceCount()
-            for i in range(count):
-                dacl.DeleteAce(0)
-
-            dacl.AddAccessAllowedAce(
-                win32security.ACL_REVISION,
-                con.FILE_GENERIC_READ | con.FILE_GENERIC_WRITE,
-                user
-            )
-            sd.SetSecurityDescriptorDacl(1, dacl, 0)
-            win32security.SetFileSecurity(CREDENTIALS_PATH, win32security.DACL_SECURITY_INFORMATION, sd)
+        os.chmod(CREDENTIALS_PATH, stat.S_IRUSR | stat.S_IWUSR)
 
     def open_main_window(self):
-        main_controller = MainController(self.jira_client)
+        MainController(self.jira_client)
         self.view.close()

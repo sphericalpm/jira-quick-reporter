@@ -1,3 +1,5 @@
+import os
+
 from PyQt5.QtWidgets import (
     QMessageBox
 )
@@ -51,19 +53,41 @@ class MainController:
         self.view.show_issues_list(issues_list)
 
     def open_pomodoro_window(self, issue_key, issue_title):
-        self.pomodoro_view = PomodoroWindow(self, issue_key, issue_title)
+        if self.pomodoro_view:
+            if self.pomodoro_view.issue_key is issue_key \
+                    or not self.pomodoro_view.quit():
+                return
+        self.pomodoro_view = PomodoroWindow(
+            self, issue_key,
+            issue_title,
+            self.view.tray_menu
+        )
         self.pomodoro_view.show()
+        self.pomodoro_view.log_work_if_file_exists()
+
+    def quit_app(self):
+        if self.pomodoro_view:
+            if not self.pomodoro_view.quit():
+                return
+        exit()
 
     def open_timelog_from_pomodoro(self, issue_key):
         params = [issue_key]
-        if self.pomodoro_view:
-            h, m = self.pomodoro_view.get_past_pomodoros_time().split(':')
-            if h == '0':
-                params.append('{}m'.format(m))
-            elif m == '0':
-                params.append('{}h'.format(h))
-            else:
-                params.append('{}h {}m'.format(h, m))
+        if not os.path.exists(self.pomodoro_view.LOG_PATH):
+            params.append('0m')
+        else:
+            with open(self.pomodoro_view.LOG_PATH, 'r') as log_file:
+                try:
+                    h, m = log_file.readline().split(':')
+                except ValueError:
+                    print('exc')
+                    h = m = '0'
+                if h == '0':
+                    params.append('{}m'.format(m))
+                elif m == '0':
+                    params.append('{}h'.format(h))
+                else:
+                    params.append('{}h {}m'.format(h, m))
         self.open_timelog_window(*params)
 
     def open_timelog_window(self, issue_key, time_spent=None):
@@ -72,7 +96,9 @@ class MainController:
         existing_estimate = self.jira_client.get_remaining_estimate(issue)
         self.time_log_view.set_existing_estimate(existing_estimate)
         self.time_log_view.show()
-        self.time_log_view.save_button.clicked.connect(lambda: self.save_issue_worklog(issue_key))
+        self.time_log_view.save_button.clicked.connect(
+            lambda: self.save_issue_worklog(issue_key)
+        )
 
     def save_issue_worklog(self, issue_key):
         """Save button event handler
@@ -108,7 +134,11 @@ class MainController:
                 new_estimate=estimate
             )
         else:
-            QMessageBox.about(self.time_log_view, 'Error', 'something went wrong')
+            QMessageBox.about(
+                self.time_log_view,
+                'Error',
+                'something went wrong'
+            )
             return
         try:
             self.jira_client.log_work(
