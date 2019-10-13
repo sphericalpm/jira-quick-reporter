@@ -8,8 +8,8 @@ from PyQt5.QtWidgets import (
     QTextEdit,
     QRadioButton
 )
-
 from PyQt5.QtCore import QEvent
+
 from center_window import CenterWindow
 from config import QSS_PATH
 
@@ -18,7 +18,9 @@ class TimeLogWindow(CenterWindow):
     def __init__(self, issue_key, time_spent=None):
         super().__init__()
         self.issue_key = issue_key
-        self.setStyleSheet(open(QSS_PATH, 'r').read())
+        # main window characteristics
+        with open(QSS_PATH, 'r') as qss_file:
+            self.setStyleSheet(qss_file.read())
         self.resize(600, 450)
         self.setWindowTitle('Log Work: {issue}'.format(issue=issue_key))
 
@@ -30,7 +32,7 @@ class TimeLogWindow(CenterWindow):
 
         self.automatically_estimate = QRadioButton('Adjust automatically')
         self.automatically_estimate.setChecked(True)
-        self.automatically_estimate.value = 'automatically_estimate'
+        self.automatically_estimate.value = {'name': 'automatically_estimate'}
         self.automatically_estimate.toggled.connect(self.radio_click)
 
         self.existing_estimate = QRadioButton()
@@ -104,20 +106,17 @@ class TimeLogWindow(CenterWindow):
         return datetime.strptime(date, '%d-%m-%Y %H:%M')
 
     def eventFilter(self, obj, event):
-        if obj == self.date_start_line:
-            if event.type() == QEvent.FocusOut:
+        if event.type() == QEvent.FocusOut:
+            if obj is self.date_start_line:
                 try:
                     self.date_start = self.get_date_from_line()
                     self.date_start_line.setObjectName('')
                     self.date_start_line.setStyleSheet('')
                 except ValueError:
                     self.date_start = None
-                    self.set_error_date()
+                    self.date_start_line.setObjectName('error_field')
+                    self.date_start_line.setStyleSheet('error_field')
         return False
-
-    def set_error_date(self):
-        self.date_start_line.setObjectName('error_field')
-        self.date_start_line.setStyleSheet('error_field')
 
     def radio_click(self):
         """ Check which radio button was pressed """

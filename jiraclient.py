@@ -11,10 +11,12 @@ class JiraClient:
             max_retries=1
         )
 
-    def get_issues(self):
+    def get_issues(self, start_at):
         return self.client.search_issues(
                 'assignee = currentUser()',
-                fields='key, summary, timetracking')
+                fields='key, summary, timetracking',
+                startAt=start_at
+        )
 
     def log_work(
             self,

@@ -1,5 +1,4 @@
 from PyQt5.QtWidgets import (
-    QApplication,
     QLabel,
     QHBoxLayout,
     QLineEdit,
@@ -59,10 +58,9 @@ class LoginWindow(CenterWindow):
         btn_login = QPushButton('Login')
         btn_login.clicked.connect(self.controller.login)
 
-        # create remember me checkbox
-        self.cb_remember_me = QCheckBox('Remember me')
+        self.remember_me_btn = QCheckBox('Remember me')
 
-        self.btn_box.addWidget(self.cb_remember_me)
+        self.btn_box.addWidget(self.remember_me_btn)
         self.btn_box.addWidget(btn_login)
 
         # add widgets to form layout
@@ -74,15 +72,6 @@ class LoginWindow(CenterWindow):
         self.form.addRow(self.label_error)
         self.form.addRow(self.btn_box)
         self.form.setAlignment(Qt.AlignCenter)
-
-    def set_wait_cursor(self):
-        QApplication.setOverrideCursor(Qt.WaitCursor)
-
-    def stop_wait_cursor(self):
-        QApplication.restoreOverrideCursor()
-
-    def remember_cb_state(self):
-        return 1 if self.cb_remember_me.isChecked() else 0
 
     def set_error_to_label(self, text):
         self.label_error.setText(text)

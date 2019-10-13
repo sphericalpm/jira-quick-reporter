@@ -2,6 +2,8 @@ import os
 import stat
 
 from jira import JIRAError
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import Qt
 
 from config import CREDENTIALS_PATH
 from login_window import LoginWindow
@@ -19,17 +21,17 @@ class LoginController:
         email = self.view.email_field.text()
         token = self.view.token_field.text()
 
-        self.view.set_wait_cursor()
+        QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
             self.jira_client = JiraClient(email, token)
-            if self.view.remember_cb_state():
+            if self.view.remember_me_btn.isChecked():
                 self.remember_me(email, token)
             self.open_main_window()
         except JIRAError:
             self.view.set_error_to_label('The email or token is incorrect.')
         except UnicodeEncodeError:
             self.view.set_error_to_label('English letters only')
-        self.view.stop_wait_cursor()
+        QApplication.restoreOverrideCursor()
 
     def remember_me(self, email, token):
         """
