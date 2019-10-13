@@ -221,8 +221,6 @@ class PomodoroWindow(CenterWindow):
         self.timer_box.addStretch()
         self.main_box.addLayout(self.timer_box)
 
-        self.settings_window = Settings(self)
-
         self.action_show_time = QAction(self)
         self.action_show_time.setEnabled(False)
         self.action_open_timer = QAction('Open timer', self)
@@ -230,6 +228,9 @@ class PomodoroWindow(CenterWindow):
         self.action_quit_timer = QAction('Quit timer', self)
         self.action_quit_timer.triggered.connect(self.quit)
         self.action_settings = QAction('Settings', self)
+
+        self.settings_window = Settings(self)
+
         self.action_settings.triggered.connect(self.settings_window.show)
         self.action_reset = QAction('Reset timer', self)
         self.action_reset.triggered.connect(self.reset)
