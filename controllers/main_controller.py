@@ -65,7 +65,7 @@ class MainController:
 
     def open_pomodoro_window(self, issue_key, issue_title):
         if self.pomodoro_view:
-            if self.pomodoro_view.issue_key is issue_key \
+            if self.pomodoro_view.issue_key == issue_key \
                     or not self.pomodoro_view.quit():
                 return
         self.pomodoro_view = PomodoroWindow(
