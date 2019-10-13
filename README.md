@@ -8,7 +8,7 @@ JIRA Quick Reporter (JQR, pronounced "zheeker") is a small utility that helps 
 
 ## Main window
 -------------
-Contents list of user's task, link for each of them, time estimate button(spent/remaining), refresh button
+Contents list of user's task, link for each of them, time estimate button(spent/remaining), workflow dropdown, refresh button
 
 ## Time log window
 -------------
