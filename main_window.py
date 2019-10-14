@@ -91,7 +91,6 @@ class MainWindow(CenterWindow):
 
         self.controller = controller
         self.resize(800, 450)
-        self.center()
         self.setWindowTitle('JIRA Quick Reporter')
         self.setWindowIcon(QIcon(LOGO_PATH))
 
@@ -99,6 +98,7 @@ class MainWindow(CenterWindow):
         self.hbox = QHBoxLayout()
         self.list_box = QVBoxLayout()
         self.issue_list_widget = QListWidget(self)
+        self.issue_list_widget.setObjectName('issue_list')
 
         self.create_filter_box = QHBoxLayout()
         self.my_filters_list = QListWidget()
@@ -119,11 +119,6 @@ class MainWindow(CenterWindow):
         self.create_filter_box.addWidget(self.filter_field)
         self.create_filter_box.addWidget(self.filter_button)
 
-        self.main_box.addLayout(self.create_filter_box)
-        self.main_box.addLayout(self.hbox)
-        self.main_box.addLayout(self.btn_box)
-        self.setLayout(self.main_box)
-
         self.load_more_issues_btn = QPushButton('Load more')
         width = self.load_more_issues_btn.fontMetrics().boundingRect(
             self.load_more_issues_btn.text()
@@ -134,9 +129,13 @@ class MainWindow(CenterWindow):
         )
 
         self.refresh_btn = QPushButton('Refresh')
-        #self.refresh_btn.clicked.connect(self.controller.filter_selected)
         self.refresh_btn.clicked.connect(self.controller.refresh_issue_list)
         self.btn_box.addWidget(self.refresh_btn, alignment=Qt.AlignRight)
+
+        self.main_box.addLayout(self.create_filter_box)
+        self.main_box.addLayout(self.hbox)
+        self.main_box.addLayout(self.btn_box)
+        self.setLayout(self.main_box)
 
     def show_issues_list(self, issues_list, load_more=False):
         # clear listbox
@@ -145,13 +144,12 @@ class MainWindow(CenterWindow):
                 self.list_box.itemAt(0).widget().setParent(None)
             self.issue_list_widget.clear()
 
-        if not issues_list and not load_more:
+        if not issues_list:
             label_info = QLabel('You have no issues.')
             label_info.setAlignment(Qt.AlignCenter)
             self.list_box.addWidget(label_info)
             return
         elif not load_more:
-            #issue_list_widget.setObjectName('issue_list')
             self.list_box.addWidget(self.issue_list_widget)
             self.list_box.addWidget(self.load_more_issues_btn)
 

@@ -13,8 +13,9 @@ class MainController:
     def __init__(self, jira_client):
         self.jira_client = jira_client
         self.issues_count = 0
+        self.current_jql = ''
         self.view = MainWindow(self)
-        self.refresh_issue_list()
+
         self.config = configparser.ConfigParser()
         self.section = 'Filters'
         self.items = dict()
@@ -23,14 +24,15 @@ class MainController:
 
     def get_issue_list(self, jql):
         issues_list = []
-        issues = self.jira_client.get_issues(jql)
-        issues = self.jira_client.get_issues(self.issues_count)
+        issues = self.jira_client.get_issues(self.issues_count, jql)
         current_issues_count = len(issues)
         self.issues_count += current_issues_count
         if current_issues_count < DEFAULT_ISSUES_COUNT:
             self.view.load_more_issues_btn.hide()
         else:
             self.view.load_more_issues_btn.show()
+        if not current_issues_count:
+            return
 
         # create list of issues
         for issue in issues:
@@ -57,10 +59,12 @@ class MainController:
             issues_list.append(issues_dict)
         return issues_list
 
-    def refresh_issue_list(self, jql='', load_more=False):
+    def refresh_issue_list(self, load_more=False):
         if not load_more:
             self.issues_count = 0
-        issues_list = self.get_issue_list(jql)
+        issues_list = self.get_issue_list(self.current_jql)
+        if not issues_list and load_more:
+            return
         self.view.show_issues_list(issues_list, load_more)
 
     def open_timelog_window(self, issue_key):
@@ -101,9 +105,9 @@ class MainController:
 
     def filter_selected(self):
         selected_key = self.view.get_current_filter()
-        jql = self.items[selected_key]
-        self.refresh_issue_list(jql)
-        self.view.set_filter_jql_to_field(jql)
+        self.current_jql = self.items[selected_key]
+        self.refresh_issue_list()
+        self.view.set_filter_jql_to_field(self.current_jql)
 
     def save_filter(self):
         jql = self.view.get_new_filter()
