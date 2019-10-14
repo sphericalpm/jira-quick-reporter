@@ -14,7 +14,7 @@ from PyQt5.QtCore import Qt
 from functools import partial
 
 from center_window import CenterWindow
-from config import QSS_PATH
+from config import QSS_PATH, LOGO_PATH
 
 
 class QCustomWidget(QWidget):
@@ -25,10 +25,6 @@ class QCustomWidget(QWidget):
 
     def __init__(self):
         super().__init__()
-
-        with open(QSS_PATH, "r") as qss_file:
-            self.setStyleSheet(qss_file.read())
-
         self.estimated_label = QLabel()
         self.estimated_label.setObjectName('estimated_label')
         self.spent_label = QLabel()
@@ -90,18 +86,20 @@ class MainWindow(CenterWindow):
     def __init__(self, controller):
         super().__init__()
 
-        with open('qss/style.qss', "r") as qss_file:
+        with open(QSS_PATH, 'r') as qss_file:
             self.setStyleSheet(qss_file.read())
 
         self.controller = controller
         self.resize(800, 450)
         self.center()
         self.setWindowTitle('JIRA Quick Reporter')
-        self.setWindowIcon(QIcon('logo.png'))
+        self.setWindowIcon(QIcon(LOGO_PATH))
 
         self.main_box = QVBoxLayout()
         self.hbox = QHBoxLayout()
         self.list_box = QVBoxLayout()
+        self.issue_list_widget = QListWidget(self)
+
         self.create_filter_box = QHBoxLayout()
         self.my_filters_list = QListWidget()
         self.my_filters_list.itemSelectionChanged.connect(
@@ -126,25 +124,36 @@ class MainWindow(CenterWindow):
         self.main_box.addLayout(self.btn_box)
         self.setLayout(self.main_box)
 
+        self.load_more_issues_btn = QPushButton('Load more')
+        width = self.load_more_issues_btn.fontMetrics().boundingRect(
+            self.load_more_issues_btn.text()
+        ).width() + 20
+        self.load_more_issues_btn.setMaximumWidth(width)
+        self.load_more_issues_btn.clicked.connect(
+            lambda: self.controller.refresh_issue_list(True)
+        )
+
         self.refresh_btn = QPushButton('Refresh')
-        self.refresh_btn.clicked.connect(self.controller.filter_selected)
+        #self.refresh_btn.clicked.connect(self.controller.filter_selected)
+        self.refresh_btn.clicked.connect(self.controller.refresh_issue_list)
         self.btn_box.addWidget(self.refresh_btn, alignment=Qt.AlignRight)
 
-    def show_issues_list(self, issues_list):
+    def show_issues_list(self, issues_list, load_more=False):
         # clear listbox
-        for i in range(self.list_box.count()):
-            self.list_box.itemAt(i).widget().setParent(None)
+        if not load_more:
+            for i in range(self.list_box.count()):
+                self.list_box.itemAt(0).widget().setParent(None)
+            self.issue_list_widget.clear()
 
-        if not issues_list:
+        if not issues_list and not load_more:
             label_info = QLabel('You have no issues.')
             label_info.setAlignment(Qt.AlignCenter)
             self.list_box.addWidget(label_info)
             return
-
-        # create issue list widget
-        issue_list_widget = QListWidget(self)
-        issue_list_widget.setObjectName('issue_list')
-        self.list_box.addWidget(issue_list_widget)
+        elif not load_more:
+            #issue_list_widget.setObjectName('issue_list')
+            self.list_box.addWidget(self.issue_list_widget)
+            self.list_box.addWidget(self.load_more_issues_btn)
 
         # create list of issues
         for issue in issues_list:
@@ -162,10 +171,10 @@ class MainWindow(CenterWindow):
             )
 
             # add issue item to list
-            issue_list_widget_item = QListWidgetItem(issue_list_widget)
+            issue_list_widget_item = QListWidgetItem(self.issue_list_widget)
             issue_list_widget_item.setSizeHint(issue_widget.sizeHint())
-            issue_list_widget.addItem(issue_list_widget_item)
-            issue_list_widget.setItemWidget(
+            self.issue_list_widget.addItem(issue_list_widget_item)
+            self.issue_list_widget.setItemWidget(
                 issue_list_widget_item, issue_widget
             )
 

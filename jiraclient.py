@@ -11,10 +11,12 @@ class JiraClient:
             max_retries=1
         )
 
-    def get_issues(self, jql=''):
+    def get_issues(self, jql='', start_at):
         return self.client.search_issues(
                 jql,
-                fields='key, summary, timetracking')
+                fields='key, summary, timetracking',
+                startAt=start_at
+            )
 
     def log_work(
             self,
@@ -36,7 +38,8 @@ class JiraClient:
             comment=comment
         )
 
-    def get_remaining_estimate(self, issue):
+    @staticmethod
+    def get_remaining_estimate(issue):
         try:
             existing_estimate = issue.fields.timetracking.raw['remainingEstimate']
         except (AttributeError, TypeError, KeyError):

@@ -1,5 +1,4 @@
 from PyQt5.QtWidgets import (
-    QApplication,
     QLabel,
     QHBoxLayout,
     QLineEdit,
@@ -11,21 +10,21 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
 
 from center_window import CenterWindow
-from config import QSS_PATH
+from config import QSS_PATH, LOGO_PATH
 
 
 class LoginWindow(CenterWindow):
     def __init__(self, controller):
         super().__init__()
 
-        with open(QSS_PATH, "r") as qss_file:
+        with open(QSS_PATH, 'r') as qss_file:
             self.setStyleSheet(qss_file.read())
 
         self.controller = controller
         self.resize(380, 200)
         self.center()
         self.setWindowTitle('JIRA Quick Reporter')
-        self.setWindowIcon(QIcon('logo.png'))
+        self.setWindowIcon(QIcon(LOGO_PATH))
         self.setMaximumSize(self.size())
 
         self.form = QFormLayout()
@@ -60,10 +59,9 @@ class LoginWindow(CenterWindow):
         btn_login = QPushButton('Login')
         btn_login.clicked.connect(self.controller.login)
 
-        # create remember me checkbox
-        self.cb_remember_me = QCheckBox('Remember me')
+        self.remember_me_btn = QCheckBox('Remember me')
 
-        self.btn_box.addWidget(self.cb_remember_me)
+        self.btn_box.addWidget(self.remember_me_btn)
         self.btn_box.addWidget(btn_login)
 
         # add widgets to form layout
@@ -75,24 +73,6 @@ class LoginWindow(CenterWindow):
         self.form.addRow(self.label_error)
         self.form.addRow(self.btn_box)
         self.form.setAlignment(Qt.AlignCenter)
-
-    def email(self):
-        return self.email_field.text()
-
-    def token(self):
-        return self.token_field.text()
-
-    def set_wait_cursor(self):
-        QApplication.setOverrideCursor(Qt.WaitCursor)
-
-    def stop_wait_cursor(self):
-        QApplication.restoreOverrideCursor()
-
-    def remember_cb_state(self):
-        if self.cb_remember_me.checkState() == Qt.Checked:
-            return 1
-        else:
-            return 0
 
     def set_error_to_label(self, text):
         self.label_error.setText(text)

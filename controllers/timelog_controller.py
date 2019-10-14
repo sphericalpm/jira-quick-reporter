@@ -5,12 +5,13 @@ from time_log_window import TimeLogWindow
 
 
 class TimeLogController:
-    def __init__(self, jira_client, issue_key):
+    def __init__(self, jira_client, issue_key, main_controller):
+        self.main_controller = main_controller
         self.jira_client = jira_client
         self.issue = jira_client.issue(issue_key)
         self.view = TimeLogWindow(self, issue_key)
-        existing_estimate = self.jira_client.get_remaining_estimate(self.issue)
-        self.view.set_existing_estimate(existing_estimate)
+        self.existing_estimate = self.jira_client.get_remaining_estimate(self.issue)
+        self.view.set_existing_estimate(self.existing_estimate)
         self.view.show()
 
     def save_click(self):
@@ -19,30 +20,34 @@ class TimeLogController:
         show popup for successfully save or exception
         """
 
-        time_spent = self.view.time_spent()
-        start_date = self.view.date_start()
+        time_spent = self.view.time_spent_line.text()
+        start_date = self.view.date_start
+        if not start_date:
+            return
         comment = self.view.comment()
         remaining_estimate = self.view.new_remaining_estimate
 
-        if not remaining_estimate:
-            log_work_params = dict()
+        if not remaining_estimate or \
+                remaining_estimate.get('name') == 'automatically_estimate':
+            log_work_params = {}
+
         elif remaining_estimate.get('name') == 'existing_estimate':
-            log_work_params = dict(
-                adjust_estimate='new',
-                new_estimate=remaining_estimate.get('value')
-            )
+            log_work_params = {
+                'adjust_estimate': 'new',
+                'new_estimate': remaining_estimate.get('value')
+            }
         elif remaining_estimate.get('name') == 'set_new_estimate':
             estimate = self.view.set_new_estimate_value.text()
-            log_work_params = dict(
-                adjust_estimate='new',
-                new_estimate=estimate
-            )
+            log_work_params = {
+                'adjust_estimate': 'new',
+                'new_estimate': estimate
+            }
         elif remaining_estimate.get('name') == 'reduce_estimate':
             estimate = self.view.reduce_estimate_value.text()
-            log_work_params = dict(
-                adjust_estimate='manual',
-                new_estimate=estimate
-            )
+            log_work_params = {
+                'adjust_estimate': 'manual',
+                'new_estimate': estimate
+            }
         else:
             QMessageBox.about(self.view, 'Error', 'something went wrong')
             return
@@ -53,6 +58,7 @@ class TimeLogController:
                 start_date,
                 comment,
                 **log_work_params)
-            QMessageBox.about(self.view, 'Save', 'Successfully saved')
+            self.view.close()
+            self.main_controller.refresh_issue_list()
         except JIRAError as e:
             QMessageBox.about(self.view, "Error", e.text)
