@@ -11,7 +11,7 @@ class JiraClient:
             max_retries=1
         )
 
-    def get_issues(self, start_at, jql=''):
+    def get_issues(self, start_at=0, jql=''):
         return self.client.search_issues(
                 jql,
                 fields='key, summary, timetracking',

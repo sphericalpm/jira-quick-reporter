@@ -1,6 +1,7 @@
 import configparser
 import os
 from PyQt5.QtWidgets import QMessageBox, QInputDialog
+from PyQt5.QtCore import Qt
 
 from main_window import MainWindow
 from controllers.timelog_controller import TimeLogController
@@ -70,6 +71,11 @@ class MainController:
     def open_timelog_window(self, issue_key):
         TimeLogController(self.jira_client, issue_key, self)
 
+    def write_ini_if_errors(self):
+        self.config.clear()
+        self.set_section()
+        self.write_to_ini()
+
     def create_filters(self):
         # create if not exist
         if not os.path.exists('filters.ini'):
@@ -78,9 +84,9 @@ class MainController:
         try:
             self.config.read('filters.ini')
         except configparser.ParsingError:
-            self.config.clear()
-            self.set_section()
-            self.write_to_ini()
+            self.write_ini_if_errors()
+        if not self.config.sections():
+            self.write_ini_if_errors()
 
         self.set_items()
         if not self.items:
@@ -95,58 +101,75 @@ class MainController:
 
     def set_section(self):
         self.config[self.section] = {
-            'my open issues': 'assignee = currentUser() '
-            'AND resolution = Unresolved'
+            'my open issues': 'assignee = currentuser() '
+            'and resolution = unresolved'
         }
 
     def write_to_ini(self):
-        with open('filters.ini', 'w') as ini_file:
+        with open('filters.ini', 'w+') as ini_file:
             self.config.write(ini_file)
 
     def filter_selected(self):
-        selected_key = self.view.get_current_filter()
+        selected_key = self.view.my_filters_list.currentItem().text()
         self.current_jql = self.items[selected_key]
         self.refresh_issue_list()
-        self.view.set_filter_jql_to_field(self.current_jql)
+        self.view.filter_field.setText(self.current_jql)
 
     def save_filter(self):
-        jql = self.view.get_new_filter()
+        jql = self.view.filter_field.text().lower()
         if jql:
-            try:
-                self.jira_client.get_issues(jql)
-                if jql not in self.items.values():
-                    name, ok = QInputDialog.getText(
-                        self.view,
-                        'Input Dialog',
-                        'Enter filter name:'
-                    )
-                    if any(c in [':', '=', '#'] for c in name):
-                        QMessageBox.about(
-                            self.view, 'Error',
-                            'The name is incorrect. Try again'
-                        )
-                    if ok and not name:
-                        QMessageBox.about(
-                            self.view, 'Error',
-                            'Please, enter a filter name'
-                        )
-                    elif ok and name not in self.items:
-                        self.config[self.section][name] = jql
-                        self.write_to_ini()
-                        self.set_items()
-                        self.view.add_filter(name)
-                    elif ok:
-                        QMessageBox.about(
-                            self.view, 'Error',
-                            'A filter with this name already exists'
-                        )
-                else:
+            if jql not in self.items.values():
+                try:
+                    self.jira_client.get_issues(jql=jql)
+                    dlg = QInputDialog(self.view)
+                    dlg.setWindowIconText('Save filter')
+                    dlg.setLabelText('Enter filter name')
+                    dlg.setInputMode(QInputDialog.TextInput)
+
+                    while dlg.exec_():
+                        name = dlg.textValue()
+                        if not name or set(':=#') & set(name):
+                            continue
+                        elif name in self.items:
+                            reply = QMessageBox.question(
+                                self.view,
+                                'Warning',
+                                'A filter with name \'{}\' '
+                                'already exists. Overwrite?'.format(name),
+                                QMessageBox.Yes | QMessageBox.Cancel
+                            )
+                            if reply == QMessageBox.Yes:
+                                self.config[self.section][name] = jql
+                                self.write_to_ini()
+                                self.set_items()
+                                items = self.view.my_filters_list.findItems(
+                                    name, Qt.MatchExactly
+                                )
+                                self.view.my_filters_list.setCurrentItem(
+                                    items[0]
+                                )
+                                break
+                        else:
+                            self.config[self.section][name] = jql
+                            self.write_to_ini()
+                            self.set_items()
+                            self.view.my_filters_list.addItem(name)
+                            self.view.my_filters_list.setCurrentItem(
+                                self.view.my_filters_list.item(
+                                    self.view.my_filters_list.count() - 1
+                                )
+                            )
+                            break
+
+                except JIRAError:
                     QMessageBox.about(
                         self.view, 'Error',
-                        'A filter with this jql already exists'
+                        'The jql query is incorrect'
                     )
-            except JIRAError:
-                QMessageBox.about(
-                    self.view, 'Error',
-                    'The jql query is incorrect'
+
+            else:
+                QMessageBox.warning(
+                    self.view,
+                    'Warning',
+                    'A filter with this jql already exists.'
                 )

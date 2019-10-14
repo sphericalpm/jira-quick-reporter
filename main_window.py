@@ -183,15 +183,3 @@ class MainWindow(CenterWindow):
         self.my_filters_list.setMaximumWidth(
             self.my_filters_list.sizeHintForColumn(0) + 10
         )
-
-    def add_filter(self, filter):
-        self.my_filters_list.addItem(filter)
-
-    def get_current_filter(self):
-        return self.my_filters_list.currentItem().text()
-
-    def get_new_filter(self):
-        return self.filter_field.text()
-
-    def set_filter_jql_to_field(self, jql):
-        self.filter_field.setText(jql)
