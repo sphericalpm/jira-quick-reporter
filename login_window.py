@@ -22,7 +22,6 @@ class LoginWindow(CenterWindow):
 
         self.controller = controller
         self.resize(380, 200)
-        self.center()
         self.setWindowTitle('JIRA Quick Reporter')
         self.setWindowIcon(QIcon(LOGO_PATH))
         self.setMaximumSize(self.size())

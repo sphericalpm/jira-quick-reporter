@@ -19,12 +19,14 @@ if __name__ == '__main__':
     if os.path.exists(CREDENTIALS_PATH):
         with open(CREDENTIALS_PATH, 'r', encoding='utf-8') as file:
             content = file.read()
+            main_controller = None
             try:
                 email, token = content.split(';')
                 jira_client = JiraClient(email, token)
                 main_controller = MainController(jira_client)
             except (ValueError, JIRAError):
-                login_controller = LoginController()
+                if not main_controller:
+                    login_controller = LoginController()
             except requests.exceptions.ConnectionError:
                 QMessageBox.warning(
                     None,

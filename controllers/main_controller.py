@@ -1,13 +1,16 @@
 import configparser
 import os
+
 from PyQt5.QtWidgets import QMessageBox, QInputDialog
 from PyQt5.QtCore import Qt
+from jira import JIRAError
 
 from main_window import MainWindow
 from controllers.timelog_controller import TimeLogController
-from jira import JIRAError
+from  config import FILTERS_PATH
 
 DEFAULT_ISSUES_COUNT = 50
+SECTION = 'Filters'
 
 
 class MainController:
@@ -18,7 +21,6 @@ class MainController:
         self.view = MainWindow(self)
 
         self.config = configparser.ConfigParser()
-        self.section = 'Filters'
         self.items = dict()
         self.view.show()
         self.create_filters()
@@ -78,11 +80,11 @@ class MainController:
 
     def create_filters(self):
         # create if not exist
-        if not os.path.exists('filters.ini'):
+        if not os.path.exists(FILTERS_PATH):
             self.set_section()
             self.write_to_ini()
         try:
-            self.config.read('filters.ini')
+            self.config.read(FILTERS_PATH)
         except configparser.ParsingError:
             self.write_ini_if_errors()
         if not self.config.sections():
@@ -100,13 +102,13 @@ class MainController:
             self.items.update(self.config.items(section))
 
     def set_section(self):
-        self.config[self.section] = {
+        self.config[SECTION] = {
             'my open issues': 'assignee = currentuser() '
             'and resolution = unresolved'
         }
 
     def write_to_ini(self):
-        with open('filters.ini', 'w+') as ini_file:
+        with open(FILTERS_PATH, 'w+') as ini_file:
             self.config.write(ini_file)
 
     def filter_selected(self):
@@ -139,7 +141,7 @@ class MainController:
                                 QMessageBox.Yes | QMessageBox.Cancel
                             )
                             if reply == QMessageBox.Yes:
-                                self.config[self.section][name] = jql
+                                self.config[SECTION][name] = jql
                                 self.write_to_ini()
                                 self.set_items()
                                 items = self.view.my_filters_list.findItems(
@@ -150,7 +152,7 @@ class MainController:
                                 )
                                 break
                         else:
-                            self.config[self.section][name] = jql
+                            self.config[SECTION][name] = jql
                             self.write_to_ini()
                             self.set_items()
                             self.view.my_filters_list.addItem(name)

@@ -23,7 +23,6 @@ class TimeLogWindow(CenterWindow):
         with open(QSS_PATH, 'r') as qss_file:
             self.setStyleSheet(qss_file.read())
         self.resize(600, 450)
-        self.center()
         self.setWindowTitle('Log Work: {issue}'.format(issue=issue_key))
 
         # vbox elements description
