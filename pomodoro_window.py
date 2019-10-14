@@ -133,10 +133,10 @@ class Settings(QWidget):
 
 
 class PomodoroWindow(CenterWindow):
-    def __init__(self, controller, issue_key, issue_title, tray_menu):
+    def __init__(self, controller, issue_key, issue_title, tray_icon):
         super().__init__()
         self.controller = controller
-        self.tray_menu = tray_menu
+        self.tray_icon = tray_icon
         self.LOG_PATH = os.path.join(
             LOGGED_TIME_DIR, '{}.txt'.format(issue_key)
         )
@@ -239,18 +239,22 @@ class PomodoroWindow(CenterWindow):
         self.action_stop_timer = QAction('Stop', self)
         self.action_stop_timer.triggered.connect(self.toggle_timer)
         self.action_log_work = QAction('Log work', self)
+        self.action_log_work.triggered.connect(
+            lambda: self.controller.open_timelog_from_pomodoro(issue_key)
+        )
+        self.action_log_work.setEnabled(False)
 
-        self.tray_menu.addSeparator()
-        self.tray_menu.addAction(self.action_show_time)
+        self.tray_icon.contextMenu().addSeparator()
+        self.tray_icon.contextMenu().addAction(self.action_show_time)
         self.action_show_time.setText(self.time.toString('mm:ss'))
-        self.tray_menu.addAction(self.action_open_timer)
-        self.tray_menu.addAction(self.action_settings)
-        self.tray_menu.addAction(self.action_quit_timer)
-        self.tray_menu.addSeparator()
-        self.tray_menu.addAction(self.action_start_timer)
-        self.tray_menu.addAction(self.action_stop_timer)
-        self.tray_menu.addAction(self.action_reset)
-        self.tray_menu.addAction(self.action_log_work)
+        self.tray_icon.contextMenu().addAction(self.action_open_timer)
+        self.tray_icon.contextMenu().addAction(self.action_settings)
+        self.tray_icon.contextMenu().addAction(self.action_quit_timer)
+        self.tray_icon.contextMenu().addSeparator()
+        self.tray_icon.contextMenu().addAction(self.action_start_timer)
+        self.tray_icon.contextMenu().addAction(self.action_stop_timer)
+        self.tray_icon.contextMenu().addAction(self.action_reset)
+        self.tray_icon.contextMenu().addAction(self.action_log_work)
 
     def log_work_if_file_exists(self):
         if os.path.exists(self.LOG_PATH):
@@ -312,6 +316,7 @@ class PomodoroWindow(CenterWindow):
             QSound.play(RINGING_SOUND_PATH)
             if self.current_time_name is not POMODORO:
                 self.is_active_timer = False
+                self.tray_icon.showMessage('Pomodoro', 'Your break is over', 2000)
             self.set_timer()
 
     def update_timer(self):
@@ -386,6 +391,7 @@ class PomodoroWindow(CenterWindow):
             self.start_btn.setText('Stop')
             self.action_start_timer.setEnabled(False)
         else:
+            self.tray_icon.showMessage('Pomodoro', 'Focus on your task', 2000)
             self.start_btn.setText('Pause')
             self.action_start_timer.setText('Pause')
         self.logwork_btn.setEnabled(False)
@@ -473,13 +479,6 @@ class PomodoroWindow(CenterWindow):
             )
             if reply == QMessageBox.No:
                 return False
-        self.tray_menu.removeAction(self.action_open_timer)
-        self.tray_menu.removeAction(self.action_settings)
-        self.tray_menu.removeAction(self.action_quit_timer)
-        self.tray_menu.removeAction(self.action_start_timer)
-        self.tray_menu.removeAction(self.action_stop_timer)
-        self.tray_menu.removeAction(self.action_reset)
-        self.tray_menu.removeAction(self.action_log_work)
 
         self.settings.setValue(
             POMODORO, self.time_dict[POMODORO].minute()

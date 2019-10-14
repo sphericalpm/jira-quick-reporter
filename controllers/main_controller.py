@@ -71,7 +71,7 @@ class MainController:
         self.pomodoro_view = PomodoroWindow(
             self, issue_key,
             issue_title,
-            self.view.tray_menu
+            self.view.tray_icon
         )
         self.pomodoro_view.show()
         self.pomodoro_view.log_work_if_file_exists()
