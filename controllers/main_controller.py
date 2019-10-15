@@ -1,4 +1,5 @@
 from PyQt5.QtWidgets import QMessageBox
+from jira import JIRAError
 
 from main_window import MainWindow
 from controllers.timelog_controller import TimeLogController
@@ -69,11 +70,18 @@ class MainController:
     def change_workflow(self, workflow, issue_obj, status):
         status_id = workflow.get(status)
 
-        if status_id:
-            self.jira_client.client.transition_issue(
-                issue_obj,
-                transition=status_id
-            )
+        try:
+            if status_id:
+                self.jira_client.client.transition_issue(
+                    issue_obj,
+                    transition=status_id
+                )
 
-        else:
-            QMessageBox.about(self.view, 'Error', 'Please try again')
+            else:
+                QMessageBox.about(self.view, 'Error', 'The status already in use')
+        
+        except JIRAError as e:
+            QMessageBox.about(self.view, 'Error', e.text)
+
+        finally:
+            self.refresh_issue_list()
