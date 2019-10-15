@@ -12,7 +12,7 @@ from jiraclient import JiraClient
 
 
 class LoginController:
-    def __init__(self):
+    def show(self):
         self.view = LoginWindow(self)
         self.view.show()
         self.jira_client = None

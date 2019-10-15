@@ -11,6 +11,8 @@ class MainController:
     def __init__(self, jira_client):
         self.jira_client = jira_client
         self.issues_count = 0
+    
+    def show(self):
         self.view = MainWindow(self)
         self.refresh_issue_list()
         self.view.show()
@@ -66,6 +68,7 @@ class MainController:
             issue_key,
             self
         )
+        time_log_controller.show()
 
     def change_workflow(self, workflow, issue_obj, status):
         status_id = workflow.get(status)

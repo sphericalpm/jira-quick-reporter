@@ -8,8 +8,11 @@ class TimeLogController:
     def __init__(self, jira_client, issue_key, main_controller):
         self.main_controller = main_controller
         self.jira_client = jira_client
-        self.issue = jira_client.issue(issue_key)
-        self.view = TimeLogWindow(self, issue_key)
+        self.issue_key = issue_key
+
+    def show(self):
+        self.issue = jira_client.issue(self.issue_key)
+        self.view = TimeLogWindow(self, self.issue_key)
         self.existing_estimate = self.jira_client.get_remaining_estimate(self.issue)
         self.view.set_existing_estimate(self.existing_estimate)
         self.view.show()
