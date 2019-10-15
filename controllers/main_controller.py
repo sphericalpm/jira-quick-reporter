@@ -7,7 +7,7 @@ from jira import JIRAError
 
 from main_window import MainWindow
 from controllers.timelog_controller import TimeLogController
-from  config import FILTERS_PATH
+from config import FILTERS_PATH
 
 DEFAULT_ISSUES_COUNT = 50
 SECTION = 'Filters'
@@ -116,6 +116,11 @@ class MainController:
         self.current_jql = self.items[selected_key]
         self.refresh_issue_list()
         self.view.filter_field.setText(self.current_jql)
+
+    def delete_filter(self, filter_name):
+        self.config.remove_option(SECTION, filter_name)
+        self.items.pop(filter_name)
+        self.write_to_ini()
 
     def save_filter(self):
         jql = self.view.filter_field.text().lower()

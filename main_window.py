@@ -7,10 +7,12 @@ from PyQt5.QtWidgets import (
     QLabel,
     QPushButton,
     QGridLayout,
-    QLineEdit
+    QLineEdit,
+    QMenu,
+    QMessageBox
 )
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QEvent
 from functools import partial
 
 from center_window import CenterWindow
@@ -102,6 +104,8 @@ class MainWindow(CenterWindow):
 
         self.create_filter_box = QHBoxLayout()
         self.my_filters_list = QListWidget()
+
+        self.my_filters_list.installEventFilter(self)
         self.my_filters_list.itemSelectionChanged.connect(
             self.controller.filter_selected
         )
@@ -183,3 +187,26 @@ class MainWindow(CenterWindow):
         self.my_filters_list.setMaximumWidth(
             self.my_filters_list.sizeHintForColumn(0) + 10
         )
+
+    def eventFilter(self, object, event):
+        if (event.type() == QEvent.ContextMenu and
+                object is self.my_filters_list):
+            if object.itemAt(event.pos()) is self.my_filters_list.currentItem():
+                context_menu = QMenu()
+                context_menu.addAction('Delete')
+                if context_menu.exec_(event.globalPos()):
+                    item_text = self.my_filters_list.currentItem().text()
+                    reply = QMessageBox.question(
+                        self,
+                        'Delete filter',
+                        'Are you sure wou want to delete '
+                        '\'{}\' filter?'.format(item_text),
+                        QMessageBox.Yes | QMessageBox.Cancel
+                    )
+                    if reply == QMessageBox.Yes:
+                        pass
+                        self.controller.delete_filter(item_text)
+                        self.my_filters_list.takeItem(
+                            self.my_filters_list.currentRow()
+                        )
+        return False
