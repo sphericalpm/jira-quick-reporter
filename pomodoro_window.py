@@ -35,6 +35,7 @@ POMODORO = 'pomodoro'
 class CustomDialog(QDialog):
     def __init__(self, cur_break):
         super(CustomDialog, self).__init__()
+        self.setWindowTitle('Break')
         self.cur_break = cur_break
         self.another_break = SHORT_BREAK if self.cur_break is LONG_BREAK else LONG_BREAK
         self.main_box = QVBoxLayout()
@@ -316,7 +317,10 @@ class PomodoroWindow(CenterWindow):
             QSound.play(RINGING_SOUND_PATH)
             if self.current_time_name is not POMODORO:
                 self.is_active_timer = False
-                self.tray_icon.showMessage('Pomodoro', 'Your break is over', 2000)
+                self.tray_icon.showMessage(
+                    'Pomodoro',
+                    'Your break is over',
+                    msecs=2000)
             self.set_timer()
 
     def update_timer(self):
@@ -391,7 +395,11 @@ class PomodoroWindow(CenterWindow):
             self.start_btn.setText('Stop')
             self.action_start_timer.setEnabled(False)
         else:
-            self.tray_icon.showMessage('Pomodoro', 'Focus on your task', 2000)
+            self.tray_icon.showMessage(
+                'Pomodoro',
+                'Focus on your task',
+                msecs=2000
+            )
             self.start_btn.setText('Pause')
             self.action_start_timer.setText('Pause')
         self.logwork_btn.setEnabled(False)

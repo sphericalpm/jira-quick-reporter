@@ -8,3 +8,6 @@ POMODORO_MARK_PATH = os.path.join(STATICDIR, 'tomato.png')
 RINGING_SOUND_PATH = os.path.join(STATICDIR, 'ring.wav')
 LOGO_PATH = os.path.join(STATICDIR, 'logo.png')
 LOGGED_TIME_DIR = os.path.join(BASEDIR, 'log')
+
+# ms * min = 1 hour
+LOG_TIME = 60000 * 60

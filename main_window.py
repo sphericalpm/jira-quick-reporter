@@ -11,12 +11,13 @@ from PyQt5.QtWidgets import (
     QMenu,
     QAction
 )
+from PyQt5.QtMultimedia import QSound
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from functools import partial
 
 from center_window import CenterWindow
-from config import QSS_PATH, LOGO_PATH
+from config import QSS_PATH, LOGO_PATH, LOG_TIME, RINGING_SOUND_PATH
 
 
 class QCustomWidget(QWidget):
@@ -139,6 +140,18 @@ class MainWindow(CenterWindow):
         self.action_quit.triggered.connect(self.controller.quit_app)
         self.tray_icon.setContextMenu(self.tray_menu)
         self.tray_icon.show()
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.notification_to_log_wokr)
+        self.timer.start(LOG_TIME)
+
+    def notification_to_log_wokr(self):
+        QSound.play(RINGING_SOUND_PATH)
+        self.tray_icon.showMessage(
+            '1 hour had passed',
+            'Don\'t forget to log your work!',
+            msecs=2000
+        )
+        self.timer.start(LOG_TIME)
 
     def show_issues_list(self, issues_list, load_more=False):
         # clear listbox

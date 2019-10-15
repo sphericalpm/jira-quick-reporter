@@ -8,6 +8,7 @@ from jira import JIRAError
 from main_window import MainWindow
 from time_log_window import TimeLogWindow
 from pomodoro_window import PomodoroWindow
+from config import LOG_TIME
 
 DEFAULT_ISSUES_COUNT = 50
 
@@ -160,6 +161,7 @@ class MainController:
                 **log_work_params)
             self.time_log_view.close()
             self.refresh_issue_list()
+            self.view.timer.start(LOG_TIME)
             if self.pomodoro_view:
                 self.pomodoro_view.reset()
 
