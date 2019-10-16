@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import QEvent
 
 from center_window import CenterWindow
-from config import QSS_PATH
+from config import QSS
 
 
 class TimeLogWindow(CenterWindow):
@@ -19,8 +19,7 @@ class TimeLogWindow(CenterWindow):
         super().__init__()
         self.issue_key = issue_key
         # main window characteristics
-        with open(QSS_PATH, 'r') as qss_file:
-            self.setStyleSheet(qss_file.read())
+        self.setStyleSheet(QSS)
         self.resize(600, 450)
         self.setWindowTitle('Log Work: {issue}'.format(issue=issue_key))
 

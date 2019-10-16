@@ -23,9 +23,9 @@ if __name__ == '__main__':
             try:
                 email, token = content.split(';')
                 jira_client = JiraClient(email, token)
-                main_controller = MainController(jira_client)
+                MainController(jira_client)
             except (ValueError, JIRAError):
-                login_controller = LoginController()
+                LoginController()
             except requests.exceptions.ConnectionError:
                 QMessageBox.warning(
                     None,
@@ -33,5 +33,5 @@ if __name__ == '__main__':
                     'Check your internet connection and try again'
                 )
     else:
-        login_controller = LoginController()
+        LoginController()
     sys.exit(app.exec_())

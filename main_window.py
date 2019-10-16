@@ -17,7 +17,12 @@ from PyQt5.QtCore import Qt, QTimer
 from functools import partial
 
 from center_window import CenterWindow
-from config import QSS_PATH, LOGO_PATH, LOG_TIME, RINGING_SOUND_PATH
+from config import (
+    QSS,
+    LOGO_PATH,
+    LOG_TIME,
+    RING_SOUND_PATH
+)
 
 
 class QCustomWidget(QWidget):
@@ -95,9 +100,7 @@ class MainWindow(CenterWindow):
     def __init__(self, controller):
         super().__init__()
 
-        with open(QSS_PATH, 'r') as qss_file:
-            self.setStyleSheet(qss_file.read())
-
+        self.setStyleSheet(QSS)
         self.controller = controller
         self.pomodoro_window = None
         self.selected_issue_key = None
@@ -145,7 +148,7 @@ class MainWindow(CenterWindow):
         self.timer.start(LOG_TIME)
 
     def notification_to_log_wokr(self):
-        QSound.play(RINGING_SOUND_PATH)
+        QSound.play(RING_SOUND_PATH)
         self.tray_icon.showMessage(
             '1 hour had passed',
             'Don\'t forget to log your work!',

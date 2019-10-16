@@ -20,21 +20,20 @@ from PyQt5.QtCore import QTimer, QTime, Qt, QSettings
 
 from center_window import CenterWindow
 from config import (
-    QSS_PATH,
-    RINGING_SOUND_PATH,
+    QSS,
+    RING_SOUND_PATH,
     POMODORO_MARK_PATH,
     LOGGED_TIME_DIR
 )
 
 SHORT_BREAK = 'short'
 LONG_BREAK = 'long'
-SKIP_BREAK = 'skip'
 POMODORO = 'pomodoro'
 
 
-class CustomDialog(QDialog):
+class BreakDialog(QDialog):
     def __init__(self, cur_break):
-        super(CustomDialog, self).__init__()
+        super(BreakDialog, self).__init__()
         self.setWindowTitle('Break')
         self.cur_break = cur_break
         self.another_break = SHORT_BREAK if self.cur_break is LONG_BREAK else LONG_BREAK
@@ -58,7 +57,7 @@ class CustomDialog(QDialog):
         self.main_box.addLayout(self.btn_box)
 
     def exec(self):
-        super(CustomDialog, self).exec()
+        super(BreakDialog, self).exec()
         return self.cur_break
 
     def another_break_btn_click(self):
@@ -66,16 +65,14 @@ class CustomDialog(QDialog):
         self.accept()
 
     def skip_break_btn_click(self):
-        self.cur_break = SKIP_BREAK
+        self.cur_break = POMODORO
         self.accept()
 
 
 class Settings(QWidget):
     def __init__(self, pomodoro_window):
         super().__init__()
-        with open(QSS_PATH, 'r') as qss_file:
-            self.setStyleSheet(qss_file.read())
-
+        self.setStyleSheet(QSS)
         self.setWindowTitle('Settings')
         self.pomodoro_window = pomodoro_window
         self.main_box = QFormLayout()
@@ -136,14 +133,14 @@ class Settings(QWidget):
 class PomodoroWindow(CenterWindow):
     def __init__(self, controller, issue_key, issue_title, tray_icon):
         super().__init__()
+        self.setStyleSheet(QSS)
         self.controller = controller
         self.tray_icon = tray_icon
+        if not os.path.exists(LOGGED_TIME_DIR):
+            os.mkdir(LOGGED_TIME_DIR)
         self.LOG_PATH = os.path.join(
             LOGGED_TIME_DIR, '{}.txt'.format(issue_key)
         )
-        with open(QSS_PATH, 'r') as qss_file:
-            self.setStyleSheet(qss_file.read())
-
         self.setWindowTitle('Pomodoro Timer')
         self.settings = QSettings('Spherical', 'Jira Quick Reporter')
         pomodoro_settings = int(self.settings.value(POMODORO, 25))
@@ -234,7 +231,7 @@ class PomodoroWindow(CenterWindow):
 
         self.action_settings.triggered.connect(self.settings_window.show)
         self.action_reset = QAction('Reset timer', self)
-        self.action_reset.triggered.connect(self.reset)
+        self.action_reset.triggered.connect(self.reset_timer)
         self.action_start_timer = QAction('Start', self)
         self.action_start_timer.triggered.connect(self.toggle_timer)
         self.action_stop_timer = QAction('Stop', self)
@@ -280,7 +277,7 @@ class PomodoroWindow(CenterWindow):
             spent_time_seconds = self.time.secsTo(self.time_dict[time_name])
             if minutes <= spent_time_seconds // 60:
                 self.stop_timer()
-                QSound.play(RINGING_SOUND_PATH)
+                QSound.play(RING_SOUND_PATH)
                 self.set_timer()
             else:
                 time_diff = self.time_dict[time_name].minute() - minutes
@@ -314,9 +311,8 @@ class PomodoroWindow(CenterWindow):
                 self.log_time()
         else:
             self.stop_timer()
-            QSound.play(RINGING_SOUND_PATH)
+            QSound.play(RING_SOUND_PATH)
             if self.current_time_name is not POMODORO:
-                self.is_active_timer = False
                 self.tray_icon.showMessage(
                     'Pomodoro',
                     'Your break is over',
@@ -352,7 +348,7 @@ class PomodoroWindow(CenterWindow):
         self.pomodoros_box.addWidget(label)
         self.pomodoros_count_label.setText(str(self.pomodoros_count))
 
-    def set_pomodoro_mark(self):
+    def set_pomodoro_img(self):
         label = QLabel()
         pixmap = QPixmap(POMODORO_MARK_PATH)
         label.setPixmap(pixmap)
@@ -408,6 +404,7 @@ class PomodoroWindow(CenterWindow):
 
     def stop_timer(self):
         self.timer.stop()
+        self.is_active_timer = False
         self.start_btn.setText('Start')
         self.action_start_timer.setText('Start')
         self.logwork_btn.setEnabled(True)
@@ -429,7 +426,7 @@ class PomodoroWindow(CenterWindow):
         self.logwork_btn.setEnabled(True)
         self.action_log_work.setEnabled(True)
 
-    def reset(self):
+    def reset_timer(self):
         self.logwork_btn.setEnabled(False)
         self.action_log_work.setEnabled(False)
         self.stop_timer()
@@ -440,42 +437,46 @@ class PomodoroWindow(CenterWindow):
         if os.path.exists(self.LOG_PATH):
             os.remove(self.LOG_PATH)
 
+    def set_pomodoro_mark(self):
+        if self.pomodoros_count < 5:
+            self.set_pomodoro_img()
+        elif self.pomodoros_count == 5:
+            self.set_pomodoro_count()
+        else:
+            self.pomodoros_count_label.setText(
+                str(self.pomodoros_count)
+            )
+
     def set_timer(self):
         """
         In this method decides which timer will go next
         """
 
         # if pomodoro time's up
-        if self.current_time_name is POMODORO and self.is_active_timer:
+        if self.current_time_name is POMODORO:
             self.pomodoros_count += 1
-            if self.pomodoros_count < 5:
-                self.set_pomodoro_mark()
-            elif self.pomodoros_count == 5:
-                self.set_pomodoro_count()
-            else:
-                self.pomodoros_count_label.setText(
-                    str(self.pomodoros_count)
-                )
+            self.set_pomodoro_mark()
 
             # if four pomodoros have completed
             if not self.pomodoros_count % 4:
                 self.current_time_name = LONG_BREAK
             else:
                 self.current_time_name = SHORT_BREAK
-            self.dialog = CustomDialog(self.current_time_name)
-            QTimer.singleShot(4000, self.dialog.close)
-            self.current_time_name = self.dialog.exec()
-        else:
-            self.current_time_name = POMODORO
-        if self.current_time_name is not SKIP_BREAK:
-            self.time = self.time_dict[self.current_time_name]
-        else:
-            self.time = self.time_dict[POMODORO]
-        self.update_timer()
-        if self.current_time_name not in(POMODORO, SKIP_BREAK):
-            self.start_timer()
-        else:
-            self.set_pomodoro_timer()
+            dialog = BreakDialog(self.current_time_name)
+
+            # close dialog after 4 seconds
+            QTimer.singleShot(4000, dialog.close)
+
+            # get break name (short, long or skip) from dialog
+            self.current_time_name = dialog.exec()
+            if self.current_time_name is not POMODORO:
+                self.time = self.time_dict[self.current_time_name]
+                self.update_timer()
+                self.start_timer()
+                return
+
+        # if break time's up
+        self.set_pomodoro_timer()
 
     def quit(self):
         if os.path.exists(self.LOG_PATH):

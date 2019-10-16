@@ -68,6 +68,7 @@ class MainController:
         if self.pomodoro_view:
             if self.pomodoro_view.issue_key == issue_key \
                     or not self.pomodoro_view.quit():
+                self.pomodoro_view.show()
                 return
         self.pomodoro_view = PomodoroWindow(
             self, issue_key,
@@ -163,7 +164,7 @@ class MainController:
             self.refresh_issue_list()
             self.view.timer.start(LOG_TIME)
             if self.pomodoro_view:
-                self.pomodoro_view.reset()
+                self.pomodoro_view.reset_timer()
 
         except JIRAError as e:
             QMessageBox.about(self.time_log_view, "Error", e.text)
