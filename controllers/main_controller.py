@@ -1,4 +1,5 @@
 from PyQt5.QtWidgets import QMessageBox
+from jira import JIRAError
 
 from main_window import MainWindow
 from controllers.timelog_controller import TimeLogController
@@ -10,6 +11,8 @@ class MainController:
     def __init__(self, jira_client):
         self.jira_client = jira_client
         self.issues_count = 0
+    
+    def show(self):
         self.view = MainWindow(self)
         self.refresh_issue_list()
         self.view.show()
@@ -65,15 +68,35 @@ class MainController:
             issue_key,
             self
         )
+        time_log_controller.show()
 
     def change_workflow(self, workflow, issue_obj, status):
         status_id = workflow.get(status)
 
-        if status_id:
-            self.jira_client.client.transition_issue(
-                issue_obj,
-                transition=status_id
-            )
+        try:
+            if status_id:
+                self.jira_client.client.transition_issue(
+                    issue_obj,
+                    transition=status_id
+                )
 
-        else:
-            QMessageBox.about(self.view, 'Error', 'Please try again')
+            else:
+                QMessageBox.about(self.view, 'Error', 'The status already in use')
+        
+        except JIRAError as e:
+            QMessageBox.about(self.view, 'Error', e.text)
+
+        finally:
+            self.refresh_issue_list()
+
+    def get_possible_workflows(self, issue):
+        current_workflow = issue['issue_obj'].fields.status
+        possible_workflows = list(issue['workflow'].keys())
+
+        if current_workflow.name != 'Backlog':  # when it's 'Backlog' status,
+            # JIRA API provides possibility to change it to 'Return to backlog'.
+            # Cause it's the same that we already have we won't show it one more time
+            possible_workflows.insert(0, current_workflow.name)  # insert because of
+            # setCurrentIndex() can have only positive value
+
+        return possible_workflows

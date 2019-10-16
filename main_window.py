@@ -153,10 +153,8 @@ class MainWindow(CenterWindow):
                 partial(self.controller.open_timelog_window, issue['key'])
             )
 
-            current_workflow = issue['issue_obj'].fields.status
-            possible_workflows = list(issue['workflow'].keys())
-            possible_workflows.insert(0, current_workflow.name)  # insert because of
-            # setCurrentIndex() can have only positive value
+            # add workflow statuses to dropdown
+            possible_workflows = self.controller.get_possible_workflows(issue)
 
             issue_widget.set_workflow.addItems(possible_workflows)
             issue_widget.set_workflow.setCurrentIndex(0)
@@ -165,7 +163,7 @@ class MainWindow(CenterWindow):
                 partial(
                     self.controller.change_workflow,
                     issue['workflow'],
-                    issue['issue_obj']
+                    issue['issue_obj'],
                 )
             )
 
