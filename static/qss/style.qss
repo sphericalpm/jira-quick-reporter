@@ -2,8 +2,10 @@ QLabel#issue_title_label{
     font-weight: bold;
 }
 
-QPushButton#logwork_btn{
-    background-color: white;
+QPushButton#issue_menu_btn{
+    border: none;
+    font-size: 12pt;
+    font-weight: bold;
 }
 
 QListWidget::item{

@@ -9,7 +9,8 @@ from PyQt5.QtWidgets import (
     QGridLayout,
     QSystemTrayIcon,
     QMenu,
-    QAction
+    QAction,
+    QSizePolicy
 )
 from PyQt5.QtMultimedia import QSound
 from PyQt5.QtGui import QIcon
@@ -40,20 +41,10 @@ class QCustomWidget(QWidget):
         self.remaining_label = QLabel()
         self.remaining_label.setObjectName('remaining_label')
 
-        self.logwork_btn = QPushButton('Log work')
-        self.logwork_btn.setObjectName('logwork_btn')
-        self.logwork_btn.setMaximumSize(self.logwork_btn.size())
-
-        self.pomodoro_btn = QPushButton('Start pomodoro')
-        self.pomodoro_btn.setObjectName('logwork_btn')
-        self.pomodoro_btn.setMaximumSize(self.pomodoro_btn.size())
-
         timetracking_grid = QGridLayout()
         timetracking_grid.addWidget(self.estimated_label, 0, 0)
         timetracking_grid.addWidget(self.spent_label, 0, 1)
         timetracking_grid.addWidget(self.remaining_label, 0, 2)
-        timetracking_grid.addWidget(self.logwork_btn, 0, 3, Qt.AlignRight)
-        timetracking_grid.addWidget(self.pomodoro_btn, 0, 4, Qt.AlignRight)
 
         # create labels for issue key and title
         self.issue_key_label = QLabel()
@@ -62,9 +53,26 @@ class QCustomWidget(QWidget):
         self.issue_title_label.setWordWrap(True)
         self.issue_key_label.setOpenExternalLinks(True)
 
+        self.hbox = QHBoxLayout()
+        self.issue_menu_btn = QPushButton('. . .')
+        self.issue_menu_btn.setObjectName('logwork_btn')
+        issue_menu = QMenu()
+        self.action_log_work = QAction('Log work', self)
+        self.action_pomodoro_timer = QAction('Pomodoro timer', self)
+        issue_menu.addAction(self.action_log_work)
+        issue_menu.addAction(self.action_pomodoro_timer)
+        self.issue_menu_btn.setMenu(issue_menu)
+
+        self.hbox.addWidget(self.issue_key_label, Qt.AlignLeft)
+        self.issue_key_label.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Fixed
+        )
+        self.issue_menu_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.hbox.addWidget(self.issue_menu_btn, Qt.AlignRight)
+
         # create main box layout
         vbox = QVBoxLayout()
-        vbox.addWidget(self.issue_key_label)
+        vbox.addLayout(self.hbox)
         vbox.addWidget(self.issue_title_label)
         vbox.addLayout(timetracking_grid)
         self.setLayout(vbox)
@@ -183,14 +191,18 @@ class MainWindow(CenterWindow):
                 issue['remaining']
             )
 
-            issue_widget.pomodoro_btn.clicked.connect(
-                partial(self.controller.open_pomodoro_window,
-                        issue['key'], issue['title'])
+            issue_widget.action_log_work.triggered.connect(
+                partial(
+                    self.controller.open_timelog_window,
+                    issue['key']
+                )
             )
 
-            issue_widget.logwork_btn.clicked.connect(
-                partial(self.controller.open_timelog_window,
-                        issue['key'])
+            issue_widget.action_pomodoro_timer.triggered.connect(
+                partial(
+                    self.controller.open_pomodoro_window,
+                    issue['key'], issue['title']
+                )
             )
 
             # add issue item to list
