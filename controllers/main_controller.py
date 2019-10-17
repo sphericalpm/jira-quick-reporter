@@ -3,6 +3,8 @@ from jira import JIRAError
 
 from main_window import MainWindow
 from controllers.timelog_controller import TimeLogController
+from controllers.workflow_controller import WorkflowController
+
 
 DEFAULT_ISSUES_COUNT = 50
 
@@ -73,21 +75,24 @@ class MainController:
     def change_workflow(self, workflow, issue_obj, status):
         status_id = workflow.get(status)
 
-        try:
-            if status_id:
+        if status_id and not status == 'Put on hold' and not status == 'Complete':
+            self.view = WorkflowController(self.jira_client, issue_obj, status, self)
+            self.view.show()
+            return
+
+        elif status == 'Put on hold':
+            try:
                 self.jira_client.client.transition_issue(
-                    issue_obj,
-                    transition=status_id
-                )
+                        issue_obj,
+                        transition=status_id
+                    )
+            except JIRAError as e:
+                QMessageBox.about(self.view, 'Error', e.text)
 
-            else:
-                pass
-        
-        except JIRAError as e:
-            QMessageBox.about(self.view, 'Error', e.text)
+        elif not status_id:  # selected already applied workflow
+            pass
 
-        finally:
-            self.refresh_issue_list()
+        self.refresh_issue_list()
 
     def get_possible_workflows(self, issue):
         current_workflow = issue['issue_obj'].fields.status
