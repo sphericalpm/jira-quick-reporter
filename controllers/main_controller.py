@@ -81,7 +81,7 @@ class MainController:
                 )
 
             else:
-                QMessageBox.about(self.view, 'Error', 'The status already in use')
+                pass
         
         except JIRAError as e:
             QMessageBox.about(self.view, 'Error', e.text)
