@@ -80,9 +80,6 @@ class MainController:
                     transition=status_id
                 )
 
-            else:
-                pass
-        
         except JIRAError as e:
             QMessageBox.about(self.view, 'Error', e.text)
 
