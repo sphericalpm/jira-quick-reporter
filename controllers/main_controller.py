@@ -66,10 +66,11 @@ class MainController:
 
     def open_pomodoro_window(self, issue_key, issue_title):
         if self.pomodoro_view:
-            if self.pomodoro_view.issue_key == issue_key \
-                    or not self.pomodoro_view.quit():
+            if self.pomodoro_view.issue_key == issue_key:
                 self.pomodoro_view.show()
-                return
+            else:
+                QMessageBox.warning(None, 'Warning', 'Another task in progress now!')
+            return
         self.pomodoro_view = PomodoroWindow(
             self, issue_key,
             issue_title,

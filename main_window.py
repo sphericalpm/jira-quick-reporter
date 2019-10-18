@@ -55,7 +55,7 @@ class QCustomWidget(QWidget):
 
         self.hbox = QHBoxLayout()
         self.issue_menu_btn = QPushButton('. . .')
-        self.issue_menu_btn.setObjectName('logwork_btn')
+        self.issue_menu_btn.setObjectName('issue_menu_btn')
         issue_menu = QMenu()
         self.action_log_work = QAction('Log work', self)
         self.action_pomodoro_timer = QAction('Pomodoro timer', self)
