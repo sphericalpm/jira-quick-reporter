@@ -1,3 +1,6 @@
+from PyQt5.QtWidgets import QMessageBox
+from jira import JIRAError
+
 from workflow_window import WorkflowWindow
 
 
@@ -17,5 +20,16 @@ class WorkflowController:
         original_estimate = self.view.original_estimate_line.text()
         remaining_estimate = self.view.remaining_estimate_line.text()
         comment = self.view.comment_line.toPlainText()
+
+        if assignee != "Me":
+            from receive_accountId import find_accountId_for_user
+            account_id = find_accountId_for_user(assignee)
+
+            if account_id:
+                try:
+                    self.jira_client.client.assign_issue(self.issue_obj, account_id)
+                except JIRAError as e:
+                    QMessageBox.about(self.view, 'Error', e.text)
+
 
         return assignee, original_estimate, remaining_estimate, comment
