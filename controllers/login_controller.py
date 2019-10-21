@@ -45,6 +45,6 @@ class LoginController:
         os.chmod(CREDENTIALS_PATH, stat.S_IRUSR | stat.S_IWUSR)
 
     def open_main_window(self):
-        self.main_controller = MainController(self.jira_client)
-        self.main_controller.show()
+        main_controller = MainController(self.jira_client)
+        main_controller.show()
         self.view.close()

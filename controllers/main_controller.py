@@ -21,7 +21,6 @@ class MainController:
         self.refresh_issue_list()
         self.view.show()
 
-
     def get_issue_list(self):
         issues_list = []
         issues = self.jira_client.get_issues(self.issues_count)
@@ -188,6 +187,11 @@ class MainController:
             self.time_log_view.close()
             self.refresh_issue_list()
             self.view.timer.start(LOG_TIME)
+            self.view.tray_icon.showMessage(
+                'Saving work log',
+                'Successfully saved',
+                msecs=200
+            )
             if self.pomodoro_view:
                 self.pomodoro_view.reset_timer()
 
