@@ -3,7 +3,7 @@ from config import MAX_RETRIES
 
 class JiraClient:
     def __init__(self, email, token, server='https://spherical.atlassian.net'):
-        if not email and not token:
+        if not email or not token:
             raise ValueError('You need to specify email and token')
         self.client = JIRA(
             server=server,

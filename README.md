@@ -1,26 +1,34 @@
 # JIRA Quick Reporter
 
+JIRA Quick Reporter (JQR, pronounced "zheeker") is a small desktop application
+
+that helps automate your time management and reporting.
+
+With JQR you can simply manage your issues, workflow, spent time, etc.
 
 
--------------
-JIRA Quick Reporter (JQR, pronounced "zheeker") is a small utility that helps automate your time management and reporting. In the base version, it will do the following:
+### How to build an executable application:
+------------
+First you should create pyenv based on your system version of python and activate it.
+
+You can find instructions here:
+
+https://github.com/pyenv/pyenv-installer
+
+https://github.com/pyenv/pyenv-virtualenv
+
+Next run ```pip install -r requirements.txt```
+
+Then you should run build_app.py: ```python3 build_app.py```
+
+You can find executable version of JQR in dist/JQR/JQR
 
 
-## Main window
--------------
-Contents list of user's task, link for each of them, time estimate button(spent/remaining), workflow dropdown, refresh button
 
-## Time log window
--------------
-Provide a possibility to log time worked on the task with most of the features of the time tracking dialog available in JIRA itself (amount of time spent, start time, possibility to set remaining estimate and a mandatory comment)
-
-## Login in window
--------------
-Provide access to the JIRA Quick Reporter
-
-## Contacts
+### Contacts
 -------------
 You can contact us:
 
 Maria Filonova: <mfilonova@spherical.pm>
+
 Dayana Shcheglova: <dshcheglova@spherical.pm>

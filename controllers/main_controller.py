@@ -89,9 +89,6 @@ class MainController:
             except JIRAError as e:
                 QMessageBox.about(self.view, 'Error', e.text)
 
-        elif not status_id:  # selected already applied workflow
-            pass
-
         self.refresh_issue_list()
 
     def get_possible_workflows(self, issue):
