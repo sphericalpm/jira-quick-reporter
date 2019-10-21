@@ -30,4 +30,5 @@ You can find executable version of JQR in dist/JQR/JQR
 You can contact us:
 
 Maria Filonova: <mfilonova@spherical.pm>
+
 Dayana Shcheglova: <dshcheglova@spherical.pm>
