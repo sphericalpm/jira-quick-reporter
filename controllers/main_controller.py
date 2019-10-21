@@ -13,7 +13,7 @@ class MainController:
     def __init__(self, jira_client):
         self.jira_client = jira_client
         self.issues_count = 0
-    
+
     def show(self):
         self.view = MainWindow(self)
         self.refresh_issue_list()
@@ -76,8 +76,8 @@ class MainController:
         status_id = workflow.get(status)
 
         if status_id and not status == 'Put on hold' and not status == 'Complete':
-            self.view = WorkflowController(self.jira_client, issue_obj, status, self)
-            self.view.show()
+            self.workflow_controller = WorkflowController(self.jira_client, issue_obj, status, self)
+            self.workflow_controller.show()
             return
 
         elif status == 'Put on hold':
