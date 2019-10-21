@@ -6,7 +6,8 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
-    QGridLayout
+    QGridLayout,
+    QComboBox
 )
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
@@ -30,15 +31,19 @@ class QCustomWidget(QWidget):
         self.spent_label.setObjectName('spent_label')
         self.remaining_label = QLabel()
         self.remaining_label.setObjectName('remaining_label')
+
         self.logwork_btn = QPushButton('Log work')
         self.logwork_btn.setObjectName('logwork_btn')
         self.logwork_btn.setMaximumSize(self.logwork_btn.size())
+
+        self.set_workflow = QComboBox(self)
 
         timetracking_grid = QGridLayout()
         timetracking_grid.addWidget(self.estimated_label, 0, 0)
         timetracking_grid.addWidget(self.spent_label, 0, 1)
         timetracking_grid.addWidget(self.remaining_label, 0, 2)
         timetracking_grid.addWidget(self.logwork_btn, 0, 3, Qt.AlignRight)
+        timetracking_grid.addWidget(self.set_workflow, 1, 3, Qt.AlignRight)
 
         # create labels for issue key and title
         self.issue_key_label = QLabel()
@@ -144,9 +149,22 @@ class MainWindow(CenterWindow):
                 issue['logged'],
                 issue['remaining']
             )
-
             issue_widget.logwork_btn.clicked.connect(
                 partial(self.controller.open_timelog_window, issue['key'])
+            )
+
+            # add workflow statuses to dropdown
+            possible_workflows = self.controller.get_possible_workflows(issue)
+
+            issue_widget.set_workflow.addItems(possible_workflows)
+            issue_widget.set_workflow.setCurrentIndex(0)
+
+            issue_widget.set_workflow.activated[str].connect(
+                partial(
+                    self.controller.change_workflow,
+                    issue['workflow'],
+                    issue['issue_obj'],
+                )
             )
 
             # add issue item to list
