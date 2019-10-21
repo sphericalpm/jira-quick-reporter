@@ -25,7 +25,7 @@ class WorkflowWindow(CenterWindow):
         )
 
         # vbox elements description
-        assignee = QLabel('Assignee (eg. vsmith@spherical.pm):')
+        assignee = QLabel('Assignee (eg. vsmith):')
         original_estimate = QLabel('Original Estimate (eg. 13w 4d 12h):')
         remaining_estimate = QLabel('Remaining estimate (eg. 13w 4d 12h):')
 
