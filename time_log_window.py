@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from PyQt5.QtCore import QEvent
 from PyQt5.QtWidgets import (
     QPushButton,
     QLineEdit,
@@ -8,7 +9,6 @@ from PyQt5.QtWidgets import (
     QTextEdit,
     QRadioButton
 )
-from PyQt5.QtCore import QEvent
 
 from center_window import CenterWindow
 from config import QSS

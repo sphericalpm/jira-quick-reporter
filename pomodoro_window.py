@@ -1,5 +1,7 @@
 import os
 
+from PyQt5.QtCore import QTimer, QTime, Qt, QSettings
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtMultimedia import QSound
 from PyQt5.QtWidgets import (
     QWidget,
@@ -15,8 +17,6 @@ from PyQt5.QtWidgets import (
     QAction,
     QSlider
 )
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import QTimer, QTime, Qt, QSettings
 
 from center_window import CenterWindow
 from config import (
@@ -36,7 +36,7 @@ class BreakDialog(QDialog):
         super(BreakDialog, self).__init__()
         self.setWindowTitle('Break')
         self.cur_break = cur_break
-        self.another_break = SHORT_BREAK if self.cur_break is LONG_BREAK else LONG_BREAK
+        self.another_break = SHORT_BREAK if self.cur_break == LONG_BREAK else LONG_BREAK
         self.main_box = QVBoxLayout()
         self.setLayout(self.main_box)
         self.message_label = QLabel(
@@ -268,7 +268,7 @@ class PomodoroWindow(CenterWindow):
                 os.remove(self.LOG_PATH)
 
     def update_time_from_settings(self, minutes, time_name):
-        if self.current_time_name is not time_name:
+        if self.current_time_name != time_name:
             self.time_dict[time_name].setHMS(0, minutes, 0)
         elif not self.is_active_timer:
             self.time_dict[time_name].setHMS(0, minutes, 0)
@@ -312,7 +312,7 @@ class PomodoroWindow(CenterWindow):
         else:
             self.stop_timer()
             QSound.play(RING_SOUND_PATH)
-            if self.current_time_name is not POMODORO:
+            if self.current_time_name != POMODORO:
                 self.tray_icon.showMessage(
                     'Pomodoro',
                     'Your break is over',
@@ -361,7 +361,7 @@ class PomodoroWindow(CenterWindow):
         self.pomodoros_box.addWidget(label)
 
     def clear_pomodoros(self):
-        for i in range(self.pomodoros_box.count()):
+        for _ in range(self.pomodoros_box.count()):
             self.pomodoros_box.itemAt(0).widget().setParent(None)
 
     def toggle_timer(self):
@@ -376,13 +376,13 @@ class PomodoroWindow(CenterWindow):
 
     def log_time(self):
         self.logged_time = self.logged_time.addSecs(60)
-        with open(self.LOG_PATH, 'w+') as log_file:
+        with open(self.LOG_PATH, 'w') as log_file:
             log_file.write(self.logged_time.toString('h:m'))
 
     def start_timer(self):
         self.is_active_timer = True
         # change style before a break
-        if self.current_time_name is not POMODORO:
+        if self.current_time_name != POMODORO:
             self.issue_label.setObjectName('issue_label_break')
             self.issue_label.setStyleSheet('issue_label_break')
             self.pbar.setObjectName('break')
@@ -409,7 +409,7 @@ class PomodoroWindow(CenterWindow):
         self.action_start_timer.setText('Start')
         self.logwork_btn.setEnabled(True)
         self.action_log_work.setEnabled(True)
-        if self.current_time_name is not POMODORO:
+        if self.current_time_name != POMODORO:
             self.stop_btn.show()
             self.action_start_timer.setEnabled(True)
 
@@ -453,7 +453,7 @@ class PomodoroWindow(CenterWindow):
         """
 
         # if pomodoro time's up
-        if self.current_time_name is POMODORO:
+        if self.current_time_name == POMODORO:
             self.pomodoros_count += 1
             self.set_pomodoro_mark()
 
@@ -469,7 +469,7 @@ class PomodoroWindow(CenterWindow):
 
             # get break name (short, long or skip) from dialog
             self.current_time_name = dialog.exec()
-            if self.current_time_name is not POMODORO:
+            if self.current_time_name != POMODORO:
                 self.time = self.time_dict[self.current_time_name]
                 self.update_timer()
                 self.start_timer()

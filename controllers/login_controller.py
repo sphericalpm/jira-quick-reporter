@@ -1,14 +1,14 @@
 import os
 import stat
 
-from jira import JIRAError
-from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication
+from jira import JIRAError
 
 from config import CREDENTIALS_PATH
-from login_window import LoginWindow
 from controllers.main_controller import MainController
 from jiraclient import JiraClient
+from login_window import LoginWindow
 
 
 class LoginController:

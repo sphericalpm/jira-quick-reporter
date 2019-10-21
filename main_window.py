@@ -1,3 +1,8 @@
+from functools import partial
+
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QIcon
+from PyQt5.QtMultimedia import QSound
 from PyQt5.QtWidgets import (
     QWidget,
     QListWidget,
@@ -12,10 +17,6 @@ from PyQt5.QtWidgets import (
     QAction,
     QSizePolicy
 )
-from PyQt5.QtMultimedia import QSound
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt, QTimer
-from functools import partial
 
 from center_window import CenterWindow
 from config import (
@@ -152,10 +153,10 @@ class MainWindow(CenterWindow):
         self.tray_icon.setContextMenu(self.tray_menu)
         self.tray_icon.show()
         self.timer = QTimer()
-        self.timer.timeout.connect(self.notification_to_log_wokr)
+        self.timer.timeout.connect(self.notification_to_log_work)
         self.timer.start(LOG_TIME)
 
-    def notification_to_log_wokr(self):
+    def notification_to_log_work(self):
         QSound.play(RING_SOUND_PATH)
         self.tray_icon.showMessage(
             '1 hour had passed',
@@ -167,7 +168,7 @@ class MainWindow(CenterWindow):
     def show_issues_list(self, issues_list, load_more=False):
         # clear listbox
         if not load_more:
-            for i in range(self.list_box.count()):
+            for _ in range(self.list_box.count()):
                 self.list_box.itemAt(0).widget().setParent(None)
             self.issue_list_widget.clear()
 

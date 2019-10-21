@@ -1,3 +1,5 @@
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (
     QLabel,
     QHBoxLayout,
@@ -6,8 +8,6 @@ from PyQt5.QtWidgets import (
     QCheckBox,
     QFormLayout
 )
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt
 
 from center_window import CenterWindow
 from config import QSS, LOGO_PATH

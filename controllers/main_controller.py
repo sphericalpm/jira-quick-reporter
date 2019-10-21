@@ -1,16 +1,12 @@
 import os
 
-from PyQt5.QtWidgets import (
-    QMessageBox
-)
+from PyQt5.QtWidgets import QMessageBox
 from jira import JIRAError
 
+from config import LOG_TIME, DEFAULT_ISSUES_COUNT
 from main_window import MainWindow
-from time_log_window import TimeLogWindow
 from pomodoro_window import PomodoroWindow
-from config import LOG_TIME
-
-DEFAULT_ISSUES_COUNT = 50
+from time_log_window import TimeLogWindow
 
 
 class MainController:
@@ -92,16 +88,15 @@ class MainController:
         else:
             with open(self.pomodoro_view.LOG_PATH, 'r') as log_file:
                 try:
-                    h, m = log_file.readline().split(':')
+                    hours, minutes = log_file.readline().split(':')
                 except ValueError:
-                    print('exc')
-                    h = m = '0'
-                if h == '0':
-                    params.append('{}m'.format(m))
-                elif m == '0':
-                    params.append('{}h'.format(h))
+                    hours = minutes = '0'
+                if hours == '0':
+                    params.append('{}m'.format(minutes))
+                elif minutes == '0':
+                    params.append('{}h'.format(hours))
                 else:
-                    params.append('{}h {}m'.format(h, m))
+                    params.append('{}h {}m'.format(hours, minutes))
         self.open_timelog_window(*params)
 
     def open_timelog_window(self, issue_key, time_spent=None):
