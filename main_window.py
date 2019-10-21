@@ -15,7 +15,8 @@ from PyQt5.QtWidgets import (
     QSystemTrayIcon,
     QMenu,
     QAction,
-    QSizePolicy
+    QSizePolicy,
+    QComboBox
 )
 
 from center_window import CenterWindow
@@ -42,10 +43,13 @@ class QCustomWidget(QWidget):
         self.remaining_label = QLabel()
         self.remaining_label.setObjectName('remaining_label')
 
+        self.set_workflow = QComboBox(self)
+
         timetracking_grid = QGridLayout()
         timetracking_grid.addWidget(self.estimated_label, 0, 0)
         timetracking_grid.addWidget(self.spent_label, 0, 1)
         timetracking_grid.addWidget(self.remaining_label, 0, 2)
+        timetracking_grid.addWidget(self.set_workflow, 0, 3, Qt.AlignRight)
 
         # create labels for issue key and title
         self.issue_key_label = QLabel()
@@ -111,7 +115,6 @@ class MainWindow(CenterWindow):
 
         self.setStyleSheet(QSS)
         self.controller = controller
-        self.pomodoro_window = None
         self.selected_issue_key = None
         self.resize(800, 450)
         self.setWindowTitle('JIRA Quick Reporter')
@@ -203,6 +206,20 @@ class MainWindow(CenterWindow):
                 partial(
                     self.controller.open_pomodoro_window,
                     issue['key'], issue['title']
+                )
+            )
+
+            # add workflow statuses to dropdown
+            possible_workflows = self.controller.get_possible_workflows(issue)
+
+            issue_widget.set_workflow.addItems(possible_workflows)
+            issue_widget.set_workflow.setCurrentIndex(0)
+
+            issue_widget.set_workflow.activated[str].connect(
+                partial(
+                    self.controller.change_workflow,
+                    issue['workflow'],
+                    issue['issue_obj'],
                 )
             )
 

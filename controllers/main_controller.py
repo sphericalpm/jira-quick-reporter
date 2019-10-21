@@ -13,11 +13,14 @@ class MainController:
     def __init__(self, jira_client):
         self.jira_client = jira_client
         self.issues_count = 0
-        self.view = MainWindow(self)
         self.pomodoro_view = None
         self.time_log_view = None
+
+    def show(self):
+        self.view = MainWindow(self)
         self.refresh_issue_list()
         self.view.show()
+
 
     def get_issue_list(self):
         issues_list = []
@@ -31,11 +34,15 @@ class MainController:
 
         # create list of issues
         for issue in issues:
-            issues_dict = {
-                'title': issue.fields.summary,
-                'key': issue.key,
-                'link': issue.permalink()
-            }
+            workflow = self.jira_client.client.transitions(issue)
+            possible_workflow = {status['name']: status['id'] for status in workflow}
+            issues_dict = dict(
+                title=issue.fields.summary,
+                key=issue.key,
+                link=issue.permalink(),
+                issue_obj=issue,
+                workflow=possible_workflow
+            )
 
             # if the task was logged
             if issue.fields.timetracking.raw:
@@ -60,6 +67,34 @@ class MainController:
         issues_list = self.get_issue_list()
         self.view.show_issues_list(issues_list, load_more)
 
+    def change_workflow(self, workflow, issue_obj, status):
+        status_id = workflow.get(status)
+
+        try:
+            if status_id:
+                self.jira_client.client.transition_issue(
+                    issue_obj,
+                    transition=status_id
+                )
+
+        except JIRAError as e:
+            QMessageBox.about(self.view, 'Error', e.text)
+
+        finally:
+            self.refresh_issue_list()
+
+    def get_possible_workflows(self, issue):
+        current_workflow = issue['issue_obj'].fields.status
+        possible_workflows = list(issue['workflow'].keys())
+
+        if current_workflow.name != 'Backlog':  # when it's 'Backlog' status,
+            # JIRA API provides possibility to change it to 'Return to backlog'.
+            # Cause it's the same that we already have we won't show it one more time
+            possible_workflows.insert(0, current_workflow.name)  # insert because of
+            # setCurrentIndex() can have only positive value
+
+        return possible_workflows
+
     def open_pomodoro_window(self, issue_key, issue_title):
         if self.pomodoro_view:
             if self.pomodoro_view.issue_key == issue_key:
@@ -74,12 +109,6 @@ class MainController:
         )
         self.pomodoro_view.show()
         self.pomodoro_view.log_work_if_file_exists()
-
-    def quit_app(self):
-        if self.pomodoro_view:
-            if not self.pomodoro_view.quit():
-                return
-        exit()
 
     def open_timelog_from_pomodoro(self, issue_key):
         params = [issue_key]
@@ -164,3 +193,9 @@ class MainController:
 
         except JIRAError as e:
             QMessageBox.about(self.time_log_view, "Error", e.text)
+
+    def quit_app(self):
+        if self.pomodoro_view:
+            if not self.pomodoro_view.quit():
+                return
+        exit()

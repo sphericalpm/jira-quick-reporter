@@ -12,7 +12,7 @@ from login_window import LoginWindow
 
 
 class LoginController:
-    def __init__(self):
+    def show(self):
         self.view = LoginWindow(self)
         self.view.show()
         self.jira_client = None
@@ -45,5 +45,6 @@ class LoginController:
         os.chmod(CREDENTIALS_PATH, stat.S_IRUSR | stat.S_IWUSR)
 
     def open_main_window(self):
-        MainController(self.jira_client)
+        self.main_controller = MainController(self.jira_client)
+        self.main_controller.show()
         self.view.close()
