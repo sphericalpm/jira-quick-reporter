@@ -210,16 +210,15 @@ class MainWindow(CenterWindow):
             )
 
             # add workflow statuses to dropdown
-            possible_workflows = self.controller.get_possible_workflows(issue)
 
-            issue_widget.set_workflow.addItems(possible_workflows)
+            issue_widget.set_workflow.addItems(issue['workflow'])
             issue_widget.set_workflow.setCurrentIndex(0)
 
             issue_widget.set_workflow.activated[str].connect(
                 partial(
                     self.controller.change_workflow,
-                    issue['workflow'],
-                    issue['issue_obj'],
+                    issue['key'],
+                    issue['workflow'][0]
                 )
             )
 

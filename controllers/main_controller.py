@@ -13,11 +13,11 @@ class MainController:
     def __init__(self, jira_client):
         self.jira_client = jira_client
         self.issues_count = 0
+        self.view = MainWindow(self)
         self.pomodoro_view = None
         self.time_log_view = None
 
     def show(self):
-        self.view = MainWindow(self)
         self.refresh_issue_list()
         self.view.show()
 
@@ -33,23 +33,20 @@ class MainController:
 
         # create list of issues
         for issue in issues:
-            workflow = self.jira_client.client.transitions(issue)
-            possible_workflow = {status['name']: status['id'] for status in workflow}
             issues_dict = dict(
                 title=issue.fields.summary,
                 key=issue.key,
                 link=issue.permalink(),
-                issue_obj=issue,
-                workflow=possible_workflow
+                workflow=self.jira_client.get_possible_workflows(issue)
             )
 
             # if the task was logged
             if issue.fields.timetracking.raw:
-                timetracking = issue.fields.timetracking
+                timetracking = issue.fields.timetracking.raw
                 issues_dict.update({
-                    'estimated': getattr(timetracking, 'originalEstimate', '0m'),
-                    'logged': getattr(timetracking, 'timeSpent', '0m'),
-                    'remaining': getattr(timetracking, 'remainingEstimate', '0m'),
+                    'estimated': timetracking.get('originalEstimate', '0m'),
+                    'logged': timetracking.get('timeSpent', '0m'),
+                    'remaining': timetracking.get('remainingEstimate', '0m'),
                 })
             else:
                 issues_dict.update({
@@ -66,13 +63,18 @@ class MainController:
         issues_list = self.get_issue_list()
         self.view.show_issues_list(issues_list, load_more)
 
-    def change_workflow(self, workflow, issue_obj, status):
-        status_id = workflow.get(status)
+    def change_workflow(self, issue_key, current_status, status):
+        if current_status == status:
+            return
+        status_id = self.jira_client.client.find_transitionid_by_name(
+            issue_key,
+            status
+        )
 
         try:
             if status_id:
                 self.jira_client.client.transition_issue(
-                    issue_obj,
+                    issue_key,
                     transition=status_id
                 )
 
@@ -81,18 +83,6 @@ class MainController:
 
         finally:
             self.refresh_issue_list()
-
-    def get_possible_workflows(self, issue):
-        current_workflow = issue['issue_obj'].fields.status
-        possible_workflows = list(issue['workflow'].keys())
-
-        if current_workflow.name != 'Backlog':  # when it's 'Backlog' status,
-            # JIRA API provides possibility to change it to 'Return to backlog'.
-            # Cause it's the same that we already have we won't show it one more time
-            possible_workflows.insert(0, current_workflow.name)  # insert because of
-            # setCurrentIndex() can have only positive value
-
-        return possible_workflows
 
     def open_pomodoro_window(self, issue_key, issue_title):
         if self.pomodoro_view:
