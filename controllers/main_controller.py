@@ -7,6 +7,7 @@ from config import LOG_TIME, DEFAULT_ISSUES_COUNT
 from main_window import MainWindow
 
 from controllers.workflow_controller import WorkflowController
+from .workflow_controller import CompleteWorkflowController, CompleteWorkflowController
 from pomodoro_window import PomodoroWindow
 from time_log_window import TimeLogWindow
 
@@ -82,12 +83,18 @@ class MainController:
                 except JIRAError as e:
                     QMessageBox.about(self.view, 'Error', e.text)
 
-            elif status == 'Complete':
-            # we need complete workflow window
-                pass  # TODO: make big workflow window
+            elif status == 'Complete' or 'Declare done':
+                self.complete_workflow_controller = CompleteWorkflowController(
+                    self.jira_client, issue_obj, status, self
+                )
+                existing_estimate = self.jira_client.get_remaining_estimate(issue_obj)
+                self.complete_workflow_controller.show()
+                self.complete_workflow_controller.view.set_existing_estimate(existing_estimate)
 
             else:
-                self.workflow_controller = WorkflowController(self.jira_client, issue_obj, status, self)
+                self.workflow_controller = WorkflowController(
+                    self.jira_client, issue_obj, status, self
+                )
                 self.workflow_controller.show()
                 try:
                     self.jira_client.client.transition_issue(
@@ -146,13 +153,10 @@ class MainController:
 
     def open_timelog_window(self, issue_key, time_spent=None):
         issue = self.jira_client.issue(issue_key)
-        self.time_log_view = TimeLogWindow(issue_key, time_spent)
+        self.time_log_view = TimeLogWindow(issue_key, time_spent, save_callback=self.save_issue_worklog)
         existing_estimate = self.jira_client.get_remaining_estimate(issue)
         self.time_log_view.set_existing_estimate(existing_estimate)
         self.time_log_view.show()
-        self.time_log_view.save_button.clicked.connect(
-            lambda: self.save_issue_worklog(issue_key)
-        )
 
     def save_issue_worklog(self, issue_key):
         """Save button event handler
