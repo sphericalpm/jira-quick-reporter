@@ -224,11 +224,17 @@ class MainWindow(CenterWindow):
 
             # add issue item to list
             issue_list_widget_item = QListWidgetItem(self.issue_list_widget)
+            issue_list_widget_item.setText(issue['key'])
             issue_list_widget_item.setSizeHint(issue_widget.sizeHint())
             self.issue_list_widget.addItem(issue_list_widget_item)
             self.issue_list_widget.setItemWidget(
                 issue_list_widget_item, issue_widget
             )
+
+    def set_workflow_current_state(self, issue_key):
+        item = self.issue_list_widget.findItems(issue_key, Qt.MatchExactly)[0]
+        custom_item = self.issue_list_widget.itemWidget(item)
+        custom_item.set_workflow.setCurrentIndex(0)
 
     def closeEvent(self, QCloseEvent):
         QCloseEvent.ignore()

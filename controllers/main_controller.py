@@ -1,12 +1,15 @@
 import os
 
-from PyQt5.QtWidgets import QMessageBox
+import requests
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QMessageBox, QApplication
 from jira import JIRAError
 
 from config import LOG_TIME, DEFAULT_ISSUES_COUNT
 from main_window import MainWindow
 from pomodoro_window import PomodoroWindow
 from time_log_window import TimeLogWindow
+from utils.decorators import catch_timeout_exception
 
 
 class MainController:
@@ -60,29 +63,47 @@ class MainController:
     def refresh_issue_list(self, load_more=False):
         if not load_more:
             self.issues_count = 0
-        issues_list = self.get_issue_list()
-        self.view.show_issues_list(issues_list, load_more)
+        try:
+            issues_list = self.get_issue_list()
+            self.view.show_issues_list(issues_list, load_more)
+        except (requests.exceptions.ConnectionError,
+                requests.exceptions.ReadTimeout):
+            QMessageBox.warning(
+                None,
+                'Connection error',
+                'Check your internet connection and try again'
+            )
 
     def change_workflow(self, issue_key, current_status, status):
         if current_status == status:
             return
-        status_id = self.jira_client.client.find_transitionid_by_name(
-            issue_key,
-            status
-        )
-
+        QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
-            if status_id:
-                self.jira_client.client.transition_issue(
-                    issue_key,
-                    transition=status_id
-                )
+            status_id = self.jira_client.client.find_transitionid_by_name(
+                issue_key,
+                status
+            )
 
-        except JIRAError as e:
-            QMessageBox.about(self.view, 'Error', e.text)
-
-        finally:
-            self.refresh_issue_list()
+            try:
+                if status_id:
+                    self.jira_client.client.transition_issue(
+                        issue_key,
+                        transition=status_id
+                    )
+                self.refresh_issue_list()
+                QApplication.restoreOverrideCursor()
+            except JIRAError as e:
+                QApplication.restoreOverrideCursor()
+                QMessageBox.about(self.view, 'Error', e.text)
+        except (requests.exceptions.ConnectionError,
+                requests.exceptions.ReadTimeout):
+            QApplication.restoreOverrideCursor()
+            QMessageBox.warning(
+                None,
+                'Connection error',
+                'Check your internet connection and try again'
+            )
+            self.view.set_workflow_current_state(issue_key)
 
     def open_pomodoro_window(self, issue_key, issue_title):
         if self.pomodoro_view:
@@ -117,6 +138,7 @@ class MainController:
                     params.append('{}h {}m'.format(hours, minutes))
         self.open_timelog_window(*params)
 
+    @catch_timeout_exception
     def open_timelog_window(self, issue_key, time_spent=None):
         issue = self.jira_client.issue(issue_key)
         self.time_log_view = TimeLogWindow(issue_key, time_spent)
@@ -127,6 +149,7 @@ class MainController:
             lambda: self.save_issue_worklog(issue_key)
         )
 
+    @catch_timeout_exception
     def save_issue_worklog(self, issue_key):
         """Save button event handler
         take user input values, save JIRAalues into Jira time tracking,

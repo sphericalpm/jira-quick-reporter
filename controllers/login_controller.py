@@ -1,8 +1,9 @@
 import os
 import stat
 
+import requests
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QMessageBox
 from jira import JIRAError
 
 from config import CREDENTIALS_PATH
@@ -31,6 +32,15 @@ class LoginController:
             self.view.set_error_to_label('The email or token is incorrect.')
         except UnicodeEncodeError:
             self.view.set_error_to_label('English letters only')
+
+        except (requests.exceptions.ConnectionError,
+                requests.exceptions.ReadTimeout):
+            QMessageBox.warning(
+                None,
+                'Connection error',
+                'Check your internet connection and try again'
+            )
+
         QApplication.restoreOverrideCursor()
 
     def remember_me(self, email, token):
