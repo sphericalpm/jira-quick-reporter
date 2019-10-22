@@ -16,7 +16,6 @@ class WorkflowWindow(CenterWindow):
         self.choosen_status = status
         self.controller = controller
         self.set_style()
-        self.center()
         self.resize(600, 450)
         self.setWindowTitle('{status}: {issue}'.format(
             status=self.choosen_status,
@@ -29,7 +28,7 @@ class WorkflowWindow(CenterWindow):
         original_estimate = QLabel('Original Estimate (eg. 13w 4d 12h):')
         remaining_estimate = QLabel('Remaining estimate (eg. 13w 4d 12h):')
 
-        comment = QLabel('Work Description:')
+        comment = QLabel('Comment:')
 
         self.assignee_line = QLineEdit('Me')
         self.original_estimate_line = QLineEdit(
