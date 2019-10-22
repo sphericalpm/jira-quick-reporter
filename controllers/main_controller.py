@@ -71,19 +71,31 @@ class MainController:
     def change_workflow(self, workflow, issue_obj, status):
         status_id = workflow.get(status)
 
-        if status_id and not status == 'Put on hold' and not status == 'Complete':
-            self.workflow_controller = WorkflowController(self.jira_client, issue_obj, status, self)
-            self.workflow_controller.show()
-            return
+        if status_id:
+            if status == 'Put on hold' or status == 'Select for development':
+            # we do not need to open workflow window with detail information
+                try:
+                    self.jira_client.client.transition_issue(
+                            issue_obj,
+                            transition=status_id
+                        )
+                except JIRAError as e:
+                    QMessageBox.about(self.view, 'Error', e.text)
 
-        elif status == 'Put on hold':
-            try:
-                self.jira_client.client.transition_issue(
-                        issue_obj,
-                        transition=status_id
-                    )
-            except JIRAError as e:
-                QMessageBox.about(self.view, 'Error', e.text)
+            elif status == 'Complete':
+            # we need complete workflow window
+                pass  # TODO: make big workflow window
+
+            else:
+                self.workflow_controller = WorkflowController(self.jira_client, issue_obj, status, self)
+                self.workflow_controller.show()
+                try:
+                    self.jira_client.client.transition_issue(
+                            issue_obj,
+                            transition=status_id
+                        )
+                except JIRAError as e:
+                    QMessageBox.about(self.view, 'Error', e.text)
 
         self.refresh_issue_list()
 
