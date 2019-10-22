@@ -4,7 +4,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 import json
 
-from workflow_window import WorkflowWindow
+from workflow_window import WorkflowWindow, CompleteWorflowWindow
 from config import CREDENTIALS_PATH, API_LINK_FOR_ACCOUNT_ID
 
 
@@ -83,3 +83,82 @@ class WorkflowController:
             QMessageBox.about(self.view, 'Error', e.text)
 
         self.view.close()
+
+
+class CompleteWorkflowController:
+    def __init__(self, jira_client, issue_obj, status, controller):
+        self.controller = controller
+        self.jira_client = jira_client
+        self.issue_obj = issue_obj
+        self.status = status
+
+    def show(self):
+        self.view = CompleteWorflowWindow(self, self.issue_obj, save_callback=self.save_click)
+        self.view.show()
+
+    def get_possible_resolutions(self, issue):
+        resolutions = self.jira_client.client.resolutions()
+        possible_resolutions = [resolution.name for resolution in resolutions]
+
+        return possible_resolutions
+
+    def save_click(self, issue_key):
+        issue = self.jira_client.issue(issue_key)
+        time_spent = self.view.time_spent_line.text()
+        start_date = self.view.date_start
+
+        if not start_date:
+            return
+        comment = self.view.work_description_line.toPlainText()
+        remaining_estimate = self.view.new_remaining_estimate
+
+        if not remaining_estimate:
+            log_work_params = dict()
+
+        elif remaining_estimate.get('name') == 'existing_estimate':
+            log_work_params = dict(
+                adjust_estimate='new',
+                new_estimate=remaining_estimate.get('value')
+            )
+        elif remaining_estimate.get('name') == 'set_new_estimate':
+            estimate = self.view.set_new_estimate_value.text()
+            log_work_params = dict(
+                adjust_estimate='new',
+                new_estimate=estimate
+            )
+        elif remaining_estimate.get('name') == 'reduce_estimate':
+            estimate = self.view.reduce_estimate_value.text()
+            log_work_params = dict(
+                adjust_estimate='manual',
+                new_estimate=estimate
+            )
+        else:
+            QMessageBox.about(
+                self.view,
+                'Error',
+                'something went wrong'
+            )
+            return
+        try:
+            self.jira_client.log_work(
+                issue,
+                time_spent,
+                start_date,
+                comment,
+                **log_work_params)
+
+            resolution = self.view.set_resolution.currentText()
+            resolutions = self.jira_client.client.resolutions()
+            possible_resolutions = {resolution.name: resolution.id for resolution in resolutions}
+            new_resolution = possible_resolutions[resolution]
+            self.jira_client.client.transition_issue(issue, new_resolution)
+
+            self.view.close()
+            self.view.timer.start(LOG_TIME)
+            self.view.tray_icon.showMessage(
+                'Saving...',
+                'Successfully saved',
+                msecs=200
+            )
+        except JIRAError as e:
+            QMessageBox.about(self.view, "Error", e.text)
