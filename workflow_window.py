@@ -4,9 +4,12 @@ from PyQt5.QtWidgets import (
     QGridLayout,
     QLabel,
     QTextEdit,
+    QRadioButton,
+    QComboBox
 )
-
+from PyQt5.QtCore import Qt
 from center_window import CenterWindow
+from time_log_window import TimeLogWindow
 
 
 class WorkflowWindow(CenterWindow):
@@ -60,3 +63,35 @@ class WorkflowWindow(CenterWindow):
 
         self.setLayout(vbox)
         self.save_button.clicked.connect(self.controller.save_click)
+
+
+class CompleteWorflowWindow(TimeLogWindow):
+    def __init__(self, controller, issue, save_callback=None):
+        self.controller = controller
+        self.issue = issue
+        super().__init__(issue, save_callback=save_callback)
+
+
+    def build_issue_form_vbox(self):
+        vbox = super().build_issue_form_vbox()
+
+        assignee = QLabel('Assignee (eg. vsmith):')
+        self.assignee_line = QLineEdit('Me')
+        vbox.addWidget(assignee)
+        vbox.addWidget(self.assignee_line)
+
+        fix_version = QLabel('Fix version:')
+        self.fix_version_line = QLineEdit('Ongoing')
+        vbox.addWidget(fix_version)
+        vbox.addWidget(self.fix_version_line)
+
+        resolution = QLabel('Resolution:')
+        vbox.addWidget(resolution)
+        self.set_resolution = QComboBox(self)
+        vbox.addWidget(self.set_resolution)
+
+        possible_resolutions = self.controller.get_possible_resolutions(self.issue)
+        self.set_resolution.addItems(possible_resolutions)
+        self.set_resolution.setCurrentIndex(0)
+
+        return vbox
