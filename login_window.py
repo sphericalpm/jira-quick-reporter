@@ -1,3 +1,5 @@
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (
     QLabel,
     QHBoxLayout,
@@ -6,23 +8,18 @@ from PyQt5.QtWidgets import (
     QCheckBox,
     QFormLayout
 )
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt
 
 from center_window import CenterWindow
-from config import QSS_PATH, LOGO_PATH
+from config import QSS, LOGO_PATH
 
 
 class LoginWindow(CenterWindow):
     def __init__(self, controller):
         super().__init__()
 
-        with open(QSS_PATH, 'r') as qss_file:
-            self.setStyleSheet(qss_file.read())
-
+        self.setStyleSheet(QSS)
         self.controller = controller
         self.resize(380, 200)
-        self.center()
         self.setWindowTitle('JIRA Quick Reporter')
         self.setWindowIcon(QIcon(LOGO_PATH))
         self.setMaximumSize(self.size())

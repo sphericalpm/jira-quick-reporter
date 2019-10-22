@@ -1,3 +1,8 @@
+from functools import partial
+
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QIcon
+from PyQt5.QtMultimedia import QSound
 from PyQt5.QtWidgets import (
     QWidget,
     QListWidget,
@@ -7,14 +12,20 @@ from PyQt5.QtWidgets import (
     QLabel,
     QPushButton,
     QGridLayout,
+    QSystemTrayIcon,
+    QMenu,
+    QAction,
+    QSizePolicy,
     QComboBox
 )
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt
-from functools import partial
 
 from center_window import CenterWindow
-from config import QSS_PATH, LOGO_PATH
+from config import (
+    QSS,
+    LOGO_PATH,
+    LOG_TIME,
+    RING_SOUND_PATH
+)
 
 
 class QCustomWidget(QWidget):
@@ -32,18 +43,13 @@ class QCustomWidget(QWidget):
         self.remaining_label = QLabel()
         self.remaining_label.setObjectName('remaining_label')
 
-        self.logwork_btn = QPushButton('Log work')
-        self.logwork_btn.setObjectName('logwork_btn')
-        self.logwork_btn.setMaximumSize(self.logwork_btn.size())
-
         self.set_workflow = QComboBox(self)
 
         timetracking_grid = QGridLayout()
         timetracking_grid.addWidget(self.estimated_label, 0, 0)
         timetracking_grid.addWidget(self.spent_label, 0, 1)
         timetracking_grid.addWidget(self.remaining_label, 0, 2)
-        timetracking_grid.addWidget(self.logwork_btn, 0, 3, Qt.AlignRight)
-        timetracking_grid.addWidget(self.set_workflow, 1, 3, Qt.AlignRight)
+        timetracking_grid.addWidget(self.set_workflow, 0, 3, Qt.AlignRight)
 
         # create labels for issue key and title
         self.issue_key_label = QLabel()
@@ -52,9 +58,26 @@ class QCustomWidget(QWidget):
         self.issue_title_label.setWordWrap(True)
         self.issue_key_label.setOpenExternalLinks(True)
 
+        self.hbox = QHBoxLayout()
+        self.issue_menu_btn = QPushButton('. . .')
+        self.issue_menu_btn.setObjectName('issue_menu_btn')
+        issue_menu = QMenu()
+        self.action_log_work = QAction('Log work', self)
+        self.action_pomodoro_timer = QAction('Pomodoro timer', self)
+        issue_menu.addAction(self.action_log_work)
+        issue_menu.addAction(self.action_pomodoro_timer)
+        self.issue_menu_btn.setMenu(issue_menu)
+
+        self.hbox.addWidget(self.issue_key_label, Qt.AlignLeft)
+        self.issue_key_label.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Fixed
+        )
+        self.issue_menu_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.hbox.addWidget(self.issue_menu_btn, Qt.AlignRight)
+
         # create main box layout
         vbox = QVBoxLayout()
-        vbox.addWidget(self.issue_key_label)
+        vbox.addLayout(self.hbox)
         vbox.addWidget(self.issue_title_label)
         vbox.addLayout(timetracking_grid)
         self.setLayout(vbox)
@@ -90,13 +113,10 @@ class MainWindow(CenterWindow):
     def __init__(self, controller):
         super().__init__()
 
-        with open(QSS_PATH, 'r') as qss_file:
-            self.setStyleSheet(qss_file.read())
-
+        self.setStyleSheet(QSS)
         self.controller = controller
         self.selected_issue_key = None
         self.resize(800, 450)
-        self.center()
         self.setWindowTitle('JIRA Quick Reporter')
         self.setWindowIcon(QIcon(LOGO_PATH))
 
@@ -123,10 +143,35 @@ class MainWindow(CenterWindow):
         self.refresh_btn.clicked.connect(self.controller.refresh_issue_list)
         self.btn_box.addWidget(self.refresh_btn, alignment=Qt.AlignRight)
 
+        self.tray_icon = QSystemTrayIcon(self)
+        self.tray_icon.setIcon(QIcon(LOGO_PATH))
+
+        self.tray_menu = QMenu()
+        self.action_open = QAction('Open JQR', self)
+        self.action_quit = QAction('Quit JQR', self)
+        self.tray_menu.addAction(self.action_open)
+        self.action_open.triggered.connect(self.show)
+        self.tray_menu.addAction(self.action_quit)
+        self.action_quit.triggered.connect(self.controller.quit_app)
+        self.tray_icon.setContextMenu(self.tray_menu)
+        self.tray_icon.show()
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.notification_to_log_work)
+        self.timer.start(LOG_TIME)
+
+    def notification_to_log_work(self):
+        QSound.play(RING_SOUND_PATH)
+        self.tray_icon.showMessage(
+            '1 hour had passed',
+            'Don\'t forget to log your work!',
+            msecs=2000
+        )
+        self.timer.start(LOG_TIME)
+
     def show_issues_list(self, issues_list, load_more=False):
         # clear listbox
         if not load_more:
-            for i in range(self.list_box.count()):
+            for _ in range(self.list_box.count()):
                 self.list_box.itemAt(0).widget().setParent(None)
             self.issue_list_widget.clear()
 
@@ -149,8 +194,19 @@ class MainWindow(CenterWindow):
                 issue['logged'],
                 issue['remaining']
             )
-            issue_widget.logwork_btn.clicked.connect(
-                partial(self.controller.open_timelog_window, issue['key'])
+
+            issue_widget.action_log_work.triggered.connect(
+                partial(
+                    self.controller.open_timelog_window,
+                    issue['key']
+                )
+            )
+
+            issue_widget.action_pomodoro_timer.triggered.connect(
+                partial(
+                    self.controller.open_pomodoro_window,
+                    issue['key'], issue['title']
+                )
             )
 
             # add workflow statuses to dropdown
@@ -174,3 +230,7 @@ class MainWindow(CenterWindow):
             self.issue_list_widget.setItemWidget(
                 issue_list_widget_item, issue_widget
             )
+
+    def closeEvent(self, QCloseEvent):
+        QCloseEvent.ignore()
+        self.hide()

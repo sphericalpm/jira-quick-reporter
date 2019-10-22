@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from PyQt5.QtCore import QEvent
 from PyQt5.QtWidgets import (
     QPushButton,
     QLineEdit,
@@ -8,26 +9,22 @@ from PyQt5.QtWidgets import (
     QTextEdit,
     QRadioButton
 )
-from PyQt5.QtCore import QEvent
 
 from center_window import CenterWindow
-from config import QSS_PATH
+from config import QSS
 
 
 class TimeLogWindow(CenterWindow):
-    def __init__(self, controller, issue_key):
+    def __init__(self, issue_key, time_spent=None):
         super().__init__()
-        self.controller = controller
         self.issue_key = issue_key
         # main window characteristics
-        with open(QSS_PATH, 'r') as qss_file:
-            self.setStyleSheet(qss_file.read())
+        self.setStyleSheet(QSS)
         self.resize(600, 450)
-        self.center()
         self.setWindowTitle('Log Work: {issue}'.format(issue=issue_key))
 
         # vbox elements description
-        time_spent = QLabel('Time Spent (eg. 3w 4d 12h):')
+        time_spent_label = QLabel('Time Spent (eg. 3w 4d 12h):')
         date_start = QLabel('Date Started (eg. 12-05-2019 13:15):')
 
         self.remaining_estimate = QLabel('Remaining estimate')
@@ -59,6 +56,8 @@ class TimeLogWindow(CenterWindow):
         work_description = QLabel('Work Description:')
 
         self.time_spent_line = QLineEdit()
+        if time_spent:
+            self.time_spent_line.setText(time_spent)
         self.date_start_line = QLineEdit(
             datetime.strftime(datetime.now(), '%d-%m-%Y %H:%M')
         )
@@ -72,7 +71,7 @@ class TimeLogWindow(CenterWindow):
         # add elements to box
         vbox = QGridLayout()
 
-        vbox.addWidget(time_spent)
+        vbox.addWidget(time_spent_label)
         vbox.addWidget(self.time_spent_line)
 
         vbox.addWidget(date_start)
@@ -91,9 +90,6 @@ class TimeLogWindow(CenterWindow):
         vbox.addWidget(self.save_button)
 
         self.setLayout(vbox)
-
-        # button settings, show window command
-        self.save_button.clicked.connect(self.controller.save_click)
 
     def set_existing_estimate(self, existing_estimate):
         self.existing_estimate.setText(
@@ -120,9 +116,6 @@ class TimeLogWindow(CenterWindow):
                     self.date_start_line.setObjectName('error_field')
                     self.date_start_line.setStyleSheet('error_field')
         return False
-
-    def comment(self):
-        return self.work_description_line.toPlainText()
 
     def radio_click(self):
         """ Check which radio button was pressed """

@@ -1,6 +1,7 @@
 from jira import JIRA
 from config import MAX_RETRIES
 
+
 class JiraClient:
     def __init__(self, email, token, server='https://spherical.atlassian.net'):
         if not email or not token:

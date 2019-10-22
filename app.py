@@ -13,6 +13,7 @@ from config import CREDENTIALS_PATH
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
 
     path = os.path.dirname(os.path.realpath(__file__))
 
