@@ -114,8 +114,7 @@ class MainController:
                 except JIRAError as e:
                     QMessageBox.about(self.view, 'Error', e.text)
 
-        self.refresh_issue_list()  # TODO: if it's complete workflow window
-        # it refreshes not in time when window closes
+        self.refresh_issue_list()
 
     def get_possible_workflows(self, issue):
         current_workflow = issue['issue_obj'].fields.status
@@ -202,6 +201,8 @@ class MainController:
             )
         elif remaining_estimate.get('name') == 'reduce_estimate':
             estimate = self.time_log_view.reduce_estimate_value.text()
+            print(estimate)
+
             log_work_params = dict(
                 adjust_estimate='manual',
                 new_estimate=estimate
@@ -213,6 +214,7 @@ class MainController:
                 'something went wrong'
             )
             return
+        # log_work_params = self.take_timelog_values(self, remaining_estimate)
         try:
             self.jira_client.log_work(
                 issue,
@@ -233,6 +235,37 @@ class MainController:
 
         except JIRAError as e:
             QMessageBox.about(self.time_log_view, "Error", e.text)
+
+    def take_timelog_values(self, remaining_estimate):
+        if not remaining_estimate:
+            log_work_params = dict()
+
+        elif remaining_estimate.get('name') == 'existing_estimate':
+            log_work_params = dict(
+                adjust_estimate='new',
+                new_estimate=remaining_estimate.get('value')
+            )
+        elif remaining_estimate.get('name') == 'set_new_estimate':
+            estimate = self.view.set_new_estimate_value.text()
+            log_work_params = dict(
+                adjust_estimate='new',
+                new_estimate=estimate
+            )
+        elif remaining_estimate.get('name') == 'reduce_estimate':
+            estimate = self.view.reduce_estimate_value.text()
+            log_work_params = dict(
+                adjust_estimate='manual',
+                new_estimate=estimate
+            )
+        else:
+            QMessageBox.about(
+                self.view,
+                'Error',
+                'something went wrong'
+            )
+            return
+
+        return log_work_params
 
     def quit_app(self):
         if self.pomodoro_view:
