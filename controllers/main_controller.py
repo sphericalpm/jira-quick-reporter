@@ -74,7 +74,7 @@ class MainController:
 
         if status_id:
             if status == 'Put on hold' or status == 'Select for development':
-            # we do not need to open workflow window with detail information
+                # we do not need to open workflow window with detail information
                 try:
                     self.jira_client.client.transition_issue(
                             issue_obj,
@@ -83,15 +83,19 @@ class MainController:
                 except JIRAError as e:
                     QMessageBox.about(self.view, 'Error', e.text)
 
-            elif status == 'Complete' or 'Declare done':
+            elif status == 'Complete' or status == 'Declare done':
+                # open complete workflow window
                 self.complete_workflow_controller = CompleteWorkflowController(
                     self.jira_client, issue_obj, status, self
                 )
                 existing_estimate = self.jira_client.get_remaining_estimate(issue_obj)
                 self.complete_workflow_controller.show()
-                self.complete_workflow_controller.view.set_existing_estimate(existing_estimate)
+                self.complete_workflow_controller.view.set_existing_estimate(
+                    existing_estimate
+                )
 
             else:
+                # open workflow window
                 self.workflow_controller = WorkflowController(
                     self.jira_client, issue_obj, status, self
                 )
@@ -104,7 +108,8 @@ class MainController:
                 except JIRAError as e:
                     QMessageBox.about(self.view, 'Error', e.text)
 
-        self.refresh_issue_list()
+        self.refresh_issue_list()  # TODO: if it's complete workflow window
+        # it refreshes not in time when window closes
 
     def get_possible_workflows(self, issue):
         current_workflow = issue['issue_obj'].fields.status
@@ -153,7 +158,11 @@ class MainController:
 
     def open_timelog_window(self, issue_key, time_spent=None):
         issue = self.jira_client.issue(issue_key)
-        self.time_log_view = TimeLogWindow(issue_key, time_spent, save_callback=self.save_issue_worklog)
+        self.time_log_view = TimeLogWindow(
+            issue_key,
+            time_spent,
+            save_callback=self.save_issue_worklog
+        )
         existing_estimate = self.jira_client.get_remaining_estimate(issue)
         self.time_log_view.set_existing_estimate(existing_estimate)
         self.time_log_view.show()
