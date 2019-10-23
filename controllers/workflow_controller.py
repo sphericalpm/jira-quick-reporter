@@ -32,6 +32,11 @@ class WorkflowController:
             self.jira_client.client.add_comment(self.issue_obj, comment)
 
         try:
+            self.controller.view.tray_icon.showMessage(
+                'Saving...',
+                'Please wait',
+                msecs=200
+            )
             self.issue_obj.update(
                 fields={
                     'timetracking': {
@@ -89,6 +94,12 @@ class CompleteWorkflowController:
         comment = self.view.work_description_line.toPlainText()
         remaining_estimate = self.view.new_remaining_estimate
         assignee = self.view.assignee_line.text()
+
+        self.controller.view.tray_icon.showMessage(
+            'Saving...',
+            'Please wait',
+            msecs=250
+        )
 
         if not start_date:
             return
@@ -166,4 +177,5 @@ class CompleteWorkflowController:
             QMessageBox.about(self.view, "Error", e.text)
             return
 
+        self.controller.refresh_issue_list()
         self.view.close()
