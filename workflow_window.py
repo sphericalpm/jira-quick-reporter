@@ -83,7 +83,7 @@ class CompleteWorflowWindow(TimeLogWindow):
         self.set_resolution = QComboBox(self)
         vbox.addWidget(self.set_resolution)
 
-        possible_resolutions = self.controller.get_possible_resolutions(self.issue)
+        possible_resolutions = self.controller.jira_client.get_possible_resolutions(self.issue)
         self.set_resolution.addItems(possible_resolutions)
         self.set_resolution.setCurrentIndex(0)
 
@@ -92,7 +92,7 @@ class CompleteWorflowWindow(TimeLogWindow):
         self.set_version = QComboBox(self)
         vbox.addWidget(self.set_version)
 
-        possible_versions = self.controller.get_possible_versions(self.issue)
+        possible_versions = self.controller.jira_client.get_possible_versions(self.issue)
         self.set_version.addItems(possible_versions)
         self.set_version.setCurrentIndex(0)
         return vbox

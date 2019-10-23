@@ -40,6 +40,27 @@ class JiraClient:
             comment=comment
         )
 
+    def get_possible_resolutions(self, issue):
+        resolutions = self.client.resolutions()
+        possible_resolutions = [resolution.name for resolution in resolutions]
+
+        return possible_resolutions
+
+    def get_possible_versions(self, issue):
+        all_projects = self.client.projects()
+        current_project_key = issue.key.split('-')[0]
+
+        for id, project in enumerate(all_projects):
+            if project.key == current_project_key:
+                current_project_id = id
+
+        versions = self.client.project_versions(
+            all_projects[current_project_id]
+        )
+        possible_versions = [version.name for version in versions]
+
+        return possible_versions
+
     @staticmethod
     def get_remaining_estimate(issue):
         try:
