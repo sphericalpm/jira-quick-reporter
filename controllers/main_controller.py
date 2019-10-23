@@ -83,6 +83,12 @@ class MainController:
                 except JIRAError as e:
                     QMessageBox.about(self.view, 'Error', e.text)
 
+                self.view.tray_icon.showMessage(
+                    'Saving...',
+                    'Please wait',
+                    msecs=100
+                )
+
             elif status == 'Complete' or status == 'Declare done':
                 # open complete workflow window
                 self.complete_workflow_controller = CompleteWorkflowController(
@@ -91,7 +97,7 @@ class MainController:
                 existing_estimate = self.jira_client.get_remaining_estimate(issue_obj)
                 self.complete_workflow_controller.show()
                 self.complete_workflow_controller.view.set_existing_estimate(
-                    existing_estimate
+                    existing_estimate,
                 )
 
             else:
