@@ -9,8 +9,6 @@ RING_SOUND_PATH = os.path.join(STATICDIR, 'ring.wav')
 LOGO_PATH = os.path.join(STATICDIR, 'logo.png')
 LOGGED_TIME_DIR = os.path.join(BASEDIR, 'log')
 
-API_LINK_FOR_ACCOUNT_ID = "https://spherical.atlassian.net/rest/api/3/user/bulk/migration?username={}"
-
 with open(QSS_PATH, 'r') as qss_file:
     QSS = qss_file.read()
 
