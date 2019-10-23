@@ -88,12 +88,12 @@ class CompleteWorkflowController:
         return possible_versions
 
     def save_click(self, issue_key):
-        issue = self.jira_client.issue(issue_key)
         time_spent = self.view.time_spent_line.text()
         start_date = self.view.date_start
         comment = self.view.work_description_line.toPlainText()
         remaining_estimate = self.view.new_remaining_estimate
         assignee = self.view.assignee_line.text()
+        log_work_params = self.take_timelog_values(remaining_estimate)
 
         self.controller.view.tray_icon.showMessage(
             'Saving...',
@@ -104,7 +104,6 @@ class CompleteWorkflowController:
         if not start_date:
             return
 
-        # change assignee
         if assignee != "Me":
             try:
                 self.issue_obj.update(assignee={'name': assignee})
@@ -112,7 +111,44 @@ class CompleteWorkflowController:
                 QMessageBox.about(self.view, 'Error', e.text)
                 return
 
-        # take timelog values
+        try:
+            # save timelog
+            self.jira_client.log_work(
+                self.issue_obj,
+                time_spent,
+                start_date,
+                comment,
+                **log_work_params)
+        except JIRAError as e:
+            QMessageBox.about(self.view, "Error", e.text)
+            return
+
+        try:
+            # change resolution
+            resolution = self.view.set_resolution.currentText()
+            self.jira_client.client.transition_issue(
+                self.issue_obj,
+                transition=self.status,
+                resolution={
+                        'name': resolution,
+                }
+            )
+        except JIRAError as e:
+            QMessageBox.about(self.view, "Error", e.text)
+            return
+
+        try:
+            # save version
+            version = self.view.set_version.currentText()
+            self.issue_obj.update(fields={'fixVersions': [{'name': version}]})
+        except JIRAError as e:
+            QMessageBox.about(self.view, "Error", e.text)
+            return
+
+        self.controller.refresh_issue_list()
+        self.view.close()
+
+    def take_timelog_values(self, remaining_estimate):
         if not remaining_estimate:
             log_work_params = dict()
 
@@ -140,42 +176,5 @@ class CompleteWorkflowController:
                 'something went wrong'
             )
             return
-        try:
-            # save timelog
-            self.jira_client.log_work(
-                issue,
-                time_spent,
-                start_date,
-                comment,
-                **log_work_params)
 
-        except JIRAError as e:
-            QMessageBox.about(self.view, "Error", e.text)
-            return
-
-        try:
-            # change resolution
-            resolution = self.view.set_resolution.currentText()
-            self.jira_client.client.transition_issue(
-                self.issue_obj,
-                transition=self.status,
-                resolution={
-                        'name': resolution,
-                }
-            )
-
-        except JIRAError as e:
-            QMessageBox.about(self.view, "Error", e.text)
-            return
-
-        try:
-            # save version
-            version = self.view.set_version.currentText()
-            self.issue_obj.update(fields={'fixVersions': [{'name': version}]})
-
-        except JIRAError as e:
-            QMessageBox.about(self.view, "Error", e.text)
-            return
-
-        self.controller.refresh_issue_list()
-        self.view.close()
+        return log_work_params
