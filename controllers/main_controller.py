@@ -7,12 +7,13 @@ from config import LOG_TIME, DEFAULT_ISSUES_COUNT
 from main_window import MainWindow
 
 from controllers.workflow_controller import WorkflowController
-from .workflow_controller import CompleteWorkflowController, CompleteWorkflowController
+from .workflow_controller import CompleteWorkflowController
+from .mixins import TimeLogMixin
 from pomodoro_window import PomodoroWindow
 from time_log_window import TimeLogWindow
 
 
-class MainController:
+class MainController(TimeLogMixin):
     def __init__(self, jira_client):
         self.jira_client = jira_client
         self.issues_count = 0
@@ -185,36 +186,7 @@ class MainController:
             return
         comment = self.time_log_view.work_description_line.toPlainText()
         remaining_estimate = self.time_log_view.new_remaining_estimate
-
-        if not remaining_estimate:
-            log_work_params = dict()
-        elif remaining_estimate.get('name') == 'existing_estimate':
-            log_work_params = dict(
-                adjust_estimate='new',
-                new_estimate=remaining_estimate.get('value')
-            )
-        elif remaining_estimate.get('name') == 'set_new_estimate':
-            estimate = self.time_log_view.set_new_estimate_value.text()
-            log_work_params = dict(
-                adjust_estimate='new',
-                new_estimate=estimate
-            )
-        elif remaining_estimate.get('name') == 'reduce_estimate':
-            estimate = self.time_log_view.reduce_estimate_value.text()
-            print(estimate)
-
-            log_work_params = dict(
-                adjust_estimate='manual',
-                new_estimate=estimate
-            )
-        else:
-            QMessageBox.about(
-                self.time_log_view,
-                'Error',
-                'something went wrong'
-            )
-            return
-        # log_work_params = self.take_timelog_values(self, remaining_estimate)
+        log_work_params = self.take_timelog_values(remaining_estimate, self.time_log_view)
         try:
             self.jira_client.log_work(
                 issue,
@@ -235,37 +207,6 @@ class MainController:
 
         except JIRAError as e:
             QMessageBox.about(self.time_log_view, "Error", e.text)
-
-    def take_timelog_values(self, remaining_estimate):
-        if not remaining_estimate:
-            log_work_params = dict()
-
-        elif remaining_estimate.get('name') == 'existing_estimate':
-            log_work_params = dict(
-                adjust_estimate='new',
-                new_estimate=remaining_estimate.get('value')
-            )
-        elif remaining_estimate.get('name') == 'set_new_estimate':
-            estimate = self.view.set_new_estimate_value.text()
-            log_work_params = dict(
-                adjust_estimate='new',
-                new_estimate=estimate
-            )
-        elif remaining_estimate.get('name') == 'reduce_estimate':
-            estimate = self.view.reduce_estimate_value.text()
-            log_work_params = dict(
-                adjust_estimate='manual',
-                new_estimate=estimate
-            )
-        else:
-            QMessageBox.about(
-                self.view,
-                'Error',
-                'something went wrong'
-            )
-            return
-
-        return log_work_params
 
     def quit_app(self):
         if self.pomodoro_view:
