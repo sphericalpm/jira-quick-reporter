@@ -6,9 +6,11 @@ from jira import JIRAError
 from config import LOG_TIME, DEFAULT_ISSUES_COUNT
 from main_window import MainWindow
 
-from controllers.workflow_controller import WorkflowController
-from .workflow_controller import CompleteWorkflowController
-from .mixins import TimeLogMixin
+from controllers.workflow_controller import (
+    WorkflowController,
+    CompleteWorkflowController
+)
+from controllers.mixins import TimeLogMixin
 from pomodoro_window import PomodoroWindow
 from time_log_window import TimeLogWindow
 

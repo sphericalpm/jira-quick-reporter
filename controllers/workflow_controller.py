@@ -22,14 +22,14 @@ class WorkflowController:
         remaining_estimate = self.view.remaining_estimate_line.text()
         comment = self.view.comment_line.toPlainText()
 
-        if assignee != "Me":
+        if assignee != 'Me':
             try:
                 self.issue_obj.update(assignee={'name': assignee})
             except JIRAError as e:
                 QMessageBox.about(self.view, 'Error', e.text)
                 return
 
-        if comment != "":
+        if comment:
             self.jira_client.client.add_comment(self.issue_obj, comment)
 
         try:
