@@ -4,10 +4,9 @@ from PyQt5.QtWidgets import (
     QGridLayout,
     QLabel,
     QTextEdit,
-    QRadioButton,
     QComboBox
 )
-from PyQt5.QtCore import Qt
+
 from center_window import CenterWindow
 from time_log_window import TimeLogWindow
 
@@ -71,7 +70,6 @@ class CompleteWorflowWindow(TimeLogWindow):
         self.issue = issue
         super().__init__(issue, save_callback=save_callback)
 
-
     def build_issue_form_vbox(self):
         vbox = super().build_issue_form_vbox()
 
@@ -79,11 +77,6 @@ class CompleteWorflowWindow(TimeLogWindow):
         self.assignee_line = QLineEdit('Me')
         vbox.addWidget(assignee)
         vbox.addWidget(self.assignee_line)
-
-        fix_version = QLabel('Fix version:')
-        self.fix_version_line = QLineEdit('Ongoing')
-        vbox.addWidget(fix_version)
-        vbox.addWidget(self.fix_version_line)
 
         resolution = QLabel('Resolution:')
         vbox.addWidget(resolution)
@@ -94,4 +87,12 @@ class CompleteWorflowWindow(TimeLogWindow):
         self.set_resolution.addItems(possible_resolutions)
         self.set_resolution.setCurrentIndex(0)
 
+        fix_versions = QLabel('Fix versions:')
+        vbox.addWidget(fix_versions)
+        self.set_version = QComboBox(self)
+        vbox.addWidget(self.set_version)
+
+        possible_versions = self.controller.get_possible_versions(self.issue)
+        self.set_version.addItems(possible_versions)
+        self.set_version.setCurrentIndex(0)
         return vbox
