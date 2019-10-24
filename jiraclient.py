@@ -18,7 +18,7 @@ class JiraClient:
     def get_issues(self, start_at):
         return self.client.search_issues(
                 'assignee = currentUser()',
-                fields='key, summary, timetracking, status',
+                fields='key, summary, timetracking, status, assignee',
                 startAt=start_at
         )
 
