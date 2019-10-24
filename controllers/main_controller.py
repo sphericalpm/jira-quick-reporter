@@ -5,7 +5,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMessageBox, QApplication
 from jira import JIRAError
 
-from config import LOG_TIME, DEFAULT_ISSUES_COUNT
+from config import LOG_TIME, ISSUES_COUNT, REFRESH_TIME
 from main_window import MainWindow
 from pomodoro_window import PomodoroWindow
 from time_log_window import TimeLogWindow
@@ -19,60 +19,126 @@ class MainController:
         self.view = MainWindow(self)
         self.pomodoro_view = None
         self.time_log_view = None
+        self.current_issues = {}
 
     def show(self):
         self.refresh_issue_list()
         self.view.show()
 
-    def get_issue_list(self):
-        issues_list = []
+    def load_more_issues(self):
+        new_issues_list = []
         issues = self.jira_client.get_issues(self.issues_count)
-        current_issues_count = len(issues)
-        self.issues_count += current_issues_count
-        if current_issues_count < DEFAULT_ISSUES_COUNT:
+        new_issues_count = len(issues)
+        self.issues_count += new_issues_count
+
+        if new_issues_count < ISSUES_COUNT:
             self.view.load_more_issues_btn.hide()
         else:
             self.view.load_more_issues_btn.show()
 
+        for issue in issues:
+            self.current_issues[issue.key] = issue
+            issue_dict = self.get_issue_parameters(issue)
+            new_issues_list.append(issue_dict)
+
+        return new_issues_list
+
+    def get_issues_list(self):
+        new_issues_list = []
+        update_issues_list = []
+
+        issues = self.jira_client.get_issues(0)
+
+        if self.issues_count > ISSUES_COUNT:
+            current_issues_count = len(issues)
+
+            while current_issues_count < self.issues_count:
+                loaded_issues = self.jira_client.get_issues(current_issues_count)
+                loaded_issues_count = len(loaded_issues)
+                if not loaded_issues_count:
+                    break
+                current_issues_count += loaded_issues_count
+                issues += loaded_issues
+
         # create list of issues
         for issue in issues:
-            issues_dict = dict(
-                title=issue.fields.summary,
-                key=issue.key,
-                link=issue.permalink(),
-                workflow=self.jira_client.get_possible_workflows(issue)
-            )
+            if issue.key not in self.current_issues:
+                self.current_issues[issue.key] = issue
+                issue_dict = self.get_issue_parameters(issue)
+                new_issues_list.append(issue_dict)
+            elif issue.raw['fields'] != self.current_issues[issue.key].raw['fields']:
+                issue_dict = self.get_issue_parameters(issue)
+                update_issues_list.append(issue_dict)
 
-            # if the task was logged
-            if issue.fields.timetracking.raw:
-                timetracking = issue.fields.timetracking.raw
-                issues_dict.update({
-                    'estimated': timetracking.get('originalEstimate', '0m'),
-                    'logged': timetracking.get('timeSpent', '0m'),
-                    'remaining': timetracking.get('remainingEstimate', '0m'),
-                })
-            else:
-                issues_dict.update({
-                    'estimated': '0m',
-                    'logged': '0m',
-                    'remaining': '0m',
-                })
-            issues_list.append(issues_dict)
-        return issues_list
+        self.issues_count = len(self.current_issues)
+        delete_issues_list = [
+            self.get_issue_parameters(issue) for issue in self.current_issues.values() if issue not in issues
+        ]
+
+        for issue in delete_issues_list:
+            self.current_issues.pop(issue['key'])
+
+        self.issues_count -= len(delete_issues_list)
+        return new_issues_list, update_issues_list, delete_issues_list
+
+    def get_issue_parameters(self, issue):
+        issue_dict = dict(
+            title=issue.fields.summary,
+            key=issue.key,
+            link=issue.permalink(),
+            workflow=self.jira_client.get_possible_workflows(issue)
+        )
+
+        # if the task was logged
+        if issue.fields.timetracking.raw:
+            timetracking = issue.fields.timetracking.raw
+            issue_dict.update({
+                'estimated': timetracking.get('originalEstimate', '0m'),
+                'logged': timetracking.get('timeSpent', '0m'),
+                'remaining': timetracking.get('remainingEstimate', '0m'),
+            })
+        else:
+            issue_dict.update({
+                'estimated': '0m',
+                'logged': '0m',
+                'remaining': '0m',
+            })
+        return issue_dict
 
     def refresh_issue_list(self, load_more=False):
-        if not load_more:
-            self.issues_count = 0
+        QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
-            issues_list = self.get_issue_list()
-            self.view.show_issues_list(issues_list, load_more)
+            if load_more:
+                new_issues_list = self.load_more_issues()
+            else:
+                new_issues_list, update_issues_list, delete_issues_list = self.get_issues_list()
+
         except (requests.exceptions.ConnectionError,
                 requests.exceptions.ReadTimeout):
-            QMessageBox.warning(
-                None,
+            QApplication.restoreOverrideCursor()
+            self.view.tray_icon.showMessage(
                 'Connection error',
-                'Check your internet connection and try again'
+                'Please, check your internet connection'
             )
+            self.current_issues.clear()
+            return
+        if not self.issues_count:
+            self.view.show_no_issues()
+            return
+        if new_issues_list:
+            self.view.insert_issues(new_issues_list)
+        if not load_more:
+            if update_issues_list:
+                self.view.update_issues(update_issues_list)
+
+            if delete_issues_list:
+                self.view.delete_issues(delete_issues_list)
+        if self.issues_count < ISSUES_COUNT:
+            self.view.load_more_issues_btn.hide()
+        else:
+            self.view.load_more_issues_btn.show()
+        self.view.timer_refresh.start(REFRESH_TIME)
+        QApplication.restoreOverrideCursor()
 
     def change_workflow(self, issue_key, current_status, status):
         if current_status == status:
@@ -110,7 +176,11 @@ class MainController:
             if self.pomodoro_view.issue_key == issue_key:
                 self.pomodoro_view.show()
             else:
-                QMessageBox.warning(None, 'Warning', 'Another task in progress now!')
+                QMessageBox.warning(
+                    None,
+                    'Warning',
+                    'Another task in progress now!'
+                )
             return
         self.pomodoro_view = PomodoroWindow(
             self, issue_key,
@@ -199,7 +269,7 @@ class MainController:
                 **log_work_params)
             self.time_log_view.close()
             self.refresh_issue_list()
-            self.view.timer.start(LOG_TIME)
+            self.view.timer_log_work.start(LOG_TIME)
             self.view.tray_icon.showMessage(
                 'Saving work log',
                 'Successfully saved',

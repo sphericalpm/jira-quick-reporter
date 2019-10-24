@@ -1,5 +1,5 @@
 from jira import JIRA
-from config import MAX_RETRIES
+from config import MAX_RETRIES, ISSUES_COUNT
 
 
 class JiraClient:
@@ -10,14 +10,15 @@ class JiraClient:
             server=server,
             basic_auth=(email, token),
             max_retries=MAX_RETRIES,
-            timeout=4,
+            timeout=4
         )
 
     def get_issues(self, start_at):
         return self.client.search_issues(
                 'assignee = currentUser()',
                 fields='key, summary, timetracking, status',
-                startAt=start_at
+                startAt=start_at,
+                maxResults=ISSUES_COUNT
         )
 
     def log_work(
@@ -43,7 +44,9 @@ class JiraClient:
     @staticmethod
     def get_remaining_estimate(issue):
         try:
-            existing_estimate = issue.fields.timetracking.raw['remainingEstimate']
+            existing_estimate = issue.fields.timetracking.raw[
+                'remainingEstimate'
+            ]
         except (AttributeError, TypeError, KeyError):
             existing_estimate = "0m"
         return existing_estimate
