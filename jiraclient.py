@@ -1,4 +1,6 @@
 from jira import JIRA
+from jira import JIRAError
+
 from config import MAX_RETRIES
 
 
@@ -68,6 +70,14 @@ class JiraClient:
         except (AttributeError, TypeError, KeyError):
             existing_estimate = "0m"
         return existing_estimate
+
+    @staticmethod
+    def get_original_estimate(issue):
+        try:
+            original_estimate = issue.fields.timetracking.originalEstimate
+        except JIRAError as e:
+            return "0m"
+        return original_estimate
 
     def issue(self, key):
         return self.client.issue(key)

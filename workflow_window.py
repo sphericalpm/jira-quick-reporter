@@ -12,19 +12,19 @@ from time_log_window import TimeLogWindow
 
 
 class WorkflowWindow(CenterWindow):
-    def __init__(self, issue, status, controller):
+    def __init__(self, issue, existing_estimate, original_estimate, controller):
         super().__init__()
         self.issue = issue
-        self.choosen_status = status
+        self.existing_estimate = existing_estimate
+        self.original_estimate = original_estimate
         self.controller = controller
+
         self.set_style()
         self.resize(600, 450)
-        self.setWindowTitle('{status}: {issue}'.format(
-            status=self.choosen_status,
+        self.setWindowTitle('Transit issue: {issue}'.format(
             issue=self.issue
             )
         )
-
         # vbox elements description
         assignee = QLabel('Assignee (eg. vsmith):')
         original_estimate = QLabel('Original Estimate (eg. 13w 4d 12h):')
@@ -33,12 +33,9 @@ class WorkflowWindow(CenterWindow):
         comment = QLabel('Comment:')
 
         self.assignee_line = QLineEdit('Me')
-        self.original_estimate_line = QLineEdit(
-            self.issue.fields.timetracking.originalEstimate
-        )
-        self.remaining_estimate_line = QLineEdit(
-            self.issue.fields.timetracking.remainingEstimate
-        )
+        self.original_estimate_line = QLineEdit(self.original_estimate)
+        self.remaining_estimate_line = QLineEdit(self.existing_estimate)
+
         self.comment_line = QTextEdit()
 
         self.save_button = QPushButton('Save')
