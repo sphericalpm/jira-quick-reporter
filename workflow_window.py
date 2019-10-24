@@ -4,14 +4,15 @@ from PyQt5.QtWidgets import (
     QGridLayout,
     QLabel,
     QTextEdit,
-    QComboBox
+    QComboBox,
+    QMainWindow
 )
-
+from PyQt5 import QtCore
 from center_window import CenterWindow
 from time_log_window import TimeLogWindow
 
 
-class WorkflowWindow(CenterWindow):
+class WorkflowWindow(CenterWindow, QMainWindow):
     def __init__(self, issue, existing_estimate, original_estimate, assignee, controller):
         super().__init__()
         self.issue = issue
@@ -61,6 +62,9 @@ class WorkflowWindow(CenterWindow):
         self.setLayout(vbox)
         self.save_button.clicked.connect(self.controller.save_click)
 
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Return:
+            self.controller.save_click()
 
 class CompleteWorflowWindow(TimeLogWindow):
     def __init__(self, controller, issue, assignee, save_callback=None):

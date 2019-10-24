@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from PyQt5.QtCore import QEvent
+from PyQt5 import QtCore
 from PyQt5.QtWidgets import (
     QPushButton,
     QLineEdit,
@@ -29,8 +30,11 @@ class TimeLogWindow(CenterWindow):
         vbox = self.add_save_button(vbox)
         self.setLayout(vbox)
 
-    def add_save_button(self, vbox):
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Return:
+            self.save_callback(self.issue_key)
 
+    def add_save_button(self, vbox):
         self.save_button = QPushButton('Save')
         self.save_button.setToolTip('save new time tracking values into Jira')
         if self.save_callback:
