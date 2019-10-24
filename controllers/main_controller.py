@@ -1,6 +1,7 @@
 import os
 
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QMessageBox, QApplication
+from PyQt5.QtCore import Qt
 from jira import JIRAError
 
 from config import LOG_TIME, DEFAULT_ISSUES_COUNT
@@ -76,11 +77,13 @@ class MainController(TimeLogMixin):
         status_id = workflow.get(status)
         existing_estimate = self.jira_client.get_remaining_estimate(issue_obj)
         original_estimate = self.jira_client.get_original_estimate(issue_obj)
+        assignee = issue_obj.fields.assignee.emailAddress
 
         if status_id:
             if status == 'Put on hold' or status == 'Select for development':
                 # we do not need to open workflow window with detail information
                 try:
+                    QApplication.setOverrideCursor(Qt.WaitCursor)
                     self.jira_client.client.transition_issue(
                             issue_obj,
                             transition=status_id
@@ -91,8 +94,9 @@ class MainController(TimeLogMixin):
                 self.view.tray_icon.showMessage(
                     'Saving...',
                     'Please wait',
-                    msecs=100
+                    msecs=2000
                 )
+                QApplication.restoreOverrideCursor()
                 self.refresh_issue_list()
 
             elif status == 'Complete' or status == 'Declare done':
@@ -101,6 +105,7 @@ class MainController(TimeLogMixin):
                     self.jira_client,
                     issue_obj,
                     status,
+                    assignee,
                     self
                 )
                 self.complete_workflow_controller.show()
@@ -115,6 +120,7 @@ class MainController(TimeLogMixin):
                     status_id,
                     existing_estimate,
                     original_estimate,
+                    assignee,
                     self
                 )
                 self.workflow_controller.show()

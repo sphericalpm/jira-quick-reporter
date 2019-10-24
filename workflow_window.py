@@ -12,12 +12,13 @@ from time_log_window import TimeLogWindow
 
 
 class WorkflowWindow(CenterWindow):
-    def __init__(self, issue, existing_estimate, original_estimate, controller):
+    def __init__(self, issue, existing_estimate, original_estimate, assignee, controller):
         super().__init__()
         self.issue = issue
         self.existing_estimate = existing_estimate
         self.original_estimate = original_estimate
         self.controller = controller
+        self.assignee = assignee
 
         self.set_style()
         self.resize(600, 450)
@@ -32,7 +33,7 @@ class WorkflowWindow(CenterWindow):
 
         comment = QLabel('Comment:')
 
-        self.assignee_line = QLineEdit('Me')
+        self.assignee_line = QLineEdit('{}'.format(self.assignee))
         self.original_estimate_line = QLineEdit(self.original_estimate)
         self.remaining_estimate_line = QLineEdit(self.existing_estimate)
 
@@ -62,16 +63,17 @@ class WorkflowWindow(CenterWindow):
 
 
 class CompleteWorflowWindow(TimeLogWindow):
-    def __init__(self, controller, issue, save_callback=None):
+    def __init__(self, controller, issue, assignee, save_callback=None):
         self.controller = controller
         self.issue = issue
+        self.assignee = assignee
         super().__init__(issue, save_callback=save_callback)
 
     def build_issue_form_vbox(self):
         vbox = super().build_issue_form_vbox()
 
         assignee = QLabel('Assignee (eg. vsmith):')
-        self.assignee_line = QLineEdit('Me')
+        self.assignee_line = QLineEdit('{}'.format(self.assignee))
         vbox.addWidget(assignee)
         vbox.addWidget(self.assignee_line)
 
