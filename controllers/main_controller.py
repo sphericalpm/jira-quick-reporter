@@ -74,6 +74,8 @@ class MainController(TimeLogMixin):
 
     def change_workflow(self, workflow, issue_obj, status):
         status_id = workflow.get(status)
+        existing_estimate = self.jira_client.get_remaining_estimate(issue_obj)
+        original_estimate = self.jira_client.get_original_estimate(issue_obj)
 
         if status_id:
             if status == 'Put on hold' or status == 'Select for development':
@@ -91,33 +93,31 @@ class MainController(TimeLogMixin):
                     'Please wait',
                     msecs=100
                 )
+                self.refresh_issue_list()
 
             elif status == 'Complete' or status == 'Declare done':
                 # open complete workflow window
                 self.complete_workflow_controller = CompleteWorkflowController(
-                    self.jira_client, issue_obj, status, self
+                    self.jira_client,
+                    issue_obj,
+                    status,
+                    self
                 )
-                existing_estimate = self.jira_client.get_remaining_estimate(issue_obj)
                 self.complete_workflow_controller.show()
                 self.complete_workflow_controller.view.set_existing_estimate(
                     existing_estimate,
                 )
 
             else:
-                # open workflow window
                 self.workflow_controller = WorkflowController(
-                    self.jira_client, issue_obj, status, self
+                    self.jira_client,
+                    issue_obj,
+                    status_id,
+                    existing_estimate,
+                    original_estimate,
+                    self
                 )
                 self.workflow_controller.show()
-                try:
-                    self.jira_client.client.transition_issue(
-                            issue_obj,
-                            transition=status_id
-                        )
-                except JIRAError as e:
-                    QMessageBox.about(self.view, 'Error', e.text)
-
-        self.refresh_issue_list()
 
     def get_possible_workflows(self, issue):
         current_workflow = issue['issue_obj'].fields.status
@@ -188,7 +188,10 @@ class MainController(TimeLogMixin):
             return
         comment = self.time_log_view.work_description_line.toPlainText()
         remaining_estimate = self.time_log_view.new_remaining_estimate
-        log_work_params = self.take_timelog_values(remaining_estimate, self.time_log_view)
+        log_work_params = self.take_timelog_values(
+            remaining_estimate,
+            self.time_log_view
+        )
         try:
             self.jira_client.log_work(
                 issue,

@@ -6,14 +6,29 @@ from .mixins import TimeLogMixin
 
 
 class WorkflowController:
-    def __init__(self, jira_client, issue_obj, status, controller):
+    def __init__(
+        self,
+        jira_client,
+        issue_obj,
+        status_id,
+        existing_estimate,
+        original_estimate,
+        controller
+    ):
         self.controller = controller
         self.jira_client = jira_client
         self.issue_obj = issue_obj
-        self.status = status
+        self.existing_estimate = existing_estimate
+        self.original_estimate = original_estimate
+        self.status_id = status_id
 
     def show(self):
-        self.view = WorkflowWindow(self.issue_obj, self.status, self)
+        self.view = WorkflowWindow(
+            self.issue_obj,
+            self.existing_estimate,
+            self.original_estimate,
+            self
+        )
         self.view.show()
 
     def save_click(self):
@@ -48,7 +63,15 @@ class WorkflowController:
             )
         except JIRAError as e:
             QMessageBox.about(self.view, 'Error', e.text)
+        try:
+            self.jira_client.client.transition_issue(
+                    self.issue_obj,
+                    transition=self.status_id
+                )
+        except JIRAError as e:
+            QMessageBox.about(self.view, 'Error', e.text)
 
+        self.controller.refresh_issue_list()
         self.view.close()
 
 
