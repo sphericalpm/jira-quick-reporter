@@ -29,18 +29,14 @@ class MainController:
         new_issues_list = []
         issues = self.jira_client.get_issues(self.issues_count)
         new_issues_count = len(issues)
-        self.issues_count += new_issues_count
 
-        if new_issues_count < ISSUES_COUNT:
-            self.view.load_more_issues_btn.hide()
-        else:
-            self.view.load_more_issues_btn.show()
-
-        for issue in issues:
+        for index, issue in enumerate(issues):
             self.current_issues[issue.key] = issue
             issue_dict = self.get_issue_parameters(issue)
+            issue_dict['index'] = index + self.issues_count
             new_issues_list.append(issue_dict)
 
+        self.issues_count += new_issues_count
         return new_issues_list
 
     def get_issues_list(self):
@@ -52,7 +48,7 @@ class MainController:
         # get firs ISSUES_COUNT issues
         issues = self.jira_client.get_issues(0)
 
-        # if we hav loaded issues before, then we need to get them
+        # if we have loaded issues before, then we need to get them
         if self.issues_count > ISSUES_COUNT:
             current_issues_count = len(issues)
 
@@ -65,12 +61,13 @@ class MainController:
                 issues += loaded_issues
 
         # create list of issues
-        for issue in issues:
+        for index, issue in enumerate(issues):
             # if this is a new issue
             if issue.key not in self.current_issues:
                 # add issue to the list of all available issues
                 self.current_issues[issue.key] = issue
                 issue_dict = self.get_issue_parameters(issue)
+                issue_dict['index'] = index
                 # add issue to the list for new issues
                 new_issues_list.append(issue_dict)
             # if issue has been changed
@@ -150,10 +147,7 @@ class MainController:
                 self.view.update_issues(update_issues_list)
             if delete_issues_list:
                 self.view.delete_issues(delete_issues_list)
-        if self.issues_count < ISSUES_COUNT:
-            self.view.load_more_issues_btn.hide()
-        else:
-            self.view.load_more_issues_btn.show()
+
         self.view.timer_refresh.start(REFRESH_TIME)
         QApplication.restoreOverrideCursor()
 

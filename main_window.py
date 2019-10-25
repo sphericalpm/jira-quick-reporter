@@ -142,7 +142,6 @@ class MainWindow(CenterWindow):
             lambda: self.controller.refresh_issue_list(True)
         )
         self.list_box.addWidget(self.load_more_issues_btn)
-        self.load_more_issues_btn.hide()
 
         self.refresh_btn = QPushButton('Refresh')
         self.refresh_btn.clicked.connect(self.controller.refresh_issue_list)
@@ -241,10 +240,10 @@ class MainWindow(CenterWindow):
             )
 
             # add issue item to list
-            issue_list_widget_item = QListWidgetItem(self.issue_list_widget)
+            issue_list_widget_item = QListWidgetItem()
             issue_list_widget_item.setText(issue['key'])
             issue_list_widget_item.setSizeHint(issue_widget.sizeHint())
-            self.issue_list_widget.addItem(issue_list_widget_item)
+            self.issue_list_widget.insertItem(issue['index'], issue_list_widget_item)
             self.issue_list_widget.setItemWidget(
                 issue_list_widget_item, issue_widget
             )
