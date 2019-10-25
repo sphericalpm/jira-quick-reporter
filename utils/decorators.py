@@ -12,13 +12,13 @@ def catch_timeout_exception(function):
             value = function(*args, **kwargs)
         except (requests.exceptions.ConnectionError,
                 requests.exceptions.ReadTimeout):
-            QApplication.restoreOverrideCursor()
             QMessageBox.warning(
                 None,
                 'Connection error',
                 'Check your internet connection and try again'
             )
             return
-        QApplication.restoreOverrideCursor()
+        finally:
+            QApplication.restoreOverrideCursor()
         return value
     return wrapper

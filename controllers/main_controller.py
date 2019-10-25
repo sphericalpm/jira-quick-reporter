@@ -44,11 +44,15 @@ class MainController:
         return new_issues_list
 
     def get_issues_list(self):
+        # list of added issues for display on main window
         new_issues_list = []
+        # list of updated issues for updated on main window
         update_issues_list = []
 
+        # get firs ISSUES_COUNT issues
         issues = self.jira_client.get_issues(0)
 
+        # if we hav loaded issues before, then we need to get them
         if self.issues_count > ISSUES_COUNT:
             current_issues_count = len(issues)
 
@@ -62,19 +66,27 @@ class MainController:
 
         # create list of issues
         for issue in issues:
+            # if this is a new issue
             if issue.key not in self.current_issues:
+                # add issue to the list of all available issues
                 self.current_issues[issue.key] = issue
                 issue_dict = self.get_issue_parameters(issue)
+                # add issue to the list for new issues
                 new_issues_list.append(issue_dict)
+            # if issue has been changed
             elif issue.raw['fields'] != self.current_issues[issue.key].raw['fields']:
+                self.current_issues[issue.key] = issue
                 issue_dict = self.get_issue_parameters(issue)
+                # add issue to the list for updated issues
                 update_issues_list.append(issue_dict)
 
+        # update count of all available issues
         self.issues_count = len(self.current_issues)
+        # get list of deleted issues
         delete_issues_list = [
             self.get_issue_parameters(issue) for issue in self.current_issues.values() if issue not in issues
         ]
-
+        # remove deleted issues from the list of all available issues
         for issue in delete_issues_list:
             self.current_issues.pop(issue['key'])
 
@@ -88,7 +100,6 @@ class MainController:
             link=issue.permalink(),
             workflow=self.jira_client.get_possible_workflows(issue)
         )
-
         # if the task was logged
         if issue.fields.timetracking.raw:
             timetracking = issue.fields.timetracking.raw
@@ -115,22 +126,28 @@ class MainController:
 
         except (requests.exceptions.ConnectionError,
                 requests.exceptions.ReadTimeout):
-            QApplication.restoreOverrideCursor()
             self.view.tray_icon.showMessage(
                 'Connection error',
                 'Please, check your internet connection'
             )
             self.current_issues.clear()
+            self.view.show_no_issues()
             return
+        finally:
+            QApplication.restoreOverrideCursor()
+
         if not self.issues_count:
             self.view.show_no_issues()
             return
+        # if we have issues, make the widget for issues enable
+        self.view.issue_list_widget.show()
+        self.view.label_info.hide()
+
         if new_issues_list:
             self.view.insert_issues(new_issues_list)
         if not load_more:
             if update_issues_list:
                 self.view.update_issues(update_issues_list)
-
             if delete_issues_list:
                 self.view.delete_issues(delete_issues_list)
         if self.issues_count < ISSUES_COUNT:
@@ -140,7 +157,8 @@ class MainController:
         self.view.timer_refresh.start(REFRESH_TIME)
         QApplication.restoreOverrideCursor()
 
-    def change_workflow(self, issue_key, current_status, status):
+    def change_workflow(self, issue_key, workflow_items, status):
+        current_status = workflow_items.itemText(0)
         if current_status == status:
             return
         QApplication.setOverrideCursor(Qt.WaitCursor)
@@ -157,19 +175,19 @@ class MainController:
                         transition=status_id
                     )
                 self.refresh_issue_list()
-                QApplication.restoreOverrideCursor()
             except JIRAError as e:
                 QApplication.restoreOverrideCursor()
                 QMessageBox.about(self.view, 'Error', e.text)
         except (requests.exceptions.ConnectionError,
                 requests.exceptions.ReadTimeout):
-            QApplication.restoreOverrideCursor()
             QMessageBox.warning(
                 None,
                 'Connection error',
                 'Check your internet connection and try again'
             )
             self.view.set_workflow_current_state(issue_key)
+        finally:
+            QApplication.restoreOverrideCursor()
 
     def open_pomodoro_window(self, issue_key, issue_title):
         if self.pomodoro_view:

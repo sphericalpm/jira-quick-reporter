@@ -190,6 +190,7 @@ class MainWindow(CenterWindow):
                 issue['logged'],
                 issue['remaining']
             )
+            issue_widget.set_workflow.clear()
             issue_widget.set_workflow.addItems(issue['workflow'])
             issue_widget.set_workflow.setCurrentIndex(0)
 
@@ -235,7 +236,7 @@ class MainWindow(CenterWindow):
                 partial(
                     self.controller.change_workflow,
                     issue['key'],
-                    issue['workflow'][0]
+                    issue_widget.set_workflow
                 )
             )
 

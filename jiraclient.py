@@ -1,9 +1,9 @@
-from jira import JIRA
-from config import MAX_RETRIES, ISSUES_COUNT
+from jira import JIRA, JIRAError
+from config import MAX_RETRIES, ISSUES_COUNT, SERVER
 
 
 class JiraClient:
-    def __init__(self, email, token, server='https://spherical.atlassian.net'):
+    def __init__(self, email, token, server=SERVER):
         if not email or not token:
             raise ValueError('You need to specify email and token')
         self.client = JIRA(

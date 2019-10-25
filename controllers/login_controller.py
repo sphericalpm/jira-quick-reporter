@@ -40,8 +40,8 @@ class LoginController:
                 'Connection error',
                 'Check your internet connection and try again'
             )
-
-        QApplication.restoreOverrideCursor()
+        finally:
+            QApplication.restoreOverrideCursor()
 
     def remember_me(self, email, token):
         """
