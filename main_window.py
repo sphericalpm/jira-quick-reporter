@@ -9,7 +9,8 @@ from PyQt5.QtWidgets import (
     QGridLayout,
     QLineEdit,
     QMenu,
-    QMessageBox
+    QMessageBox,
+    QAction
 )
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, QEvent
@@ -193,7 +194,10 @@ class MainWindow(CenterWindow):
                 object is self.my_filters_list):
             if object.itemAt(event.pos()) is self.my_filters_list.currentItem():
                 context_menu = QMenu()
-                context_menu.addAction('Delete')
+                action_delete = QAction('Delete', self)
+                context_menu.addAction(action_delete)
+                if not self.my_filters_list.currentRow():
+                    action_delete.setEnabled(False)
                 if context_menu.exec_(event.globalPos()):
                     item_text = self.my_filters_list.currentItem().text()
                     reply = QMessageBox.question(
@@ -204,7 +208,6 @@ class MainWindow(CenterWindow):
                         QMessageBox.Yes | QMessageBox.Cancel
                     )
                     if reply == QMessageBox.Yes:
-                        pass
                         self.controller.delete_filter(item_text)
                         self.my_filters_list.takeItem(
                             self.my_filters_list.currentRow()

@@ -92,6 +92,7 @@ class MainController:
 
         self.set_items()
         if not self.items:
+            self.set_section()
             self.write_to_ini()
             self.set_items()
         self.view.show_filters(self.items)
