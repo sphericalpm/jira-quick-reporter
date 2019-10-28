@@ -13,9 +13,9 @@ class JiraClient:
             timeout=4,
         )
 
-    def get_issues(self, start_at=0, jql=''):
+    def get_issues(self, start_at=0, query=''):
         return self.client.search_issues(
-                jql,
+                query,
                 fields='key, summary, timetracking, status',
                 startAt=start_at
         )
