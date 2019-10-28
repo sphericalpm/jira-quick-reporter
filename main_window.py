@@ -1,6 +1,6 @@
 from functools import partial
 
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, QEvent
 from PyQt5.QtGui import QIcon
 from PyQt5.QtMultimedia import QSound
 from PyQt5.QtWidgets import (
@@ -180,6 +180,15 @@ class MainWindow(CenterWindow):
         self.tray_icon.show()
         self.timer = QTimer()
         self.timer.timeout.connect(self.notification_to_log_work)
+        self.timer.start(LOG_TIME)
+
+    def notification_to_log_work(self):
+        QSound.play(RING_SOUND_PATH)
+        self.tray_icon.showMessage(
+            '1 hour had passed',
+            'Don\'t forget to log your work!',
+            msecs=2000
+        )
         self.timer.start(LOG_TIME)
 
     def show_issues_list(self, issues_list, load_more=False):

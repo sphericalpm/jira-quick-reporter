@@ -19,3 +19,4 @@ DEFAULT_ISSUES_COUNT = 50
 MAX_RETRIES = 0  # we need it because without it our app will not be
 # available (for 15 sec) in case of bad connection or IP blocking
 FILTERS_PATH = os.path.join(STATICDIR, 'filters.ini')
+FILTERS_SECTION_NAME = 'Filters'

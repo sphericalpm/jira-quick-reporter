@@ -2,14 +2,14 @@ import configparser
 import os
 
 from PyQt5.QtWidgets import QMessageBox, QInputDialog
+from PyQt5.QtCore import Qt
 from jira import JIRAError
 
-from config import LOG_TIME, DEFAULT_ISSUES_COUNT, FILTERS_PATH
+from config import LOG_TIME, DEFAULT_ISSUES_COUNT, FILTERS_PATH, FILTERS_SECTION_NAME
 from main_window import MainWindow
 from pomodoro_window import PomodoroWindow
 from time_log_window import TimeLogWindow
 
-SECTION = 'Filters'
 
 class MainController:
     def __init__(self, jira_client):
@@ -36,8 +36,8 @@ class MainController:
             self.view.load_more_issues_btn.hide()
         else:
             self.view.load_more_issues_btn.show()
-        # if not current_issues_count:
-        #     return
+        if not current_issues_count:
+            return
 
         # create list of issues
         for issue in issues:
@@ -244,7 +244,7 @@ class MainController:
             self.items.update(self.config.items(section))
 
     def set_section(self):
-        self.config[SECTION] = {
+        self.config[FILTERS_SECTION_NAME] = {
             'my open issues': 'assignee = currentuser() '
             'and resolution = unresolved'
         }
@@ -260,7 +260,7 @@ class MainController:
         self.view.filter_field.setText(self.current_jql)
 
     def delete_filter(self, filter_name):
-        self.config.remove_option(SECTION, filter_name)
+        self.config.remove_option(FILTERS_SECTION_NAME, filter_name)
         self.items.pop(filter_name)
         self.write_to_ini()
 
@@ -276,7 +276,7 @@ class MainController:
                     dlg.setInputMode(QInputDialog.TextInput)
 
                     while dlg.exec_():
-                        name = dlg.textValue()
+                        name = dlg.textValue().lower()
                         if not name or set(':=#') & set(name):
                             continue
                         elif name in self.items:
@@ -288,7 +288,7 @@ class MainController:
                                 QMessageBox.Yes | QMessageBox.Cancel
                             )
                             if reply == QMessageBox.Yes:
-                                self.config[SECTION][name] = jql
+                                self.config[FILTERS_SECTION_NAME][name] = jql
                                 self.write_to_ini()
                                 self.set_items()
                                 items = self.view.my_filters_list.findItems(
@@ -299,7 +299,7 @@ class MainController:
                                 )
                                 break
                         else:
-                            self.config[SECTION][name] = jql
+                            self.config[FILTERS_SECTION_NAME][name] = jql
                             self.write_to_ini()
                             self.set_items()
                             self.view.my_filters_list.addItem(name)
