@@ -120,6 +120,7 @@ class MainWindow(CenterWindow):
         self.resize(800, 450)
         self.setWindowTitle('JIRA Quick Reporter')
         self.setWindowIcon(QIcon(LOGO_PATH))
+        self.current_item = None
 
         self.main_box = QVBoxLayout()
         self.hbox = QHBoxLayout()
@@ -131,9 +132,7 @@ class MainWindow(CenterWindow):
         self.my_filters_list = QListWidget()
 
         self.my_filters_list.installEventFilter(self)
-        self.my_filters_list.itemSelectionChanged.connect(
-            self.controller.filter_selected
-        )
+        self.my_filters_list.itemClicked.connect(self.on_filter_selected)
 
         self.hbox.addWidget(self.my_filters_list)
         self.hbox.addLayout(self.list_box, Qt.AlignCenter)
@@ -258,13 +257,18 @@ class MainWindow(CenterWindow):
         for key in filters_dict.keys():
             self.my_filters_list.addItem(key)
         self.my_filters_list.setCurrentItem(self.my_filters_list.item(0))
+        self.on_filter_selected(self.my_filters_list.currentItem())
         self.my_filters_list.setMaximumWidth(
             self.my_filters_list.sizeHintForColumn(0) + 10
         )
 
+    def on_filter_selected(self, item):
+        self.current_item = item
+        self.controller.filter_selected(item)
+
     def eventFilter(self, object, event):
-        if (event.type() == QEvent.ContextMenu and
-                object is self.my_filters_list):
+        if event.type() == QEvent.ContextMenu:
+            self.my_filters_list.setCurrentItem(self.current_item)
             if object.itemAt(event.pos()) is self.my_filters_list.currentItem():
                 context_menu = QMenu()
                 action_delete = QAction('Delete', self)
@@ -285,7 +289,7 @@ class MainWindow(CenterWindow):
                         self.my_filters_list.takeItem(
                             self.my_filters_list.currentRow()
                         )
-        return False
+        return super().eventFilter(object, event)
 
     def closeEvent(self, QCloseEvent):
         QCloseEvent.ignore()

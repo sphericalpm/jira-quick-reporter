@@ -29,7 +29,6 @@ class MainController:
 
     def show(self):
         self.create_filters()
-        self.refresh_issue_list()
         self.view.show()
 
     def get_issue_list(self, filter_query):
@@ -215,13 +214,13 @@ class MainController:
 
     def write_ini_if_errors(self):
         self.config.clear()
-        self.set_section()
+        self.set_default_section()
         self.write_to_ini()
 
     def create_filters(self):
         # create if not exist
         if not os.path.exists(FILTERS_PATH):
-            self.set_section()
+            self.set_default_section()
             self.write_to_ini()
         try:
             self.config.read(FILTERS_PATH)
@@ -232,7 +231,7 @@ class MainController:
 
         self.set_filters()
         if not self.filters:
-            self.set_section()
+            self.set_default_section()
             self.write_to_ini()
             self.set_filters()
         self.view.show_filters(self.filters)
@@ -242,19 +241,18 @@ class MainController:
         for section in sections:
             self.filters.update(self.config.items(section))
 
-    def set_section(self):
+    def set_default_section(self):
         self.config[FILTERS_SECTION_NAME] = {
             'my open issues': 'assignee = currentuser() '
             'and resolution = unresolved'
         }
 
     def write_to_ini(self):
-        with open(FILTERS_PATH, 'w+') as ini_file:
+        with open(FILTERS_PATH, 'w') as ini_file:
             self.config.write(ini_file)
 
-    def filter_selected(self):
-        selected_key = self.view.my_filters_list.currentItem().text()
-        self.current_filter = self.filters[selected_key]
+    def filter_selected(self, filter):
+        self.current_filter = self.filters[filter.text()]
         self.refresh_issue_list()
         self.view.filter_field.setText(self.current_filter)
 
@@ -292,7 +290,7 @@ class MainController:
                 self.jira_client.get_issues(query=filter_query)
                 input_name_dialog = QInputDialog(self.view)
                 input_name_dialog.setWindowIconText('Save filter')
-                input_name_dialog.setLabelText('Enter filter name')
+                input_name_dialog.setLabelText('Enter filter name \n(you cannot use \':, =, #\' symbols)')
                 input_name_dialog.setInputMode(QInputDialog.TextInput)
 
                 while input_name_dialog.exec_():
