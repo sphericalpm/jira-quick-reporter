@@ -3,7 +3,7 @@ import os
 from PyQt5.QtWidgets import QMessageBox
 from jira import JIRAError
 
-from config import LOG_TIME, DEFAULT_ISSUES_COUNT
+from config import LOG_TIME
 from main_window import MainWindow
 from pomodoro_window import PomodoroWindow
 from time_log_window import TimeLogWindow
@@ -26,10 +26,6 @@ class MainController:
         issues = self.jira_client.get_issues(self.issues_count)
         current_issues_count = len(issues)
         self.issues_count += current_issues_count
-        if current_issues_count < DEFAULT_ISSUES_COUNT:
-            self.view.load_more_issues_btn.hide()
-        else:
-            self.view.load_more_issues_btn.show()
 
         # create list of issues
         for issue in issues:
@@ -65,6 +61,7 @@ class MainController:
             self.issues_count = 0
         issues_list = self.get_issue_list()
         self.view.show_issues_list(issues_list, load_more)
+        self.view.is_scrolling_enable = True
 
     def change_workflow(self, workflow, issue_obj, status):
         status_id = workflow.get(status)
