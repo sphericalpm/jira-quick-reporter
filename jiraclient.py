@@ -1,24 +1,24 @@
 from jira import JIRA
-
 from config import MAX_RETRIES
 
 
 class JiraClient:
     def __init__(self, email, token, server='https://spherical.atlassian.net'):
-        if not email and not token:
+        if not email or not token:
             raise ValueError('You need to specify email and token')
         self.client = JIRA(
             server=server,
             basic_auth=(email, token),
-            max_retries=MAX_RETRIES
+            max_retries=MAX_RETRIES,
+            timeout=4,
         )
 
     def get_issues(self, start_at=0, jql=''):
         return self.client.search_issues(
                 jql,
-                fields='key, summary, timetracking',
+                fields='key, summary, timetracking, status',
                 startAt=start_at
-            )
+        )
 
     def log_work(
             self,

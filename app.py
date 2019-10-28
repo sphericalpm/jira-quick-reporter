@@ -13,27 +13,27 @@ from config import CREDENTIALS_PATH
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
 
     path = os.path.dirname(os.path.realpath(__file__))
 
     if os.path.exists(CREDENTIALS_PATH):
         with open(CREDENTIALS_PATH, 'r', encoding='utf-8') as file:
             content = file.read()
-            main_controller = None
             try:
                 email, token = content.split(';')
                 jira_client = JiraClient(email, token)
-                main_controller = MainController(jira_client)
+                controller = MainController(jira_client)
             except (ValueError, JIRAError):
-                if not main_controller:
-                    login_controller = LoginController()
+                controller = LoginController()
             except requests.exceptions.ConnectionError:
                 QMessageBox.warning(
                     None,
                     'Connection error',
                     'Check your internet connection and try again'
                 )
+                sys.exit()
     else:
-        login_controller = LoginController()
-
+        controller = LoginController()
+    controller.show()
     sys.exit(app.exec_())
