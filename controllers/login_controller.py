@@ -1,15 +1,13 @@
 import os
 import stat
 
-import requests
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QMessageBox
 from jira import JIRAError
 
 from config import CREDENTIALS_PATH
 from controllers.main_controller import MainController
 from jiraclient import JiraClient
 from login_window import LoginWindow
+from utils.decorators import catch_timeout_exception
 
 
 class LoginController:
@@ -18,11 +16,11 @@ class LoginController:
         self.view.show()
         self.jira_client = None
 
+    @catch_timeout_exception
     def login(self):
         email = self.view.email_field.text()
         token = self.view.token_field.text()
 
-        QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
             self.jira_client = JiraClient(email, token)
             if self.view.remember_me_btn.isChecked():
@@ -32,16 +30,6 @@ class LoginController:
             self.view.set_error_to_label('The email or token is incorrect.')
         except UnicodeEncodeError:
             self.view.set_error_to_label('English letters only')
-
-        except (requests.exceptions.ConnectionError,
-                requests.exceptions.ReadTimeout):
-            QMessageBox.warning(
-                None,
-                'Connection error',
-                'Check your internet connection and try again'
-            )
-        finally:
-            QApplication.restoreOverrideCursor()
 
     def remember_me(self, email, token):
         """

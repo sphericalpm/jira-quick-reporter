@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QMessageBox, QApplication
 from PyQt5.QtCore import Qt
-import requests
+from requests.exceptions import ConnectionError, ReadTimeout
 import functools
 
 
@@ -10,8 +10,8 @@ def catch_timeout_exception(function):
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
             value = function(*args, **kwargs)
-        except (requests.exceptions.ConnectionError,
-                requests.exceptions.ReadTimeout):
+        except (ConnectionError,
+                ReadTimeout):
             QMessageBox.warning(
                 None,
                 'Connection error',

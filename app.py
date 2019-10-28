@@ -1,7 +1,7 @@
 import sys
 import os
 
-import requests
+from requests.exceptions import ConnectionError, ReadTimeout
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from jira import JIRAError
 
@@ -25,8 +25,8 @@ if __name__ == '__main__':
                 app.setQuitOnLastWindowClosed(False)
             except (ValueError, JIRAError):
                 controller = LoginController()
-            except (requests.exceptions.ConnectionError,
-                    requests.exceptions.ReadTimeout):
+            except (ConnectionError,
+                    ReadTimeout):
                 QMessageBox.warning(
                     None,
                     'Connection error',

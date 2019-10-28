@@ -85,7 +85,7 @@ class MainController:
         ]
         # remove deleted issues from the list of all available issues
         for issue in delete_issues_list:
-            self.current_issues.pop(issue['key'])
+            del self.current_issues[issue['key']]
 
         self.issues_count -= len(delete_issues_list)
         return new_issues_list, update_issues_list, delete_issues_list
