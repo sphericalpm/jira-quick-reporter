@@ -14,7 +14,7 @@ with open(QSS_PATH, 'r') as qss_file:
 
 # ms * min = 1 hour
 LOG_TIME = 60000 * 60
-# 5 minutes
+# 1 minute
 REFRESH_TIME = 60000
 ISSUES_COUNT = 20
 

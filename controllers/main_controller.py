@@ -132,6 +132,7 @@ class MainController:
             return
         finally:
             QApplication.restoreOverrideCursor()
+            self.view.timer_refresh.start(REFRESH_TIME)
 
         if not self.issues_count:
             self.view.show_no_issues()
@@ -147,9 +148,6 @@ class MainController:
                 self.view.update_issues(update_issues_list)
             if delete_issues_list:
                 self.view.delete_issues(delete_issues_list)
-
-        self.view.timer_refresh.start(REFRESH_TIME)
-        QApplication.restoreOverrideCursor()
 
     def change_workflow(self, issue_key, workflow_items, status):
         current_status = workflow_items.itemText(0)
