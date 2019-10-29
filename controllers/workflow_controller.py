@@ -10,7 +10,7 @@ class WorkflowController:
     def __init__(
         self,
         jira_client,
-        issue_obj,
+        issue,
         status_id,
         existing_estimate,
         original_estimate,
@@ -19,7 +19,7 @@ class WorkflowController:
     ):
         self.controller = controller
         self.jira_client = jira_client
-        self.issue_obj = issue_obj
+        self.issue = issue
         self.existing_estimate = existing_estimate
         self.original_estimate = original_estimate
         self.status_id = status_id
@@ -27,7 +27,7 @@ class WorkflowController:
 
     def show(self):
         self.view = WorkflowWindow(
-            self.issue_obj,
+            self.issue,
             self.existing_estimate,
             self.original_estimate,
             self.assignee,
@@ -45,16 +45,16 @@ class WorkflowController:
 
         if assignee != self.assignee:
             try:
-                self.issue_obj.update(assignee={'name': assignee})
+                self.issue.update(assignee={'name': assignee})
             except JIRAError as e:
                 QMessageBox.about(self.view, 'Error', e.text)
                 return
 
         if comment:
-            self.jira_client.client.add_comment(self.issue_obj, comment)
+            self.jira_client.client.add_comment(self.issue, comment)
 
         try:
-            self.issue_obj.update(
+            self.issue.update(
                 fields={
                     'timetracking': {
                         'remainingEstimate': remaining_estimate,
@@ -66,7 +66,7 @@ class WorkflowController:
             QMessageBox.about(self.view, 'Error', e.text)
         try:
             self.jira_client.client.transition_issue(
-                    self.issue_obj,
+                    self.issue,
                     transition=self.status_id
                 )
         except JIRAError as e:
@@ -78,18 +78,20 @@ class WorkflowController:
 
 
 class CompleteWorkflowController(TimeLogMixin):
-    def __init__(self, jira_client, issue_obj, status, assignee, controller):
+    def __init__(self, jira_client, issue, status, assignee, controller):
         self.controller = controller
         self.jira_client = jira_client
-        self.issue_obj = issue_obj
+        self.issue = issue
         self.status = status
         self.assignee = assignee
 
     def show(self):
+        possible_resolutions = self.controller.jira_client.get_possible_resolutions()
         self.view = CompleteWorflowWindow(
             self,
-            self.issue_obj,
+            self.issue,
             self.assignee,
+            possible_resolutions,
             save_callback=self.save_click
             )
         self.view.show()
@@ -109,7 +111,7 @@ class CompleteWorkflowController(TimeLogMixin):
 
         if assignee != self.assignee:
             try:
-                self.issue_obj.update(assignee={'name': assignee})
+                self.issue.update(assignee={'name': assignee})
             except JIRAError as e:
                 QMessageBox.about(self.view, 'Error', e.text)
                 return
@@ -117,7 +119,7 @@ class CompleteWorkflowController(TimeLogMixin):
         try:
             # save timelog
             self.jira_client.log_work(
-                self.issue_obj,
+                self.issue,
                 time_spent,
                 start_date,
                 comment,
@@ -130,7 +132,7 @@ class CompleteWorkflowController(TimeLogMixin):
             # change resolution
             resolution = self.view.set_resolution.currentText()
             self.jira_client.client.transition_issue(
-                self.issue_obj,
+                self.issue,
                 transition=self.status,
                 resolution={
                         'name': resolution,
@@ -143,7 +145,7 @@ class CompleteWorkflowController(TimeLogMixin):
         try:
             # save version
             version = self.view.set_version.currentText()
-            self.issue_obj.update(fields={'fixVersions': [{'name': version}]})
+            self.issue.update(fields={'fixVersions': [{'name': version}]})
         except JIRAError as e:
             QMessageBox.about(self.view, "Error", e.text)
             return
