@@ -40,7 +40,7 @@ class JiraClient:
             comment=comment
         )
 
-    def get_possible_resolutions(self, issue):
+    def get_possible_resolutions(self):
         resolutions = self.client.resolutions()
         possible_resolutions = [resolution.name for resolution in resolutions]
 
