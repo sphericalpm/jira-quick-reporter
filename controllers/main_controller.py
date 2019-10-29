@@ -80,7 +80,7 @@ class MainController(TimeLogMixin):
         assignee = issue_obj.fields.assignee.emailAddress
 
         if status_id:
-            if status == 'Put on hold' or status == 'Select for development':
+            if status in ['Put on hold', 'Select for development']:
                 # we do not need to open workflow window with detail information
                 try:
                     QApplication.setOverrideCursor(Qt.WaitCursor)
@@ -99,7 +99,7 @@ class MainController(TimeLogMixin):
                 QApplication.restoreOverrideCursor()
                 self.refresh_issue_list()
 
-            elif status == 'Complete' or status == 'Declare done':
+            elif status in ['Complete', 'Declare done']:
                 # open complete workflow window
                 self.complete_workflow_controller = CompleteWorkflowController(
                     self.jira_client,
