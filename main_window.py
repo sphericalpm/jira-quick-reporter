@@ -16,9 +16,9 @@ from PyQt5.QtWidgets import (
     QMenu,
     QAction,
     QSizePolicy,
-    QComboBox
 )
 
+from redefined_QComboBox import MyQComboBox
 from center_window import CenterWindow
 from config import (
     QSS,
@@ -43,7 +43,7 @@ class QCustomWidget(QWidget):
         self.remaining_label = QLabel()
         self.remaining_label.setObjectName('remaining_label')
 
-        self.set_workflow = QComboBox(self)
+        self.set_workflow = MyQComboBox(self)
 
         timetracking_grid = QGridLayout()
         timetracking_grid.addWidget(self.estimated_label, 0, 0)
