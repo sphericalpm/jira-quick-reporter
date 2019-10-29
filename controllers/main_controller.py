@@ -61,7 +61,6 @@ class MainController:
             self.issues_count = 0
         issues_list = self.get_issue_list()
         self.view.show_issues_list(issues_list, load_more)
-        self.view.is_scrolling_enable = True
 
     def change_workflow(self, workflow, issue_obj, status):
         status_id = workflow.get(status)

@@ -115,11 +115,9 @@ class MainWindow(CenterWindow):
 
         self.setStyleSheet(QSS)
         self.controller = controller
-        self.selected_issue_key = None
         self.resize(800, 450)
         self.setWindowTitle('JIRA Quick Reporter')
         self.setWindowIcon(QIcon(LOGO_PATH))
-        self.is_scrolling_enable = True
 
         self.main_box = QVBoxLayout()
         self.list_box = QVBoxLayout()
@@ -223,8 +221,7 @@ class MainWindow(CenterWindow):
             )
 
     def wheelEvent(self, event):
-        if event.angleDelta().y() < 0 and self.is_scrolling_enable:
-            self.is_scrolling_enable = False
+        if event.angleDelta().y() < 0:
             self.controller.refresh_issue_list(True)
             event.accept()
 
