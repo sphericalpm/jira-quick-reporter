@@ -1,6 +1,6 @@
 import os
 
-import requests
+from requests.exceptions import ReadTimeout, ConnectionError
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMessageBox, QApplication
 from jira import JIRAError
@@ -127,8 +127,8 @@ class MainController(TimeLogMixin):
             else:
                 new_issues_list, update_issues_list, delete_issues_list = self.get_issues_list()
 
-        except (requests.exceptions.ConnectionError,
-                requests.exceptions.ReadTimeout):
+        except (ConnectionError,
+                ReadTimeout):
             self.view.tray_icon.showMessage(
                 'Connection error',
                 'Please, check your internet connection'
@@ -160,17 +160,16 @@ class MainController(TimeLogMixin):
         current_status = workflow_items.itemText(0)
         if current_status == status:
             return
+
         issue = self.current_issues[issue_key]
-        try:
         existing_estimate = self.jira_client.get_remaining_estimate(issue)
         original_estimate = self.jira_client.get_original_estimate(issue)
         assignee = issue.fields.assignee.emailAddress
 
-        try:
-            status_id = self.jira_client.client.find_transitionid_by_name(
-                issue,
-                status
-            )
+        status_id = self.jira_client.client.find_transitionid_by_name(
+            issue,
+            status
+        )
 
         if not status_id:
             return
@@ -211,6 +210,9 @@ class MainController(TimeLogMixin):
                 self
             )
             self.workflow_controller.show()
+
+    def reset_workflow(self, issue):
+        self.view.set_workflow_current_state(issue.key)
 
     def open_pomodoro_window(self, issue_key, issue_title):
         if self.pomodoro_view:

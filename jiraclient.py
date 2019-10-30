@@ -1,4 +1,4 @@
-from jira import JIRA
+from jira import JIRA, JIRAError
 from config import MAX_RETRIES, ISSUES_COUNT, SERVER
 
 
