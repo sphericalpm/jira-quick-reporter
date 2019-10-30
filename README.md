@@ -28,7 +28,7 @@ You can find executable version of JQR in dist/JQR/JQR
 On the main window you can see menu with a list of filters. 
 By default you have a 'my open issues' filter and 'Search issues' menu item.
 
-![main window](https://ibb.co/QrQh1Ln)
+![main window](https://i.ibb.co/ZWXvk5K/image-2019-10-30-18-12-19.png)
 
 #### Creating new filter
 
@@ -40,7 +40,7 @@ By default you have a 'my open issues' filter and 'Search issues' menu item.
 
 4. To save filter, you need to click the 'Save as' button above the text input.
 
-![main window](https://ibb.co/sC5qNnn)
+![main window](https://i.ibb.co/5kYLSmm/image.png)
 
 #### Editing a filter
 
