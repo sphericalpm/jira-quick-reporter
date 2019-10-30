@@ -3,10 +3,10 @@ from PyQt5.QtCore import Qt
 from jira import JIRAError
 
 from workflow_window import WorkflowWindow, CompleteWorflowWindow
-from .mixins import TimeLogMixin
+from controllers.mixins import TimeLogMixin, SavingWithThreadsMixin
 
 
-class WorkflowController:
+class WorkflowController(SavingWithThreadsMixin):
     def __init__(
         self,
         jira_client,
@@ -35,13 +35,11 @@ class WorkflowController:
         )
         self.view.show()
 
-    def save_click(self):
+    def saving_into_jira(self):
         assignee = self.view.assignee_line.text()
         original_estimate = self.view.original_estimate_line.text()
         remaining_estimate = self.view.remaining_estimate_line.text()
         comment = self.view.comment_line.toPlainText()
-
-        QApplication.setOverrideCursor(Qt.WaitCursor)
 
         if assignee != self.assignee:
             try:
@@ -72,12 +70,8 @@ class WorkflowController:
         except JIRAError as e:
             QMessageBox.about(self.view, 'Error', e.text)
 
-        self.controller.refresh_issue_list()
-        QApplication.restoreOverrideCursor()
-        self.view.close()
 
-
-class CompleteWorkflowController(TimeLogMixin):
+class CompleteWorkflowController(TimeLogMixin, SavingWithThreadsMixin):
     def __init__(self, jira_client, issue, status, assignee, controller):
         self.controller = controller
         self.jira_client = jira_client
@@ -96,15 +90,13 @@ class CompleteWorkflowController(TimeLogMixin):
             )
         self.view.show()
 
-    def save_click(self, issue_key):
+    def saving_into_jira(self, issue_key=None):
         time_spent = self.view.time_spent_line.text()
         start_date = self.view.date_start
         comment = self.view.work_description_line.toPlainText()
         remaining_estimate = self.view.new_remaining_estimate
         assignee = self.view.assignee_line.text()
         log_work_params = self.take_timelog_values(remaining_estimate, self.view)
-
-        QApplication.setOverrideCursor(Qt.WaitCursor)
 
         if not start_date:
             return
@@ -149,7 +141,3 @@ class CompleteWorkflowController(TimeLogMixin):
         except JIRAError as e:
             QMessageBox.about(self.view, "Error", e.text)
             return
-
-        self.controller.refresh_issue_list()
-        QApplication.restoreOverrideCursor()
-        self.view.close()
