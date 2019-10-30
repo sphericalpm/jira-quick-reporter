@@ -14,6 +14,7 @@ from controllers.workflow_controller import (
 from controllers.mixins import TimeLogMixin
 from pomodoro_window import PomodoroWindow
 from time_log_window import TimeLogWindow
+from controllers.loading_indicator import LoadingIndicator, Thread
 
 
 class MainController(TimeLogMixin):
@@ -74,36 +75,25 @@ class MainController(TimeLogMixin):
         self.view.show_issues_list(issues_list, load_more)
 
     def change_workflow(self, workflow, issue_obj, status):
-        status_id = workflow.get(status)
-        existing_estimate = self.jira_client.get_remaining_estimate(issue_obj)
-        original_estimate = self.jira_client.get_original_estimate(issue_obj)
-        assignee = issue_obj.fields.assignee.emailAddress
+        self.issue = issue_obj
+        self.status_id = workflow.get(status)
+        existing_estimate = self.jira_client.get_remaining_estimate(self.issue)
+        original_estimate = self.jira_client.get_original_estimate(self.issue)
+        assignee = self.issue.fields.assignee.emailAddress
 
-        if status_id:
+        if self.status_id:
             if status in ['Put on hold', 'Select for development']:
-                # we do not need to open workflow window with detail information
-                try:
-                    QApplication.setOverrideCursor(Qt.WaitCursor)
-                    self.jira_client.client.transition_issue(
-                            issue_obj,
-                            transition=status_id
-                        )
-                except JIRAError as e:
-                    QMessageBox.about(self.view, 'Error', e.text)
-
-                self.view.tray_icon.showMessage(
-                    'Saving...',
-                    'Please wait',
-                    msecs=2000
-                )
-                QApplication.restoreOverrideCursor()
-                self.refresh_issue_list()
+                self.indicator = LoadingIndicator(self, self.view.main_box)
+                self.indicator.show()
+                self.new_thread = Thread(self.simple_workflow_change)
+                self.new_thread.start()
+                self.new_thread.finished.connect(self.stop_indicator)
 
             elif status in ['Complete', 'Declare done']:
                 # open complete workflow window
                 self.complete_workflow_controller = CompleteWorkflowController(
                     self.jira_client,
-                    issue_obj,
+                    self.issue,
                     status,
                     assignee,
                     self
@@ -116,14 +106,30 @@ class MainController(TimeLogMixin):
             else:
                 self.workflow_controller = WorkflowController(
                     self.jira_client,
-                    issue_obj,
-                    status_id,
+                    self.issue,
+                    self.status_id,
                     existing_estimate,
                     original_estimate,
                     assignee,
                     self
                 )
                 self.workflow_controller.show()
+
+    def stop_indicator(self, result, error):
+        self.indicator.spinner.stop()
+        if result:
+            self.refresh_issue_list()
+        elif error:
+            QMessageBox.about(self.view, 'Error', error)
+
+    def simple_workflow_change(self):
+        try:
+            self.jira_client.client.transition_issue(
+                    self.issue,
+                    transition=self.status_id
+                )
+        except JIRAError as e:
+            raise ValueError(e.text)
 
     def get_possible_workflows(self, issue):
         current_workflow = issue['issue_obj'].fields.status
@@ -151,6 +157,7 @@ class MainController(TimeLogMixin):
         )
         self.pomodoro_view.show()
         self.pomodoro_view.log_work_if_file_exists()
+
 
     def open_timelog_from_pomodoro(self, issue_key):
         params = [issue_key]
@@ -187,37 +194,45 @@ class MainController(TimeLogMixin):
         show popup for successfully save or exception
         """
 
-        issue = self.jira_client.issue(issue_key)
-        time_spent = self.time_log_view.time_spent_line.text()
-        start_date = self.time_log_view.date_start
-        if not start_date:
+        self.current_issue = self.jira_client.issue(issue_key)
+        self.time_spent = self.time_log_view.time_spent_line.text()
+        self.start_date = self.time_log_view.date_start
+        if not self.start_date:
             return
-        comment = self.time_log_view.work_description_line.toPlainText()
+        self.comment = self.time_log_view.work_description_line.toPlainText()
         remaining_estimate = self.time_log_view.new_remaining_estimate
-        log_work_params = self.take_timelog_values(
+        self.log_work_params = self.take_timelog_values(
             remaining_estimate,
             self.time_log_view
         )
-        try:
-            self.jira_client.log_work(
-                issue,
-                time_spent,
-                start_date,
-                comment,
-                **log_work_params)
+
+        self.timelog_indicator = LoadingIndicator(self, self.time_log_view.vbox)
+        self.timelog_indicator.show()
+        self.new_thread = Thread(self.save_worklog_into_jira)
+        self.new_thread.start()
+        self.new_thread.finished.connect(self.timelog_stop_indicator)
+
+    def timelog_stop_indicator(self, result, error):
+        self.timelog_indicator.spinner.stop()
+        if result:
             self.time_log_view.close()
             self.refresh_issue_list()
             self.view.timer.start(LOG_TIME)
-            self.view.tray_icon.showMessage(
-                'Saving work log',
-                'Successfully saved',
-                msecs=200
-            )
             if self.pomodoro_view:
                 self.pomodoro_view.reset_timer()
+        elif error:
+            QMessageBox.about(self.time_log_view, 'Error', error)
 
+    def save_worklog_into_jira(self):
+        try:
+            self.jira_client.log_work(
+                self.current_issue,
+                self.time_spent,
+                self.start_date,
+                self.comment,
+                **self.log_work_params)
         except JIRAError as e:
-            QMessageBox.about(self.time_log_view, "Error", e.text)
+            raise ValueError(e.text)
 
     def quit_app(self):
         if self.pomodoro_view:
