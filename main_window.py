@@ -29,7 +29,8 @@ from config import (
     LOGO_PATH,
     LOG_TIME,
     RING_SOUND_PATH,
-    FILTER_FIELD_HELP_URL
+    FILTER_FIELD_HELP_URL,
+    DEFAULT_FILTERS
 )
 
 
@@ -177,6 +178,7 @@ class MainWindow(CenterWindow):
         self.vbox.addLayout(self.list_box)
 
         self.filters_frame = QFrame()
+        self.filters_frame.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
         self.filters_frame.setFrameShape(QFrame.StyledPanel)
         self.filters_frame.setObjectName('filters_frame')
         self.filters_frame.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
@@ -205,8 +207,14 @@ class MainWindow(CenterWindow):
         self.btn_box.addWidget(self.refresh_btn, alignment=Qt.AlignRight)
         self.vbox.addLayout(self.btn_box)
 
+        self.toggle_frame_filters_btn = QPushButton('<')
+        self.toggle_frame_filters_btn.clicked.connect(self.toggle_frame_filters)
+        self.toggle_frame_filters_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.toggle_frame_filters_btn.setObjectName('toggle_filters_btn')
+
         self.main_box = QHBoxLayout()
         self.main_box.addWidget(self.filters_frame)
+        self.main_box.addWidget(self.toggle_frame_filters_btn, alignment=Qt.AlignTop)
         self.main_box.addLayout(self.vbox)
         self.setLayout(self.main_box)
 
@@ -301,7 +309,6 @@ class MainWindow(CenterWindow):
     def show_filters(self, filters_dict):
         for key in filters_dict.keys():
             self.filters_list.addItem(key)
-        self.filters_list.setCurrentItem(self.filters_list.item(0))
         self.filters_list.item(0).setText(self.filters_list.item(0).text().capitalize())
 
         # add separator after first item
@@ -313,6 +320,7 @@ class MainWindow(CenterWindow):
         self.filters_list.insertItem(1, item_separator)
         self.filters_list.setItemWidget(item_separator, separator)
 
+        self.filters_list.setCurrentItem(self.filters_list.item(2))
         self.on_filter_selected(self.filters_list.currentItem())
         self.filters_list.setMaximumWidth(
             self.filters_list.sizeHintForColumn(0) + 10
@@ -337,6 +345,14 @@ class MainWindow(CenterWindow):
             self.overwrite_filter_button.hide()
             self.save_filter_btn.show()
 
+    def toggle_frame_filters(self):
+        if self.toggle_frame_filters_btn.text() == '<':
+            self.toggle_frame_filters_btn.setText('>')
+            self.filters_frame.hide()
+        else:
+            self.toggle_frame_filters_btn.setText('<')
+            self.filters_frame.show()
+
     def eventFilter(self, object, event):
         # if user started typing in filter field
         if object is self.filter_field and event.type() == QEvent.KeyRelease:
@@ -355,13 +371,13 @@ class MainWindow(CenterWindow):
         if event.type() == QEvent.ContextMenu:
             self.filters_list.setCurrentItem(self.current_item)
             if object.itemAt(event.pos()) is self.filters_list.currentItem():
+                item_text = self.filters_list.currentItem().text().lower()
+                if item_text in DEFAULT_FILTERS:
+                    return super().eventFilter(object, event)
                 context_menu = QMenu()
                 action_delete = QAction('Delete', self)
                 context_menu.addAction(action_delete)
-                if not self.filters_list.currentRow():
-                    action_delete.setEnabled(False)
                 if context_menu.exec_(event.globalPos()):
-                    item_text = self.filters_list.currentItem().text()
                     reply = QMessageBox.question(
                         self,
                         'Delete filter',

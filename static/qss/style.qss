@@ -8,6 +8,13 @@ QPushButton#issue_menu_btn{
     font-weight: bold;
 }
 
+QPushButton#toggle_filters_btn{
+    background: #EBEBEB;
+    font-size: 12pt;
+    margin-right: 3px;
+    padding:2px;
+}
+
 QListWidget#issue_list::item{
     border-bottom: 1px solid lightgray
 }
