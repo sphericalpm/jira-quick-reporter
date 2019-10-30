@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from PyQt5.QtCore import QEvent
+from PyQt5 import QtCore
 from PyQt5.QtWidgets import (
     QPushButton,
     QLineEdit,
@@ -15,14 +16,35 @@ from config import QSS
 
 
 class TimeLogWindow(CenterWindow):
-    def __init__(self, issue_key, time_spent=None):
+    def __init__(self, issue_key, time_spent=None, save_callback=None):
         super().__init__()
         self.issue_key = issue_key
+        self.time_spent = time_spent
+        self.save_callback = save_callback
         # main window characteristics
         self.setStyleSheet(QSS)
         self.resize(600, 450)
         self.setWindowTitle('Log Work: {issue}'.format(issue=issue_key))
 
+        vbox = self.build_issue_form_vbox()
+        vbox = self.add_save_button(vbox)
+        self.setLayout(vbox)
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Return:
+            self.save_callback(self.issue_key)
+
+    def add_save_button(self, vbox):
+        self.save_button = QPushButton('Save')
+        self.save_button.setToolTip('save new time tracking values into Jira')
+        if self.save_callback:
+            self.save_button.clicked.connect(
+                lambda: self.save_callback(self.issue_key)
+            )
+        vbox.addWidget(self.save_button)
+        return vbox
+
+    def build_issue_form_vbox(self):
         # vbox elements description
         time_spent_label = QLabel('Time Spent (eg. 3w 4d 12h):')
         date_start = QLabel('Date Started (eg. 12-05-2019 13:15):')
@@ -53,20 +75,17 @@ class TimeLogWindow(CenterWindow):
 
         self.new_remaining_estimate = None
 
-        work_description = QLabel('Work Description:')
+        work_description = QLabel('Description:')
 
         self.time_spent_line = QLineEdit()
-        if time_spent:
-            self.time_spent_line.setText(time_spent)
+        if self.time_spent:
+            self.time_spent_line.setText(self.time_spent)
         self.date_start_line = QLineEdit(
             datetime.strftime(datetime.now(), '%d-%m-%Y %H:%M')
         )
         self.date_start_line.installEventFilter(self)
         self.date_start = self.get_date_from_line()
         self.work_description_line = QTextEdit()
-
-        self.save_button = QPushButton('Save')
-        self.save_button.setToolTip('save new time tracking values into Jira')
 
         # add elements to box
         vbox = QGridLayout()
@@ -87,9 +106,8 @@ class TimeLogWindow(CenterWindow):
 
         vbox.addWidget(work_description)
         vbox.addWidget(self.work_description_line)
-        vbox.addWidget(self.save_button)
 
-        self.setLayout(vbox)
+        return vbox
 
     def set_existing_estimate(self, existing_estimate):
         self.existing_estimate.setText(

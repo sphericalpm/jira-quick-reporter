@@ -1,15 +1,22 @@
 import os
 
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QMessageBox, QApplication
+from PyQt5.QtCore import Qt
 from jira import JIRAError
 
 from config import LOG_TIME
 from main_window import MainWindow
+
+from controllers.workflow_controller import (
+    WorkflowController,
+    CompleteWorkflowController
+)
+from controllers.mixins import TimeLogMixin
 from pomodoro_window import PomodoroWindow
 from time_log_window import TimeLogWindow
 
 
-class MainController:
+class MainController(TimeLogMixin):
     def __init__(self, jira_client):
         self.jira_client = jira_client
         self.issues_count = 0
@@ -64,19 +71,55 @@ class MainController:
 
     def change_workflow(self, workflow, issue_obj, status):
         status_id = workflow.get(status)
+        existing_estimate = self.jira_client.get_remaining_estimate(issue_obj)
+        original_estimate = self.jira_client.get_original_estimate(issue_obj)
+        assignee = issue_obj.fields.assignee.emailAddress
 
-        try:
-            if status_id:
-                self.jira_client.client.transition_issue(
+        if status_id:
+            if status in ['Put on hold', 'Select for development']:
+                # we do not need to open workflow window with detail information
+                try:
+                    QApplication.setOverrideCursor(Qt.WaitCursor)
+                    self.jira_client.client.transition_issue(
+                            issue_obj,
+                            transition=status_id
+                        )
+                except JIRAError as e:
+                    QMessageBox.about(self.view, 'Error', e.text)
+
+                self.view.tray_icon.showMessage(
+                    'Saving...',
+                    'Please wait',
+                    msecs=2000
+                )
+                QApplication.restoreOverrideCursor()
+                self.refresh_issue_list()
+
+            elif status in ['Complete', 'Declare done']:
+                # open complete workflow window
+                self.complete_workflow_controller = CompleteWorkflowController(
+                    self.jira_client,
                     issue_obj,
-                    transition=status_id
+                    status,
+                    assignee,
+                    self
+                )
+                self.complete_workflow_controller.show()
+                self.complete_workflow_controller.view.set_existing_estimate(
+                    existing_estimate,
                 )
 
-        except JIRAError as e:
-            QMessageBox.about(self.view, 'Error', e.text)
-
-        finally:
-            self.refresh_issue_list()
+            else:
+                self.workflow_controller = WorkflowController(
+                    self.jira_client,
+                    issue_obj,
+                    status_id,
+                    existing_estimate,
+                    original_estimate,
+                    assignee,
+                    self
+                )
+                self.workflow_controller.show()
 
     def get_possible_workflows(self, issue):
         current_workflow = issue['issue_obj'].fields.status
@@ -125,13 +168,14 @@ class MainController:
 
     def open_timelog_window(self, issue_key, time_spent=None):
         issue = self.jira_client.issue(issue_key)
-        self.time_log_view = TimeLogWindow(issue_key, time_spent)
+        self.time_log_view = TimeLogWindow(
+            issue_key,
+            time_spent,
+            save_callback=self.save_issue_worklog
+        )
         existing_estimate = self.jira_client.get_remaining_estimate(issue)
         self.time_log_view.set_existing_estimate(existing_estimate)
         self.time_log_view.show()
-        self.time_log_view.save_button.clicked.connect(
-            lambda: self.save_issue_worklog(issue_key)
-        )
 
     def save_issue_worklog(self, issue_key):
         """Save button event handler
@@ -146,33 +190,10 @@ class MainController:
             return
         comment = self.time_log_view.work_description_line.toPlainText()
         remaining_estimate = self.time_log_view.new_remaining_estimate
-
-        if not remaining_estimate:
-            log_work_params = dict()
-        elif remaining_estimate.get('name') == 'existing_estimate':
-            log_work_params = dict(
-                adjust_estimate='new',
-                new_estimate=remaining_estimate.get('value')
-            )
-        elif remaining_estimate.get('name') == 'set_new_estimate':
-            estimate = self.time_log_view.set_new_estimate_value.text()
-            log_work_params = dict(
-                adjust_estimate='new',
-                new_estimate=estimate
-            )
-        elif remaining_estimate.get('name') == 'reduce_estimate':
-            estimate = self.time_log_view.reduce_estimate_value.text()
-            log_work_params = dict(
-                adjust_estimate='manual',
-                new_estimate=estimate
-            )
-        else:
-            QMessageBox.about(
-                self.time_log_view,
-                'Error',
-                'something went wrong'
-            )
-            return
+        log_work_params = self.take_timelog_values(
+            remaining_estimate,
+            self.time_log_view
+        )
         try:
             self.jira_client.log_work(
                 issue,
