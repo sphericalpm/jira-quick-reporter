@@ -115,7 +115,6 @@ class MainWindow(CenterWindow):
 
         self.setStyleSheet(QSS)
         self.controller = controller
-        self.selected_issue_key = None
         self.resize(800, 450)
         self.setWindowTitle('JIRA Quick Reporter')
         self.setWindowIcon(QIcon(LOGO_PATH))
@@ -129,15 +128,6 @@ class MainWindow(CenterWindow):
         self.main_box.addLayout(self.list_box)
         self.main_box.addLayout(self.btn_box)
         self.setLayout(self.main_box)
-
-        self.load_more_issues_btn = QPushButton('Load more')
-        width = self.load_more_issues_btn.fontMetrics().boundingRect(
-            self.load_more_issues_btn.text()
-        ).width() + 20
-        self.load_more_issues_btn.setMaximumWidth(width)
-        self.load_more_issues_btn.clicked.connect(
-            lambda: self.controller.refresh_issue_list(True)
-        )
 
         self.refresh_btn = QPushButton('Refresh')
         self.refresh_btn.clicked.connect(self.controller.refresh_issue_list)
@@ -182,7 +172,6 @@ class MainWindow(CenterWindow):
             return
         elif not load_more:
             self.list_box.addWidget(self.issue_list_widget)
-            self.list_box.addWidget(self.load_more_issues_btn)
 
         # create list of issues
         for issue in issues_list:
@@ -230,6 +219,11 @@ class MainWindow(CenterWindow):
             self.issue_list_widget.setItemWidget(
                 issue_list_widget_item, issue_widget
             )
+
+    def wheelEvent(self, event):
+        if event.angleDelta().y() < 0:
+            self.controller.refresh_issue_list(True)
+            event.accept()
 
     def closeEvent(self, QCloseEvent):
         QCloseEvent.ignore()

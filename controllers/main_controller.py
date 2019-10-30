@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QMessageBox, QApplication
 from PyQt5.QtCore import Qt
 from jira import JIRAError
 
-from config import LOG_TIME, DEFAULT_ISSUES_COUNT
+from config import LOG_TIME
 from main_window import MainWindow
 
 from controllers.workflow_controller import (
@@ -33,10 +33,6 @@ class MainController(TimeLogMixin):
         issues = self.jira_client.get_issues(self.issues_count)
         current_issues_count = len(issues)
         self.issues_count += current_issues_count
-        if current_issues_count < DEFAULT_ISSUES_COUNT:
-            self.view.load_more_issues_btn.hide()
-        else:
-            self.view.load_more_issues_btn.show()
 
         # create list of issues
         for issue in issues:
