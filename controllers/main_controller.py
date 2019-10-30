@@ -1,7 +1,6 @@
 import os
 
-from PyQt5.QtWidgets import QMessageBox, QApplication
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QMessageBox
 from jira import JIRAError
 
 from config import LOG_TIME, DEFAULT_ISSUES_COUNT
@@ -157,7 +156,6 @@ class MainController(TimeLogMixin):
         )
         self.pomodoro_view.show()
         self.pomodoro_view.log_work_if_file_exists()
-
 
     def open_timelog_from_pomodoro(self, issue_key):
         params = [issue_key]

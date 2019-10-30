@@ -1,5 +1,3 @@
-from PyQt5.QtWidgets import QMessageBox, QApplication
-from PyQt5.QtCore import Qt
 from jira import JIRAError
 
 from workflow_window import WorkflowWindow, CompleteWorflowWindow
@@ -68,6 +66,7 @@ class WorkflowController(SavingWithThreadsMixin):
                 )
         except JIRAError as e:
             raise ValueError(e.text)
+
 
 class CompleteWorkflowController(TimeLogMixin, SavingWithThreadsMixin):
     def __init__(self, jira_client, issue, status, assignee, controller):

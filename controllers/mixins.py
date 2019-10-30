@@ -35,6 +35,7 @@ class TimeLogMixin:
 
         return log_work_params
 
+
 class SavingWithThreadsMixin():
     def save_click(self, issue_key):
         self.indicator = LoadingIndicator(self, self.view.vbox)

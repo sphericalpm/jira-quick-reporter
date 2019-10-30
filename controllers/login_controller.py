@@ -1,8 +1,6 @@
 import os
 import stat
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication
 from jira import JIRAError
 
 from config import CREDENTIALS_PATH

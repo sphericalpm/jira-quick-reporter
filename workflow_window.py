@@ -13,7 +13,14 @@ from time_log_window import TimeLogWindow
 
 
 class WorkflowWindow(CenterWindow, QMainWindow):
-    def __init__(self, issue, existing_estimate, original_estimate, assignee, controller):
+    def __init__(
+        self,
+        issue,
+        existing_estimate,
+        original_estimate,
+        assignee,
+        controller
+    ):
         super().__init__()
         self.issue = issue
         self.existing_estimate = existing_estimate
@@ -66,8 +73,16 @@ class WorkflowWindow(CenterWindow, QMainWindow):
         if event.key() == QtCore.Qt.Key_Return:
             self.controller.save_click()
 
+
 class CompleteWorflowWindow(TimeLogWindow):
-    def __init__(self, controller, issue, assignee, possible_resolutions, save_callback=None):
+    def __init__(
+        self,
+        controller,
+        issue,
+        assignee,
+        possible_resolutions,
+        save_callback=None
+    ):
         self.controller = controller
         self.issue = issue
         self.assignee = assignee

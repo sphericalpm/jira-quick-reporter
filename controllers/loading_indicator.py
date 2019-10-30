@@ -16,6 +16,7 @@ class LoadingIndicator:
         self.widget.addWidget(self.spinner)
         self.spinner.start()
 
+
 class Thread(QThread):
     finished = pyqtSignal(bool, str)
 
