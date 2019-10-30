@@ -6,16 +6,15 @@ class LoadingIndicator:
     def __init__(self, controller, widget):
         self.controller = controller
         self.widget = widget
-
-    def show(self):
         self.spinner = WaitingSpinner(
             self.controller.view,
             True,
             True,
             Qt.ApplicationModal)
+
+    def show(self):
         self.widget.addWidget(self.spinner)
         self.spinner.start()
-
 
 class Thread(QThread):
     finished = pyqtSignal()
