@@ -1,19 +1,21 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
+from PyQt5 import QtCore
 from PyQt5.QtWidgets import (
     QLabel,
     QHBoxLayout,
     QLineEdit,
     QPushButton,
     QCheckBox,
-    QFormLayout
+    QFormLayout,
+    QMainWindow
 )
 
 from center_window import CenterWindow
 from config import QSS, LOGO_PATH
 
 
-class LoginWindow(CenterWindow):
+class LoginWindow(CenterWindow, QMainWindow):
     def __init__(self, controller):
         super().__init__()
 
@@ -70,6 +72,10 @@ class LoginWindow(CenterWindow):
         self.form.addRow(self.label_error)
         self.form.addRow(self.btn_box)
         self.form.setAlignment(Qt.AlignCenter)
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Return:
+            self.controller.login()
 
     def set_error_to_label(self, text):
         self.label_error.setText(text)

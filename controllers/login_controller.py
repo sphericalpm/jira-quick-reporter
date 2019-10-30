@@ -27,7 +27,7 @@ class LoginController:
                 self.remember_me(email, token)
             self.open_main_window()
         except JIRAError:
-            self.view.set_error_to_label('The email or token is incorrect.')
+            self.view.set_error_to_label('Email or token is incorrect')
         except UnicodeEncodeError:
             self.view.set_error_to_label('English letters only')
 

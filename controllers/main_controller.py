@@ -7,12 +7,18 @@ from jira import JIRAError
 
 from config import LOG_TIME, ISSUES_COUNT, REFRESH_TIME
 from main_window import MainWindow
+
+from controllers.workflow_controller import (
+    WorkflowController,
+    CompleteWorkflowController
+)
+from controllers.mixins import TimeLogMixin
 from pomodoro_window import PomodoroWindow
 from time_log_window import TimeLogWindow
 from utils.decorators import catch_timeout_exception
 
 
-class MainController:
+class MainController(TimeLogMixin):
     def __init__(self, jira_client):
         self.jira_client = jira_client
         self.issues_count = 0
@@ -149,37 +155,62 @@ class MainController:
             if delete_issues_list:
                 self.view.delete_issues(delete_issues_list)
 
+    @catch_timeout_exception
     def change_workflow(self, issue_key, workflow_items, status):
         current_status = workflow_items.itemText(0)
         if current_status == status:
             return
-        QApplication.setOverrideCursor(Qt.WaitCursor)
+        issue = self.current_issues[issue_key]
+        try:
+        existing_estimate = self.jira_client.get_remaining_estimate(issue)
+        original_estimate = self.jira_client.get_original_estimate(issue)
+        assignee = issue.fields.assignee.emailAddress
+
         try:
             status_id = self.jira_client.client.find_transitionid_by_name(
-                issue_key,
+                issue,
                 status
             )
 
+        if not status_id:
+            return
+        if status in ['Put on hold', 'Select for development']:
+            # we do not need to open workflow window with detail information
             try:
-                if status_id:
-                    self.jira_client.client.transition_issue(
-                        issue_key,
+                self.jira_client.client.transition_issue(
+                        issue,
                         transition=status_id
                     )
                 self.refresh_issue_list()
             except JIRAError as e:
-                QApplication.restoreOverrideCursor()
                 QMessageBox.about(self.view, 'Error', e.text)
-        except (requests.exceptions.ConnectionError,
-                requests.exceptions.ReadTimeout):
-            QMessageBox.warning(
-                None,
-                'Connection error',
-                'Check your internet connection and try again'
+                self.view.set_workflow_current_state(issue_key)
+
+        elif status in ['Complete', 'Declare done']:
+            # open complete workflow window
+            self.complete_workflow_controller = CompleteWorkflowController(
+                self.jira_client,
+                issue,
+                status,
+                assignee,
+                self
             )
-            self.view.set_workflow_current_state(issue_key)
-        finally:
-            QApplication.restoreOverrideCursor()
+            self.complete_workflow_controller.show()
+            self.complete_workflow_controller.view.set_existing_estimate(
+                existing_estimate,
+            )
+
+        else:
+            self.workflow_controller = WorkflowController(
+                self.jira_client,
+                issue,
+                status_id,
+                existing_estimate,
+                original_estimate,
+                assignee,
+                self
+            )
+            self.workflow_controller.show()
 
     def open_pomodoro_window(self, issue_key, issue_title):
         if self.pomodoro_view:
@@ -221,13 +252,14 @@ class MainController:
     @catch_timeout_exception
     def open_timelog_window(self, issue_key, time_spent=None):
         issue = self.jira_client.issue(issue_key)
-        self.time_log_view = TimeLogWindow(issue_key, time_spent)
+        self.time_log_view = TimeLogWindow(
+            issue_key,
+            time_spent,
+            save_callback=self.save_issue_worklog
+        )
         existing_estimate = self.jira_client.get_remaining_estimate(issue)
         self.time_log_view.set_existing_estimate(existing_estimate)
         self.time_log_view.show()
-        self.time_log_view.save_button.clicked.connect(
-            lambda: self.save_issue_worklog(issue_key)
-        )
 
     @catch_timeout_exception
     def save_issue_worklog(self, issue_key):
@@ -243,33 +275,10 @@ class MainController:
             return
         comment = self.time_log_view.work_description_line.toPlainText()
         remaining_estimate = self.time_log_view.new_remaining_estimate
-
-        if not remaining_estimate:
-            log_work_params = dict()
-        elif remaining_estimate.get('name') == 'existing_estimate':
-            log_work_params = dict(
-                adjust_estimate='new',
-                new_estimate=remaining_estimate.get('value')
-            )
-        elif remaining_estimate.get('name') == 'set_new_estimate':
-            estimate = self.time_log_view.set_new_estimate_value.text()
-            log_work_params = dict(
-                adjust_estimate='new',
-                new_estimate=estimate
-            )
-        elif remaining_estimate.get('name') == 'reduce_estimate':
-            estimate = self.time_log_view.reduce_estimate_value.text()
-            log_work_params = dict(
-                adjust_estimate='manual',
-                new_estimate=estimate
-            )
-        else:
-            QMessageBox.about(
-                self.time_log_view,
-                'Error',
-                'something went wrong'
-            )
-            return
+        log_work_params = self.take_timelog_values(
+            remaining_estimate,
+            self.time_log_view
+        )
         try:
             self.jira_client.log_work(
                 issue,
