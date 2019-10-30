@@ -43,7 +43,10 @@ class SavingWithThreadsMixin():
         self.new_thread.start()
         self.new_thread.finished.connect(self.stop_indicator)
 
-    def stop_indicator(self):
+    def stop_indicator(self, result, error):
         self.indicator.spinner.stop()
-        self.controller.refresh_issue_list()
-        self.view.close()
+        if result:
+            self.controller.refresh_issue_list()
+            self.view.close()
+        elif error:
+            QMessageBox.about(self.view, 'Error', error)

@@ -17,12 +17,15 @@ class LoadingIndicator:
         self.spinner.start()
 
 class Thread(QThread):
-    finished = pyqtSignal()
+    finished = pyqtSignal(bool, str)
 
     def __init__(self, callback, parent=None):
         super().__init__()
         self.callback = callback
 
     def run(self):
-        self.callback()
-        self.finished.emit()
+        try:
+            self.callback()
+            self.finished.emit(True, None)
+        except Exception as ex:
+            self.finished.emit(False, str(ex))

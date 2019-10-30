@@ -45,8 +45,7 @@ class WorkflowController(SavingWithThreadsMixin):
             try:
                 self.issue.update(assignee={'name': assignee})
             except JIRAError as e:
-                QMessageBox.about(self.view, 'Error', e.text)
-                return
+                raise ValueError(e.text)
 
         if comment:
             self.jira_client.client.add_comment(self.issue, comment)
@@ -61,15 +60,14 @@ class WorkflowController(SavingWithThreadsMixin):
                 }
             )
         except JIRAError as e:
-            QMessageBox.about(self.view, 'Error', e.text)
+            raise ValueError(e.text)
         try:
             self.jira_client.client.transition_issue(
                     self.issue,
                     transition=self.status_id
                 )
         except JIRAError as e:
-            QMessageBox.about(self.view, 'Error', e.text)
-
+            raise ValueError(e.text)
 
 class CompleteWorkflowController(TimeLogMixin, SavingWithThreadsMixin):
     def __init__(self, jira_client, issue, status, assignee, controller):
@@ -99,14 +97,13 @@ class CompleteWorkflowController(TimeLogMixin, SavingWithThreadsMixin):
         log_work_params = self.take_timelog_values(remaining_estimate, self.view)
 
         if not start_date:
-            return
+            raise ValueError('Enter start date')
 
         if assignee != self.assignee:
             try:
                 self.issue.update(assignee={'name': assignee})
             except JIRAError as e:
-                QMessageBox.about(self.view, 'Error', e.text)
-                return
+                raise ValueError(e.text)
 
         try:
             # save timelog
@@ -117,8 +114,7 @@ class CompleteWorkflowController(TimeLogMixin, SavingWithThreadsMixin):
                 comment,
                 **log_work_params)
         except JIRAError as e:
-            QMessageBox.about(self.view, "Error", e.text)
-            return
+            raise ValueError(e.text)
 
         try:
             # change resolution
@@ -131,13 +127,11 @@ class CompleteWorkflowController(TimeLogMixin, SavingWithThreadsMixin):
                 }
             )
         except JIRAError as e:
-            QMessageBox.about(self.view, "Error", e.text)
-            return
+            raise ValueError(e.text)
 
         try:
             # save version
             version = self.view.set_version.currentText()
             self.issue.update(fields={'fixVersions': [{'name': version}]})
         except JIRAError as e:
-            QMessageBox.about(self.view, "Error", e.text)
-            return
+            raise ValueError(e.text)
