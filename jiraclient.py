@@ -1,5 +1,5 @@
 from jira import JIRA
-from config import MAX_RETRIES
+from config import MAX_RETRIES, DEFAULT_ISSUES_COUNT
 
 
 class JiraClient:
@@ -17,7 +17,8 @@ class JiraClient:
         return self.client.search_issues(
                 query,
                 fields='key, summary, timetracking, status',
-                startAt=start_at
+                startAt=start_at,
+                maxResults=DEFAULT_ISSUES_COUNT
         )
 
     def log_work(

@@ -46,10 +46,18 @@ By default you have a 'my open issues' filter and 'Search issues' menu item.
 
 1. You need to click 'filter_name' menu item.
 
+Default query is 'assignee = currentUser() and resolution = unresolved'
+
 2. Next you need to follow steps 2-3 from previous paragraph
 
 3. To save edited filter, you need to click the 'Save' button above the text input.
     If you haven't edited a filter, the 'Save' button will be disabled.
+    
+#### How to delete a filter
+
+You need to click right button on 'filter_name' menu item and then click 'Delete' in context menu.
+
+You cannot delete default filter 'my open issues' and the 'Search issues' menu item.
 
 #### Syntax help
 
