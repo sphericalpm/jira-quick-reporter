@@ -4,6 +4,7 @@ from jira import JIRAError
 
 from workflow_window import WorkflowWindow, CompleteWorflowWindow
 from .mixins import TimeLogMixin
+from utils.decorators import catch_timeout_exception
 
 
 class WorkflowController:
@@ -24,6 +25,7 @@ class WorkflowController:
         self.original_estimate = original_estimate
         self.status_id = status_id
         self.assignee = assignee
+        self.is_save = False
 
     def show(self):
         self.view = WorkflowWindow(
@@ -35,6 +37,7 @@ class WorkflowController:
         )
         self.view.show()
 
+    @catch_timeout_exception
     def save_click(self):
         assignee = self.view.assignee_line.text()
         original_estimate = self.view.original_estimate_line.text()
@@ -74,7 +77,12 @@ class WorkflowController:
 
         self.controller.refresh_issue_list()
         QApplication.restoreOverrideCursor()
+        self.is_save = True
         self.view.close()
+
+    def close(self):
+        if not self.is_save:
+            self.controller.reset_workflow(self.issue)
 
 
 class CompleteWorkflowController(TimeLogMixin):
@@ -84,6 +92,7 @@ class CompleteWorkflowController(TimeLogMixin):
         self.issue = issue
         self.status = status
         self.assignee = assignee
+        self.is_save = False
 
     def show(self):
         possible_resolutions = self.controller.jira_client.get_possible_resolutions()
@@ -96,6 +105,7 @@ class CompleteWorkflowController(TimeLogMixin):
             )
         self.view.show()
 
+    @catch_timeout_exception
     def save_click(self, issue_key):
         time_spent = self.view.time_spent_line.text()
         start_date = self.view.date_start
@@ -152,4 +162,9 @@ class CompleteWorkflowController(TimeLogMixin):
 
         self.controller.refresh_issue_list()
         QApplication.restoreOverrideCursor()
+        self.is_save = True
         self.view.close()
+
+    def close(self):
+        if not self.is_save:
+            self.controller.reset_workflow(self.issue)

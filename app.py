@@ -1,7 +1,7 @@
 import sys
 import os
 
-import requests
+from requests.exceptions import ConnectionError, ReadTimeout
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from jira import JIRAError
 
@@ -13,8 +13,6 @@ from config import CREDENTIALS_PATH
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(False)
-
     path = os.path.dirname(os.path.realpath(__file__))
 
     if os.path.exists(CREDENTIALS_PATH):
@@ -24,9 +22,11 @@ if __name__ == '__main__':
                 email, token = content.split(';')
                 jira_client = JiraClient(email, token)
                 controller = MainController(jira_client)
+                app.setQuitOnLastWindowClosed(False)
             except (ValueError, JIRAError):
                 controller = LoginController()
-            except requests.exceptions.ConnectionError:
+            except (ConnectionError,
+                    ReadTimeout):
                 QMessageBox.warning(
                     None,
                     'Connection error',
