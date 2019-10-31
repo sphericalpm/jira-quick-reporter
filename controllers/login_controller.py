@@ -8,6 +8,7 @@ from controllers.main_controller import MainController
 from controllers.loading_indicator import LoadingIndicator, Thread
 from jiraclient import JiraClient
 from login_window import LoginWindow
+from utils.decorators import catch_timeout_exception
 
 
 class LoginController:
@@ -16,7 +17,8 @@ class LoginController:
         self.view.show()
         self.jira_client = None
 
-    def login(self):
+    @catch_timeout_exception
+    def login(self, *args):
         self.indicator = LoadingIndicator(self, self.view.form)
         self.indicator.show()
         self.new_thread = Thread(self.save_and_open_issue_list)

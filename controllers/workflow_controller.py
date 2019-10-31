@@ -2,6 +2,7 @@ from jira import JIRAError
 
 from workflow_window import WorkflowWindow, CompleteWorflowWindow
 from controllers.mixins import TimeLogMixin, SavingWithThreadsMixin
+from utils.decorators import catch_timeout_exception
 
 
 class WorkflowController(SavingWithThreadsMixin):
@@ -22,6 +23,7 @@ class WorkflowController(SavingWithThreadsMixin):
         self.original_estimate = original_estimate
         self.status_id = status_id
         self.assignee = assignee
+        self.is_save = False
 
     def show(self):
         self.view = WorkflowWindow(
@@ -33,7 +35,8 @@ class WorkflowController(SavingWithThreadsMixin):
         )
         self.view.show()
 
-    def saving_into_jira(self):
+    @catch_timeout_exception
+    def save_into_jira(self):
         assignee = self.view.assignee_line.text()
         original_estimate = self.view.original_estimate_line.text()
         remaining_estimate = self.view.remaining_estimate_line.text()
@@ -67,6 +70,12 @@ class WorkflowController(SavingWithThreadsMixin):
         except JIRAError as e:
             raise ValueError(e.text)
 
+        self.is_save = True
+
+    def close(self):
+        if not self.is_save:
+            self.controller.reset_workflow(self.issue)
+
 
 class CompleteWorkflowController(TimeLogMixin, SavingWithThreadsMixin):
     def __init__(self, jira_client, issue, status, assignee, controller):
@@ -75,6 +84,7 @@ class CompleteWorkflowController(TimeLogMixin, SavingWithThreadsMixin):
         self.issue = issue
         self.status = status
         self.assignee = assignee
+        self.is_save = False
 
     def show(self):
         possible_resolutions = self.controller.jira_client.get_possible_resolutions()
@@ -87,7 +97,8 @@ class CompleteWorkflowController(TimeLogMixin, SavingWithThreadsMixin):
             )
         self.view.show()
 
-    def saving_into_jira(self, issue_key=None):
+    @catch_timeout_exception
+    def save_into_jira(self):
         time_spent = self.view.time_spent_line.text()
         start_date = self.view.date_start
         comment = self.view.work_description_line.toPlainText()
@@ -134,3 +145,8 @@ class CompleteWorkflowController(TimeLogMixin, SavingWithThreadsMixin):
             self.issue.update(fields={'fixVersions': [{'name': version}]})
         except JIRAError as e:
             raise ValueError(e.text)
+        self.is_save = True
+
+    def close(self):
+        if not self.is_save:
+            self.controller.reset_workflow(self.issue)

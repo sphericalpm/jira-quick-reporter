@@ -73,6 +73,10 @@ class WorkflowWindow(CenterWindow, QMainWindow):
         if event.key() == QtCore.Qt.Key_Return:
             self.controller.save_click()
 
+    def closeEvent(self, event):
+        self.controller.close()
+        event.accept()
+
 
 class CompleteWorflowWindow(TimeLogWindow):
     def __init__(
@@ -114,3 +118,7 @@ class CompleteWorflowWindow(TimeLogWindow):
         self.set_version.addItems(possible_versions)
         self.set_version.setCurrentIndex(0)
         return self.vbox
+
+    def closeEvent(self, event):
+        self.controller.close()
+        event.accept()

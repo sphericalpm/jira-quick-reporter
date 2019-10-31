@@ -40,7 +40,7 @@ class SavingWithThreadsMixin():
     def save_click(self, issue_key):
         self.indicator = LoadingIndicator(self, self.view.vbox)
         self.indicator.show()
-        self.new_thread = Thread(self.saving_into_jira)
+        self.new_thread = Thread(self.save_into_jira)
         self.new_thread.start()
         self.new_thread.finished.connect(self.stop_indicator)
 

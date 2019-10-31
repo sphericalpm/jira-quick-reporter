@@ -69,11 +69,8 @@ class QCustomWidget(QWidget):
         self.issue_menu_btn.setMenu(issue_menu)
 
         self.hbox.addWidget(self.issue_key_label, Qt.AlignLeft)
-        self.issue_key_label.setSizePolicy(
-            QSizePolicy.Expanding, QSizePolicy.Fixed
-        )
-        self.issue_menu_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.hbox.addWidget(self.issue_menu_btn, Qt.AlignRight)
+        self.issue_menu_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
         # create main box layout
         vbox = QVBoxLayout()
@@ -115,7 +112,6 @@ class MainWindow(CenterWindow):
 
         self.setStyleSheet(QSS)
         self.controller = controller
-        self.selected_issue_key = None
         self.resize(800, 450)
         self.setWindowTitle('JIRA Quick Reporter')
         self.setWindowIcon(QIcon(LOGO_PATH))
@@ -125,19 +121,16 @@ class MainWindow(CenterWindow):
         self.btn_box = QHBoxLayout()
 
         self.issue_list_widget = QListWidget(self)
+        self.list_box.addWidget(self.issue_list_widget)
+
+        self.label_info = QLabel('You have no issues.')
+        self.label_info.setAlignment(Qt.AlignCenter)
+        self.list_box.addWidget(self.label_info)
+        self.label_info.hide()
 
         self.main_box.addLayout(self.list_box)
         self.main_box.addLayout(self.btn_box)
         self.setLayout(self.main_box)
-
-        self.load_more_issues_btn = QPushButton('Load more')
-        width = self.load_more_issues_btn.fontMetrics().boundingRect(
-            self.load_more_issues_btn.text()
-        ).width() + 20
-        self.load_more_issues_btn.setMaximumWidth(width)
-        self.load_more_issues_btn.clicked.connect(
-            lambda: self.controller.refresh_issue_list(True)
-        )
 
         self.refresh_btn = QPushButton('Refresh')
         self.refresh_btn.clicked.connect(self.controller.refresh_issue_list)
@@ -155,9 +148,12 @@ class MainWindow(CenterWindow):
         self.action_quit.triggered.connect(self.controller.quit_app)
         self.tray_icon.setContextMenu(self.tray_menu)
         self.tray_icon.show()
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.notification_to_log_work)
-        self.timer.start(LOG_TIME)
+        self.timer_log_work = QTimer()
+        self.timer_log_work.timeout.connect(self.notification_to_log_work)
+        self.timer_log_work.start(LOG_TIME)
+
+        self.timer_refresh = QTimer()
+        self.timer_refresh.timeout.connect(self.controller.refresh_issue_list)
 
     def notification_to_log_work(self):
         QSound.play(RING_SOUND_PATH)
@@ -166,26 +162,37 @@ class MainWindow(CenterWindow):
             'Don\'t forget to log your work!',
             msecs=2000
         )
-        self.timer.start(LOG_TIME)
+        self.timer_log_work.start(LOG_TIME)
 
-    def show_issues_list(self, issues_list, load_more=False):
-        # clear listbox
-        if not load_more:
-            for _ in range(self.list_box.count()):
-                self.list_box.itemAt(0).widget().setParent(None)
-            self.issue_list_widget.clear()
+    def update_issues(self, update_list):
+        for issue in update_list:
+            item = self.issue_list_widget.findItems(
+                issue['key'], Qt.MatchExactly
+            )[0]
+            item.setText(issue['key'])
+            issue_widget = self.issue_list_widget.itemWidget(item)
+            issue_widget.set_issue_key(issue['key'], issue['link'])
+            issue_widget.set_issue_title(issue['title'])
+            issue_widget.set_time(
+                issue['estimated'],
+                issue['logged'],
+                issue['remaining']
+            )
+            issue_widget.set_workflow.clear()
+            issue_widget.set_workflow.addItems(issue['workflow'])
+            issue_widget.set_workflow.setCurrentIndex(0)
 
-        if not issues_list and not load_more:
-            label_info = QLabel('You have no issues.')
-            label_info.setAlignment(Qt.AlignCenter)
-            self.list_box.addWidget(label_info)
-            return
-        elif not load_more:
-            self.list_box.addWidget(self.issue_list_widget)
-            self.list_box.addWidget(self.load_more_issues_btn)
+    def delete_issues(self, delete_list):
+        for issue in delete_list:
+            item = self.issue_list_widget.findItems(
+                issue['key'], Qt.MatchExactly
+            )[0]
+            self.issue_list_widget.takeItem(
+                self.issue_list_widget.row(item)
+            )
 
-        # create list of issues
-        for issue in issues_list:
+    def insert_issues(self, new_issues_list):
+        for issue in new_issues_list:
             issue_widget = QCustomWidget()
             issue_widget.set_issue_key(issue['key'], issue['link'])
             issue_widget.set_issue_title(issue['title'])
@@ -224,12 +231,30 @@ class MainWindow(CenterWindow):
             )
 
             # add issue item to list
-            issue_list_widget_item = QListWidgetItem(self.issue_list_widget)
+            issue_list_widget_item = QListWidgetItem()
+            issue_list_widget_item.setText(issue['key'])
             issue_list_widget_item.setSizeHint(issue_widget.sizeHint())
-            self.issue_list_widget.addItem(issue_list_widget_item)
+            self.issue_list_widget.insertItem(issue['index'], issue_list_widget_item)
             self.issue_list_widget.setItemWidget(
                 issue_list_widget_item, issue_widget
             )
+
+    def show_no_issues(self):
+        self.issue_list_widget.clear()
+        self.issue_list_widget.hide()
+        self.label_info.show()
+
+    def set_workflow_current_state(self, issue_key):
+        item = self.issue_list_widget.findItems(
+            issue_key, Qt.MatchExactly
+        )[0]
+        custom_item = self.issue_list_widget.itemWidget(item)
+        custom_item.set_workflow.setCurrentIndex(0)
+
+    def wheelEvent(self, event):
+        if event.angleDelta().y() < 0:
+            self.controller.refresh_issue_list(True)
+            event.accept()
 
     def closeEvent(self, QCloseEvent):
         QCloseEvent.ignore()

@@ -3,9 +3,9 @@ from PyQt5 import QtCore
 
 
 class MyQComboBox(QComboBox):
-    def __init__(self, scrollWidget=None, *args, **kwargs):
+    def __init__(self, scroll_widget=None, *args, **kwargs):
         super(MyQComboBox, self).__init__(*args, **kwargs)
-        self.scrollWidget = scrollWidget
+        self.scroll_widget = scroll_widget
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
 
     def wheelEvent(self, *args, **kwargs):
@@ -15,4 +15,4 @@ class MyQComboBox(QComboBox):
         if self.hasFocus():
             return QComboBox.wheelEvent(self, *args, **kwargs)
         else:
-            return self.scrollWidget.wheelEvent(*args, **kwargs)
+            return self.scroll_widget.wheelEvent(*args, **kwargs)
