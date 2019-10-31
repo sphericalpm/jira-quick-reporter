@@ -344,6 +344,7 @@ class MainWindow(CenterWindow):
             # activate save button
             self.overwrite_filter_button.hide()
             self.save_filter_btn.show()
+            self.filter_edited_label.hide()
 
     def toggle_frame_filters(self):
         if self.toggle_frame_filters_btn.text() == '<':
@@ -381,8 +382,8 @@ class MainWindow(CenterWindow):
                     reply = QMessageBox.question(
                         self,
                         'Delete filter',
-                        'Are you sure wou want to delete '
-                        '\'{}\' filter?'.format(item_text),
+                        "Are you sure you want to delete "
+                        "'{}' filter?".format(item_text),
                         QMessageBox.Yes | QMessageBox.Cancel
                     )
                     if reply == QMessageBox.Yes:
