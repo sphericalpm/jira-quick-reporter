@@ -1,22 +1,32 @@
 import configparser
 import os
 
-from PyQt5.QtWidgets import QMessageBox, QInputDialog
+from requests.exceptions import ReadTimeout, ConnectionError
 from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QMessageBox, QApplication, QInputDialog
 from jira import JIRAError
 
 from config import (
     LOG_TIME,
     FILTERS_PATH,
     FILTERS_DEFAULT_SECTION_NAME,
-    DEFAULT_FILTERS
+    DEFAULT_FILTERS,
+    ISSUES_COUNT,
+    REFRESH_TIME
 )
+
+from controllers.workflow_controller import (
+    WorkflowController,
+    CompleteWorkflowController
+)
+from controllers.mixins import TimeLogMixin
 from main_window import MainWindow
 from pomodoro_window import PomodoroWindow
 from time_log_window import TimeLogWindow
+from utils.decorators import catch_timeout_exception
 
 
-class MainController:
+class MainController(TimeLogMixin):
     def __init__(self, jira_client):
         self.jira_client = jira_client
         self.issues_count = 0
@@ -26,89 +36,205 @@ class MainController:
         self.time_log_view = None
         self.config = configparser.ConfigParser()
         self.filters = dict()
+        self.current_issues = {}
 
     def show(self):
         self.create_filters()
         self.view.show()
 
-    def get_issue_list(self, filter_query):
-        issues_list = []
+    def load_more_issues(self, filter_query):
+        new_issues_list = []
         issues = self.jira_client.get_issues(self.issues_count, filter_query)
-        current_issues_count = len(issues)
-        self.issues_count += current_issues_count
-        if not current_issues_count:
-            return
+        new_issues_count = len(issues)
+
+        for index, issue in enumerate(issues):
+            self.current_issues[issue.key] = issue
+            issue_dict = self.get_issue_parameters(issue)
+            issue_dict['index'] = index + self.issues_count
+            new_issues_list.append(issue_dict)
+
+        self.issues_count += new_issues_count
+        return new_issues_list
+
+    def get_issues_list(self, filter_query):
+        # list of added issues for display on main window
+        new_issues_list = []
+        # list of updated issues for updated on main window
+        update_issues_list = []
+
+        # get firs ISSUES_COUNT issues
+        issues = self.jira_client.get_issues(0, filter_query)
+
+        # if we have loaded issues before, then we need to get them
+        if self.issues_count > ISSUES_COUNT:
+            current_issues_count = len(issues)
+
+            while current_issues_count < self.issues_count:
+                loaded_issues = self.jira_client.get_issues(current_issues_count, filter_query)
+                loaded_issues_count = len(loaded_issues)
+                if not loaded_issues_count:
+                    break
+                current_issues_count += loaded_issues_count
+                issues += loaded_issues
 
         # create list of issues
-        for issue in issues:
-            workflow = self.jira_client.client.transitions(issue)
-            possible_workflow = {status['name']: status['id'] for status in workflow}
-            issues_dict = dict(
-                title=issue.fields.summary,
-                key=issue.key,
-                link=issue.permalink(),
-                issue_obj=issue,
-                workflow=possible_workflow
-            )
+        for index, issue in enumerate(issues):
+            # if this is a new issue
+            if issue.key not in self.current_issues:
+                # add issue to the list of all available issues
+                self.current_issues[issue.key] = issue
+                issue_dict = self.get_issue_parameters(issue)
+                issue_dict['index'] = index
+                # add issue to the list for new issues
+                new_issues_list.append(issue_dict)
+            # if issue has been changed
+            elif issue.raw['fields'] != self.current_issues[issue.key].raw['fields']:
+                self.current_issues[issue.key] = issue
+                issue_dict = self.get_issue_parameters(issue)
+                # add issue to the list for updated issues
+                update_issues_list.append(issue_dict)
 
-            # if the task was logged
-            if issue.fields.timetracking.raw:
-                timetracking = issue.fields.timetracking
-                issues_dict.update({
-                    'estimated': getattr(timetracking, 'originalEstimate', '0m'),
-                    'logged': getattr(timetracking, 'timeSpent', '0m'),
-                    'remaining': getattr(timetracking, 'remainingEstimate', '0m'),
-                })
-            else:
-                issues_dict.update({
-                    'estimated': '0m',
-                    'logged': '0m',
-                    'remaining': '0m',
-                })
-            issues_list.append(issues_dict)
-        return issues_list
+        # update count of all available issues
+        self.issues_count = len(self.current_issues)
+        # get list of deleted issues
+        delete_issues_list = [
+            self.get_issue_parameters(issue) for issue in self.current_issues.values() if issue not in issues
+        ]
+        # remove deleted issues from the list of all available issues
+        for issue in delete_issues_list:
+            del self.current_issues[issue['key']]
+
+        self.issues_count -= len(delete_issues_list)
+        return new_issues_list, update_issues_list, delete_issues_list
+
+    def get_issue_parameters(self, issue):
+        issue_dict = dict(
+            title=issue.fields.summary,
+            key=issue.key,
+            link=issue.permalink(),
+            workflow=self.jira_client.get_possible_workflows(issue)
+        )
+        # if the task was logged
+        if issue.fields.timetracking.raw:
+            timetracking = issue.fields.timetracking.raw
+            issue_dict.update({
+                'estimated': timetracking.get('originalEstimate', '0m'),
+                'logged': timetracking.get('timeSpent', '0m'),
+                'remaining': timetracking.get('remainingEstimate', '0m'),
+            })
+        else:
+            issue_dict.update({
+                'estimated': '0m',
+                'logged': '0m',
+                'remaining': '0m',
+            })
+        return issue_dict
 
     def refresh_issue_list(self, load_more=False):
-        if not load_more:
-            self.issues_count = 0
-        issues_list = self.get_issue_list(self.current_filter)
-        if not issues_list and load_more:
-            return
-        self.view.show_issues_list(issues_list, load_more)
-
-    def change_workflow(self, workflow, issue_obj, status):
-        status_id = workflow.get(status)
+        QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
-            if status_id:
-                self.jira_client.client.transition_issue(
-                    issue_obj,
-                    transition=status_id
-                )
+            if load_more:
+                new_issues_list = self.load_more_issues(self.current_filter)
+            else:
+                new_issues_list, update_issues_list, delete_issues_list = self.get_issues_list(self.current_filter)
 
-        except JIRAError as e:
-            QMessageBox.about(self.view, 'Error', e.text)
-
+        except (ConnectionError,
+                ReadTimeout):
+            self.view.tray_icon.showMessage(
+                'Connection error',
+                'Please, check your internet connection'
+            )
+            self.current_issues.clear()
+            self.view.show_no_issues()
+            return
         finally:
-            self.refresh_issue_list()
+            QApplication.restoreOverrideCursor()
+            self.view.timer_refresh.start(REFRESH_TIME)
 
-    def get_possible_workflows(self, issue):
-        current_workflow = issue['issue_obj'].fields.status
-        possible_workflows = list(issue['workflow'].keys())
+        if not self.issues_count:
+            self.view.show_no_issues()
+            return
+        # if we have issues, make the widget for issues enable
+        self.view.issue_list_widget.show()
+        self.view.label_info.hide()
 
-        if current_workflow.name != 'Backlog':  # when it's 'Backlog' status,
-            # JIRA API provides possibility to change it to 'Return to backlog'.
-            # Cause it's the same that we already have we won't show it one more time
-            possible_workflows.insert(0, current_workflow.name)  # insert because of
-            # setCurrentIndex() can have only positive value
+        if new_issues_list:
+            self.view.insert_issues(new_issues_list)
+        if not load_more:
+            if update_issues_list:
+                self.view.update_issues(update_issues_list)
+            if delete_issues_list:
+                self.view.delete_issues(delete_issues_list)
 
-        return possible_workflows
+    @catch_timeout_exception
+    def change_workflow(self, issue_key, workflow_items, status):
+        current_status = workflow_items.itemText(0)
+        if current_status == status:
+            return
+
+        issue = self.current_issues[issue_key]
+        existing_estimate = self.jira_client.get_remaining_estimate(issue)
+        original_estimate = self.jira_client.get_original_estimate(issue)
+        assignee = issue.fields.assignee.emailAddress
+
+        status_id = self.jira_client.client.find_transitionid_by_name(
+            issue,
+            status
+        )
+
+        if not status_id:
+            return
+        if status in ['Put on hold', 'Select for development']:
+            # we do not need to open workflow window with detail information
+            try:
+                self.jira_client.client.transition_issue(
+                        issue,
+                        transition=status_id
+                    )
+                self.refresh_issue_list()
+            except JIRAError as e:
+                QMessageBox.about(self.view, 'Error', e.text)
+                self.view.set_workflow_current_state(issue_key)
+
+        elif status in ['Complete', 'Declare done']:
+            # open complete workflow window
+            self.complete_workflow_controller = CompleteWorkflowController(
+                self.jira_client,
+                issue,
+                status,
+                assignee,
+                self
+            )
+            self.complete_workflow_controller.show()
+            self.complete_workflow_controller.view.set_existing_estimate(
+                existing_estimate,
+            )
+
+        else:
+            self.workflow_controller = WorkflowController(
+                self.jira_client,
+                issue,
+                status_id,
+                existing_estimate,
+                original_estimate,
+                assignee,
+                self
+            )
+            self.workflow_controller.show()
+
+    def reset_workflow(self, issue):
+        self.view.set_workflow_current_state(issue.key)
 
     def open_pomodoro_window(self, issue_key, issue_title):
         if self.pomodoro_view:
             if self.pomodoro_view.issue_key == issue_key:
                 self.pomodoro_view.show()
             else:
-                QMessageBox.warning(None, 'Warning', 'Another task in progress now!')
+                QMessageBox.warning(
+                    None,
+                    'Warning',
+                    'Another task in progress now!'
+                )
             return
         self.pomodoro_view = PomodoroWindow(
             self, issue_key,
@@ -136,16 +262,19 @@ class MainController:
                     params.append('{}h {}m'.format(hours, minutes))
         self.open_timelog_window(*params)
 
+    @catch_timeout_exception
     def open_timelog_window(self, issue_key, time_spent=None):
         issue = self.jira_client.issue(issue_key)
-        self.time_log_view = TimeLogWindow(issue_key, time_spent)
+        self.time_log_view = TimeLogWindow(
+            issue_key,
+            time_spent,
+            save_callback=self.save_issue_worklog
+        )
         existing_estimate = self.jira_client.get_remaining_estimate(issue)
         self.time_log_view.set_existing_estimate(existing_estimate)
         self.time_log_view.show()
-        self.time_log_view.save_button.clicked.connect(
-            lambda: self.save_issue_worklog(issue_key)
-        )
 
+    @catch_timeout_exception
     def save_issue_worklog(self, issue_key):
         """Save button event handler
         take user input values, save JIRAalues into Jira time tracking,
@@ -159,33 +288,10 @@ class MainController:
             return
         comment = self.time_log_view.work_description_line.toPlainText()
         remaining_estimate = self.time_log_view.new_remaining_estimate
-
-        if not remaining_estimate:
-            log_work_params = dict()
-        elif remaining_estimate.get('name') == 'existing_estimate':
-            log_work_params = dict(
-                adjust_estimate='new',
-                new_estimate=remaining_estimate.get('value')
-            )
-        elif remaining_estimate.get('name') == 'set_new_estimate':
-            estimate = self.time_log_view.set_new_estimate_value.text()
-            log_work_params = dict(
-                adjust_estimate='new',
-                new_estimate=estimate
-            )
-        elif remaining_estimate.get('name') == 'reduce_estimate':
-            estimate = self.time_log_view.reduce_estimate_value.text()
-            log_work_params = dict(
-                adjust_estimate='manual',
-                new_estimate=estimate
-            )
-        else:
-            QMessageBox.about(
-                self.time_log_view,
-                'Error',
-                'something went wrong'
-            )
-            return
+        log_work_params = self.take_timelog_values(
+            remaining_estimate,
+            self.time_log_view
+        )
         try:
             self.jira_client.log_work(
                 issue,
@@ -195,7 +301,7 @@ class MainController:
                 **log_work_params)
             self.time_log_view.close()
             self.refresh_issue_list()
-            self.view.timer.start(LOG_TIME)
+            self.view.timer_log_work.start(LOG_TIME)
             self.view.tray_icon.showMessage(
                 'Saving work log',
                 'Successfully saved',

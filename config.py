@@ -14,7 +14,9 @@ with open(QSS_PATH, 'r') as qss_file:
 
 # ms * min = 1 hour
 LOG_TIME = 60000 * 60
-DEFAULT_ISSUES_COUNT = 10
+# 1 minute
+REFRESH_TIME = 60000
+ISSUES_COUNT = 20
 
 MAX_RETRIES = 0  # we need it because without it our app will not be
 # available (for 15 sec) in case of bad connection or IP blocking
@@ -25,3 +27,5 @@ DEFAULT_FILTERS = {'search issues': 'order by created desc',
                                      'and resolution = unresolved'
                    }
 FILTER_FIELD_HELP_URL = 'https://confluence.atlassian.com/display/JIRASOFTWARECLOUD/Advanced+searching'
+
+SERVER = 'https://spherical.atlassian.net'

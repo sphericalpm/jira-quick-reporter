@@ -19,6 +19,10 @@ QListWidget#issue_list::item{
     border-bottom: 1px solid lightgray
 }
 
+QListWidget::item::text{
+    color:transparent;
+}
+
 QLabel#label_error{
     color: red;
 }
