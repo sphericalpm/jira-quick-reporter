@@ -16,14 +16,16 @@ with open(QSS_PATH, 'r') as qss_file:
 LOG_TIME = 60000 * 60
 # 1 minute
 REFRESH_TIME = 60000
-ISSUES_COUNT = 20
+ISSUES_COUNT = 10
 
 MAX_RETRIES = 0  # we need it because without it our app will not be
 # available (for 15 sec) in case of bad connection or IP blocking
 FILTERS_PATH = os.path.join(BASEDIR, 'filters.ini')
+SEARCH_ITEM_NAME = 'search issues'
+MY_ISSUES_ITEM_NAME = 'my open issues'
 FILTERS_DEFAULT_SECTION_NAME = 'Filters'
-DEFAULT_FILTERS = {'search issues': 'order by created desc',
-                   'my open issues': 'assignee = currentuser() '
+DEFAULT_FILTERS = {SEARCH_ITEM_NAME: 'order by created desc',
+                   MY_ISSUES_ITEM_NAME: 'assignee = currentuser() '
                                      'and resolution = unresolved'
                    }
 FILTER_FIELD_HELP_URL = 'https://confluence.atlassian.com/display/JIRASOFTWARECLOUD/Advanced+searching'

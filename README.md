@@ -31,10 +31,9 @@ By default you have a 'my open issues' filter and 'Search issues' menu item.
 ![main window](https://i.ibb.co/ZWXvk5K/image-2019-10-30-18-12-19.png)
 
 #### Creating new filter
+1. You need to click '+' button in menu or 'Search issues' menu item.
 
-1. You need to click the 'Search issues' menu item.
-
-2. Then, in the text input you can write a query (default is 'order by created desc').
+2. Then, in the text input you can write a query.
 
 3. You can click the 'Search' button and see results of the query.
 

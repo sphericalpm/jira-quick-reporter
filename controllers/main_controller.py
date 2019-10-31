@@ -313,37 +313,36 @@ class MainController(TimeLogMixin):
         except JIRAError as e:
             QMessageBox.about(self.time_log_view, "Error", e.text)
 
-    def write_ini_if_errors(self):
-        self.config.clear()
-        self.set_default_section()
-        self.write_to_ini()
-
     def create_filters(self):
-        # create if not exist
-        if not os.path.exists(FILTERS_PATH):
-            self.set_default_section()
-            self.write_to_ini()
         try:
             self.config.read(FILTERS_PATH)
-        except configparser.ParsingError:
-            self.write_ini_if_errors()
-        if not self.config.sections():
-            self.write_ini_if_errors()
+        except configparser.Error:
+            self.config.clear()
 
+        self.set_default_section()
+        self.write_to_ini()
         self.set_filters()
-        if not self.filters:
-            self.set_default_section()
-            self.write_to_ini()
-            self.set_filters()
+
+        for filter_query in self.filters.values():
+            try:
+                self.jira_client.get_issues(query=filter_query)
+            except JIRAError:
+                self.config.clear()
+                self.set_default_section()
+                self.write_to_ini()
+                self.set_filters()
+                break
         self.view.show_filters(self.filters)
 
     def set_filters(self):
-        sections = self.config.sections()
-        for section in sections:
-            self.filters.update(self.config.items(section))
+        self.filters.clear()
+        self.filters.update(self.config.items(FILTERS_DEFAULT_SECTION_NAME))
 
     def set_default_section(self):
-        self.config[FILTERS_DEFAULT_SECTION_NAME] = DEFAULT_FILTERS
+        if FILTERS_DEFAULT_SECTION_NAME not in self.config.sections():
+            self.config[FILTERS_DEFAULT_SECTION_NAME] = {}
+        for filter_name, filter in DEFAULT_FILTERS.items():
+            self.config[FILTERS_DEFAULT_SECTION_NAME][filter_name] = filter
 
     def write_to_ini(self):
         with open(FILTERS_PATH, 'w') as ini_file:
