@@ -11,12 +11,12 @@ class JiraClient:
             timeout=4
         )
 
-    def get_issues(self, start_at):
+    def get_issues(self, start_at, limit=ISSUES_COUNT):
         return self.client.search_issues(
                 'assignee = currentUser()',
                 fields='key, summary, timetracking, status, assignee',
                 startAt=start_at,
-                maxResults=ISSUES_COUNT
+                maxResults=limit
         )
 
     def log_work(
@@ -80,16 +80,3 @@ class JiraClient:
 
     def issue(self, key):
         return self.client.issue(key)
-
-    def get_possible_workflows(self, issue):
-        workflow = self.client.transitions(issue)
-        current_workflow = issue.fields.status
-        possible_workflows = [status['name'] for status in workflow]
-
-        if current_workflow.name != 'Backlog':  # when it's 'Backlog' status,
-            # JIRA API provides possibility to change it to 'Return to backlog'.
-            # Cause it's the same that we already have we won't show it one more time
-            possible_workflows.insert(0, current_workflow.name)  # insert because of
-            # setCurrentIndex() can have only positive value
-
-        return possible_workflows

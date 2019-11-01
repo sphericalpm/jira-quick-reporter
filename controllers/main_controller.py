@@ -52,20 +52,9 @@ class MainController(TimeLogMixin):
         # list of updated issues for updated on main window
         update_issues_list = []
 
-        # get firs ISSUES_COUNT issues
-        issues = self.jira_client.get_issues(0)
-
-        # if we have loaded issues before, then we need to get them
-        if self.issues_count > ISSUES_COUNT:
-            current_issues_count = len(issues)
-
-            while current_issues_count < self.issues_count:
-                loaded_issues = self.jira_client.get_issues(current_issues_count)
-                loaded_issues_count = len(loaded_issues)
-                if not loaded_issues_count:
-                    break
-                current_issues_count += loaded_issues_count
-                issues += loaded_issues
+        # get all loaded issues or default list
+        issues_count = self.issues_count if self.issues_count > ISSUES_COUNT else ISSUES_COUNT
+        issues = self.jira_client.get_issues(0, issues_count)
 
         # create list of issues
         for index, issue in enumerate(issues):
@@ -152,11 +141,9 @@ class MainController(TimeLogMixin):
         # if we have issues, make the widget for issues enable
         self.view.issue_list_widget.show()
         self.view.label_info.hide()
-
+        # import ipdb;ipdb.set_trace()
         if new_issues_list:
             self.view.insert_issues(new_issues_list)
-        if not load_more:
-            self.issues_count = 0
         if update_issues_list:
             self.view.update_issues(update_issues_list)
         if delete_issues_list:
@@ -172,39 +159,44 @@ class MainController(TimeLogMixin):
         original_estimate = self.jira_client.get_original_estimate(self.issue)
         assignee = self.issue.fields.assignee.emailAddress
 
-        if self.status_id:
-            if status in ['Put on hold', 'Select for development']:
-                self.indicator = LoadingIndicator(self, self.view.main_box)
-                self.indicator.show()
-                self.new_thread = Thread(self.simple_workflow_change)
-                self.new_thread.start()
-                self.new_thread.finished.connect(self.stop_indicator)
+        # if current_status == status:
+        #     return
 
-            elif status in ['Complete', 'Declare done']:
-                # open complete workflow window
-                self.complete_workflow_controller = CompleteWorkflowController(
-                    self.jira_client,
-                    self.issue,
-                    status,
-                    assignee,
-                    self
-                )
-                self.complete_workflow_controller.show()
-                self.complete_workflow_controller.view.set_existing_estimate(
-                    existing_estimate,
-                )
+        if not self.status_id:
+            return
 
-            else:
-                self.workflow_controller = WorkflowController(
-                    self.jira_client,
-                    self.issue,
-                    self.status_id,
-                    existing_estimate,
-                    original_estimate,
-                    assignee,
-                    self
-                )
-                self.workflow_controller.show()
+        if status in ['Put on hold', 'Select for development']:
+            self.indicator = LoadingIndicator(self, self.view.main_box)
+            self.indicator.show()
+            self.new_thread = Thread(self.simple_workflow_change)
+            self.new_thread.start()
+            self.new_thread.finished.connect(self.stop_indicator)
+
+        elif status in ['Complete', 'Declare done']:
+            # open complete workflow window
+            self.complete_workflow_controller = CompleteWorkflowController(
+                self.jira_client,
+                self.issue,
+                status,
+                assignee,
+                self
+            )
+            self.complete_workflow_controller.show()
+            self.complete_workflow_controller.view.set_existing_estimate(
+                existing_estimate,
+            )
+
+        else:
+            self.workflow_controller = WorkflowController(
+                self.jira_client,
+                self.issue,
+                self.status_id,
+                existing_estimate,
+                original_estimate,
+                assignee,
+                self
+            )
+            self.workflow_controller.show()
 
     def stop_indicator(self, result, error):
         self.indicator.spinner.stop()

@@ -7,7 +7,6 @@ import functools
 def catch_timeout_exception(function):
     @functools.wraps(function)
     def wrapper(*args, **kwargs):
-        QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
             value = function(*args, **kwargs)
         except (ConnectionError,
@@ -18,7 +17,5 @@ def catch_timeout_exception(function):
                 'Check your internet connection and try again'
             )
             return
-        finally:
-            QApplication.restoreOverrideCursor()
         return value
     return wrapper

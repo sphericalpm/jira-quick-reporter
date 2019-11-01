@@ -166,6 +166,7 @@ class MainWindow(CenterWindow):
 
     def update_issues(self, update_list):
         for issue in update_list:
+            # import ipdb;ipdb.set_trace()
             item = self.issue_list_widget.findItems(
                 issue['key'], Qt.MatchExactly
             )[0]
@@ -179,8 +180,17 @@ class MainWindow(CenterWindow):
                 issue['remaining']
             )
             issue_widget.set_workflow.clear()
-            issue_widget.set_workflow.addItems(issue['workflow'])
+            issue_widget.set_workflow.addItems(self.controller.get_possible_workflows(issue))
             issue_widget.set_workflow.setCurrentIndex(0)
+
+            issue_widget.set_workflow.activated[str].disconnect()
+            issue_widget.set_workflow.activated[str].connect(
+                partial(
+                    self.controller.change_workflow,
+                    issue['workflow'],
+                    issue['issue_obj'],
+                )
+            )
 
     def delete_issues(self, delete_list):
         for issue in delete_list:
@@ -221,7 +231,6 @@ class MainWindow(CenterWindow):
 
             issue_widget.set_workflow.addItems(possible_workflows)
             issue_widget.set_workflow.setCurrentIndex(0)
-
             issue_widget.set_workflow.activated[str].connect(
                 partial(
                     self.controller.change_workflow,
