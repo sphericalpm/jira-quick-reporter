@@ -17,12 +17,17 @@ class LoginController:
         self.jira_client = None
 
     @catch_timeout_exception
-    def login(self):
+    def login(self, *args):
         email = self.view.email_field.text()
         token = self.view.token_field.text()
 
         try:
             self.jira_client = JiraClient(email, token)
+            self.jira_client.client.search_issues(
+                'assignee = currentUser()',
+                maxResults=1
+            )  # check if username is correct
+            # use search_issues because jira.current_user always return none
             if self.view.remember_me_btn.isChecked():
                 self.remember_me(email, token)
             self.open_main_window()
