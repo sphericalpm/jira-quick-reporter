@@ -248,7 +248,6 @@ class MainWindow(CenterWindow):
 
     def update_issues(self, update_list):
         for issue in update_list:
-            # import ipdb;ipdb.set_trace()
             item = self.issue_list_widget.findItems(
                 issue['key'], Qt.MatchExactly
             )[0]
