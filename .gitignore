@@ -1,6 +1,7 @@
 # JQR private files
 my_jira_token.py
 my_credentials.txt
+filters.ini
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

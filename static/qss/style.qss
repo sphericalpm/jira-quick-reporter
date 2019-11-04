@@ -8,7 +8,14 @@ QPushButton#issue_menu_btn{
     font-weight: bold;
 }
 
-QListWidget::item{
+QPushButton#toggle_filters_btn{
+    background: #EBEBEB;
+    font-size: 12pt;
+    margin-right: 3px;
+    padding:2px;
+}
+
+QListWidget#issue_list::item{
     border-bottom: 1px solid lightgray
 }
 
@@ -63,4 +70,53 @@ QLabel#pomodoros_count{
 
 QLabel#break_label{
     font-size: 16pt;
+}
+
+QFrame#filters_frame {
+    margin-right: 5px;
+}
+
+QListWidget#filters_list{
+    background-color: transparent;
+}
+
+QListWidget#filters_list::item{
+    margin: 3px 0 3px 0;
+    padding: 3px 0 3px 0;
+    background: transparent;
+    color: black;
+}
+
+QListWidget#filters_list::item:selected{
+    background: lightgray;
+}
+
+#filters_box_label, #filter_name_label{
+    font-weight:bold;
+}
+
+#filter_name_label{
+    font-size: 13pt;
+}
+
+#save_filter_btn {
+    padding: 5px;
+    border: none;
+}
+
+#filter_field, #search_issues_button {
+    margin: 5px 0 5px 0;
+    padding: 5px;
+}
+
+#filter_edited_label {
+    color:gray;
+}
+
+#save_filter_btn::hover {
+    background: lightgray;
+}
+
+#separator{
+    color: lightgray;
 }

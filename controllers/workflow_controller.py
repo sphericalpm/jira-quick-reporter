@@ -1,5 +1,4 @@
-from PyQt5.QtWidgets import QMessageBox, QApplication
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QMessageBox
 from jira import JIRAError
 
 from workflow_window import WorkflowWindow, CompleteWorflowWindow
@@ -38,13 +37,11 @@ class WorkflowController:
         self.view.show()
 
     @catch_timeout_exception
-    def save_click(self):
+    def save_click(self, *args):
         assignee = self.view.assignee_line.text()
         original_estimate = self.view.original_estimate_line.text()
         remaining_estimate = self.view.remaining_estimate_line.text()
         comment = self.view.comment_line.toPlainText()
-
-        QApplication.setOverrideCursor(Qt.WaitCursor)
 
         if assignee != self.assignee:
             try:
@@ -76,7 +73,6 @@ class WorkflowController:
             QMessageBox.about(self.view, 'Error', e.text)
 
         self.controller.refresh_issue_list()
-        QApplication.restoreOverrideCursor()
         self.is_save = True
         self.view.close()
 
@@ -106,15 +102,13 @@ class CompleteWorkflowController(TimeLogMixin):
         self.view.show()
 
     @catch_timeout_exception
-    def save_click(self, issue_key):
+    def save_click(self, *args):
         time_spent = self.view.time_spent_line.text()
         start_date = self.view.date_start
         comment = self.view.work_description_line.toPlainText()
         remaining_estimate = self.view.new_remaining_estimate
         assignee = self.view.assignee_line.text()
         log_work_params = self.take_timelog_values(remaining_estimate, self.view)
-
-        QApplication.setOverrideCursor(Qt.WaitCursor)
 
         if not start_date:
             return
@@ -161,7 +155,6 @@ class CompleteWorkflowController(TimeLogMixin):
             return
 
         self.controller.refresh_issue_list()
-        QApplication.restoreOverrideCursor()
         self.is_save = True
         self.view.close()
 

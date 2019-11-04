@@ -1,7 +1,7 @@
 from functools import partial
 
-from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import Qt, QTimer, QEvent, QUrl
+from PyQt5.QtGui import QIcon, QDesktopServices
 from PyQt5.QtMultimedia import QSound
 from PyQt5.QtWidgets import (
     QWidget,
@@ -12,10 +12,14 @@ from PyQt5.QtWidgets import (
     QLabel,
     QPushButton,
     QGridLayout,
+    QLineEdit,
     QSystemTrayIcon,
     QMenu,
+    QMessageBox,
     QAction,
     QSizePolicy,
+    QFrame,
+    QStyle
 )
 
 from redefined_QComboBox import MyQComboBox
@@ -24,7 +28,11 @@ from config import (
     QSS,
     LOGO_PATH,
     LOG_TIME,
-    RING_SOUND_PATH
+    RING_SOUND_PATH,
+    FILTER_FIELD_HELP_URL,
+    DEFAULT_FILTERS,
+    SEARCH_ITEM_NAME,
+    MY_ISSUES_ITEM_NAME
 )
 
 
@@ -115,26 +123,100 @@ class MainWindow(CenterWindow):
         self.resize(800, 450)
         self.setWindowTitle('JIRA Quick Reporter')
         self.setWindowIcon(QIcon(LOGO_PATH))
+        self.current_item = None
 
-        self.main_box = QVBoxLayout()
+        self.vbox = QVBoxLayout()
+
+        self.save_btn_box = QHBoxLayout()
+        self.filter_name_label = QLabel()
+        self.filter_name_label.setObjectName('filter_name_label')
+        self.filter_name_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.filter_name_label.setAlignment(Qt.AlignLeft)
+        self.filter_edited_label = QLabel('-> edited')
+        self.filter_edited_label.setObjectName('filter_edited_label')
+        self.filter_edited_label.hide()
+        self.filter_edited_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.save_filter_btn = QPushButton('Save as')
+        self.save_filter_btn.setObjectName('save_filter_btn')
+        self.save_filter_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.save_filter_btn.clicked.connect(self.controller.save_filter)
+
+        self.overwrite_filter_button = QPushButton('Save')
+        self.overwrite_filter_button.setToolTip('You need to edit filter query first')
+        self.overwrite_filter_button.setObjectName('save_filter_btn')
+        self.overwrite_filter_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.overwrite_filter_button.clicked.connect(self.controller.save_existing_filter)
+
+        self.save_btn_box.addWidget(self.filter_name_label, Qt.AlignLeft)
+        self.save_btn_box.addWidget(self.filter_edited_label, Qt.AlignLeft)
+        self.save_btn_box.addWidget(self.save_filter_btn, Qt.AlignLeft)
+        self.save_btn_box.addWidget(self.overwrite_filter_button, Qt.AlignLeft)
+        self.save_btn_box.addStretch()
+
+        self.create_filter_box = QHBoxLayout()
+        self.filter_field = QLineEdit()
+        self.filter_field.setObjectName('filter_field')
+        self.filter_field.setPlaceholderText('You need to write a query here')
+        self.action_help = QAction()
+        self.action_help.setIcon(self.style().standardIcon(QStyle.SP_MessageBoxQuestion))
+        self.help_filter_url = QUrl(FILTER_FIELD_HELP_URL)
+        self.action_help.triggered.connect(self.filter_field_help)
+        self.filter_field.addAction(self.action_help, QLineEdit.TrailingPosition)
+        self.filter_field.installEventFilter(self)
+        self.search_issues_button = QPushButton('Search')
+        self.search_issues_button.setObjectName('search_issues_button')
+        self.search_issues_button.clicked.connect(self.controller.search_issues_by_filter)
+        self.create_filter_box.addWidget(self.filter_field)
+        self.create_filter_box.addWidget(self.search_issues_button)
+
         self.list_box = QVBoxLayout()
-        self.btn_box = QHBoxLayout()
-
-        self.issue_list_widget = QListWidget(self)
-        self.list_box.addWidget(self.issue_list_widget)
-
+        self.issue_list_widget = QListWidget()
+        self.issue_list_widget.setObjectName('issue_list')
         self.label_info = QLabel('You have no issues.')
         self.label_info.setAlignment(Qt.AlignCenter)
+        self.list_box.addWidget(self.issue_list_widget)
         self.list_box.addWidget(self.label_info)
         self.label_info.hide()
 
-        self.main_box.addLayout(self.list_box)
-        self.main_box.addLayout(self.btn_box)
-        self.setLayout(self.main_box)
+        self.vbox.addLayout(self.save_btn_box)
+        self.vbox.addLayout(self.create_filter_box)
+        self.vbox.addLayout(self.list_box)
 
+        self.filters_frame = QFrame()
+        self.filters_frame.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
+        self.filters_frame.setFrameShape(QFrame.StyledPanel)
+        self.filters_frame.setObjectName('filters_frame')
+        self.filters_frame.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
+        self.filters_box = QVBoxLayout(self.filters_frame)
+        self.filters_box_label = QLabel('Issues and filters')
+        self.filters_box_label.setObjectName('filters_box_label')
+        self.filters_box.addWidget(self.filters_box_label)
+        self.filters_list = QListWidget()
+        self.filters_list.installEventFilter(self)
+        self.filters_list.itemClicked.connect(self.on_filter_selected)
+        self.filters_list.setObjectName('filters_list')
+        self.filters_box.addWidget(self.filters_list)
+        self.add_filter_button = QPushButton('+')
+        self.add_filter_button.clicked.connect(self.add_filter)
+        self.add_filter_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.filters_box.addWidget(self.add_filter_button, alignment=Qt.AlignRight)
+
+        self.btn_box = QHBoxLayout()
         self.refresh_btn = QPushButton('Refresh')
         self.refresh_btn.clicked.connect(self.controller.refresh_issue_list)
         self.btn_box.addWidget(self.refresh_btn, alignment=Qt.AlignRight)
+        self.vbox.addLayout(self.btn_box)
+
+        self.toggle_frame_filters_btn = QPushButton('<')
+        self.toggle_frame_filters_btn.clicked.connect(self.toggle_frame_filters)
+        self.toggle_frame_filters_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.toggle_frame_filters_btn.setObjectName('toggle_filters_btn')
+
+        self.main_box = QHBoxLayout()
+        self.main_box.addWidget(self.filters_frame)
+        self.main_box.addWidget(self.toggle_frame_filters_btn, alignment=Qt.AlignTop)
+        self.main_box.addLayout(self.vbox)
+        self.setLayout(self.main_box)
 
         self.tray_icon = QSystemTrayIcon(self)
         self.tray_icon.setIcon(QIcon(LOGO_PATH))
@@ -236,6 +318,116 @@ class MainWindow(CenterWindow):
             self.issue_list_widget.setItemWidget(
                 issue_list_widget_item, issue_widget
             )
+
+    def show_filters(self, filters_dict):
+        for key in filters_dict:
+            if key == SEARCH_ITEM_NAME:
+                self.filters_list.insertItem(0, key)
+            else:
+                self.filters_list.addItem(key)
+        self.filters_list.item(0).setText(self.filters_list.item(0).text().capitalize())
+
+        # add separator after first item
+        separator = QFrame()
+        separator.setFrameShape(QFrame.HLine)
+        separator.setObjectName('separator')
+        item_separator = QListWidgetItem()
+        item_separator.setFlags(Qt.NoItemFlags)
+        self.filters_list.insertItem(1, item_separator)
+        self.filters_list.setItemWidget(item_separator, separator)
+
+        self.filters_list.setCurrentItem(
+            self.filters_list.findItems(
+                MY_ISSUES_ITEM_NAME, Qt.MatchExactly
+            )[0])
+
+        self.on_filter_selected(self.filters_list.currentItem())
+        self.filters_list.setMaximumWidth(
+            self.filters_list.sizeHintForColumn(0) + 10
+        )
+
+    def filter_field_help(self):
+        QDesktopServices.openUrl(self.help_filter_url)
+
+    def on_filter_selected(self, item):
+        self.current_item = item
+        self.filter_name_label.setText(item.text())
+        self.controller.search_issues_by_filter_name(item)
+        self.filter_edited_label.hide()
+
+        # if current filter is not 'Search issues'
+        if self.filters_list.currentRow():
+            # activate overwrite button
+            self.overwrite_filter_button.show()
+            self.overwrite_filter_button.setEnabled(False)
+            self.save_filter_btn.hide()
+        else:
+            # activate save button
+            self.overwrite_filter_button.hide()
+            self.save_filter_btn.show()
+
+    def toggle_frame_filters(self):
+        if self.toggle_frame_filters_btn.text() == '<':
+            self.toggle_frame_filters_btn.setText('>')
+            self.filters_frame.hide()
+        else:
+            self.toggle_frame_filters_btn.setText('<')
+            self.filters_frame.show()
+
+    def add_filter(self):
+        self.overwrite_filter_button.hide()
+        self.save_filter_btn.show()
+        self.filter_edited_label.hide()
+        self.filters_list.setCurrentItem(None)
+        self.filter_field.setText('')
+        self.filter_name_label.setText('Add new filter')
+        self.filter_edited_label.hide()
+        self.controller.current_issues.clear()
+        self.show_no_issues()
+
+    def eventFilter(self, object, event):
+        # if user started typing in filter field
+        if object is self.filter_field and event.type() == QEvent.KeyRelease:
+            # if current filter is not 'Search issues'
+            if self.filters_list.currentRow() > 0:
+                current_filter_name = self.filters_list.currentItem().text()
+                # if query of current filter has not changed
+                if self.controller.get_filter_by_name(current_filter_name) != self.filter_field.text():
+                    # show that filter has been edited
+                    self.filter_edited_label.show()
+                    self.overwrite_filter_button.setEnabled(True)
+                else:
+                    self.filter_edited_label.hide()
+                    self.overwrite_filter_button.setEnabled(False)
+
+        if event.type() == QEvent.ContextMenu:
+            self.filters_list.setCurrentItem(self.current_item)
+            if object.itemAt(event.pos()) is self.filters_list.currentItem():
+                item_text = self.filters_list.currentItem().text().lower()
+                if item_text in DEFAULT_FILTERS:
+                    return super().eventFilter(object, event)
+                context_menu = QMenu()
+                action_delete = QAction('Delete', self)
+                context_menu.addAction(action_delete)
+                if context_menu.exec_(event.globalPos()):
+                    reply = QMessageBox.question(
+                        self,
+                        'Delete filter',
+                        "Are you sure you want to delete "
+                        "'{}' filter?".format(item_text),
+                        QMessageBox.Yes | QMessageBox.Cancel
+                    )
+                    if reply == QMessageBox.Yes:
+                        self.controller.delete_filter(item_text)
+                        self.filters_list.takeItem(
+                            self.filters_list.currentRow()
+                        )
+                        self.filters_list.setCurrentItem(
+                            self.filters_list.findItems(
+                                MY_ISSUES_ITEM_NAME, Qt.MatchExactly
+                            )[0])
+                        self.on_filter_selected(self.filters_list.currentItem())
+        return super().eventFilter(object, event)
 
     def show_no_issues(self):
         self.issue_list_widget.clear()
