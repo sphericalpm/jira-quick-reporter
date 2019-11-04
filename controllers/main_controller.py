@@ -141,7 +141,6 @@ class MainController(TimeLogMixin):
         # if we have issues, make the widget for issues enable
         self.view.issue_list_widget.show()
         self.view.label_info.hide()
-        # import ipdb;ipdb.set_trace()
         if new_issues_list:
             self.view.insert_issues(new_issues_list)
         if update_issues_list:
@@ -149,18 +148,12 @@ class MainController(TimeLogMixin):
         if delete_issues_list:
             self.view.delete_issues(delete_issues_list)
 
-        # issues_list = self.get_issue_list()
-        # self.view.show_issues_list(issues_list, load_more)
-
     def change_workflow(self, workflow, issue_obj, status):
         self.issue = issue_obj
         self.status_id = workflow.get(status)
         existing_estimate = self.jira_client.get_remaining_estimate(self.issue)
         original_estimate = self.jira_client.get_original_estimate(self.issue)
         assignee = self.issue.fields.assignee.emailAddress
-
-        # if current_status == status:
-        #     return
 
         if not self.status_id:
             return
