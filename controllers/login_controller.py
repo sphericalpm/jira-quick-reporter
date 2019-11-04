@@ -37,6 +37,11 @@ class LoginController:
         token = self.view.token_field.text()
         try:
             self.jira_client = JiraClient(email, token)
+            self.jira_client.client.search_issues(
+                'assignee = currentUser()',
+                maxResults=1
+            )  # check if username is correct
+            # use search_issues because jira.current_user always return none
             if self.view.remember_me_btn.isChecked():
                 self.remember_me(email, token)
         except JIRAError:

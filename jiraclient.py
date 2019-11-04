@@ -11,9 +11,9 @@ class JiraClient:
             timeout=4
         )
 
-    def get_issues(self, start_at, limit=ISSUES_COUNT):
+    def get_issues(self, start_at=0, query='', limit=ISSUES_COUNT):
         return self.client.search_issues(
-                'assignee = currentUser()',
+                query,
                 fields='key, summary, timetracking, status, assignee',
                 startAt=start_at,
                 maxResults=limit

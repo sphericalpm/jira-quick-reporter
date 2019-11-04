@@ -1,18 +1,26 @@
+import configparser
 import os
 
 from requests.exceptions import ReadTimeout, ConnectionError
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMessageBox, QApplication
+from PyQt5.QtWidgets import QMessageBox, QApplication, QInputDialog
 from jira import JIRAError
 
-from config import LOG_TIME, ISSUES_COUNT, REFRESH_TIME
-from main_window import MainWindow
+from config import (
+    LOG_TIME,
+    FILTERS_PATH,
+    FILTERS_DEFAULT_SECTION_NAME,
+    DEFAULT_FILTERS,
+    ISSUES_COUNT,
+    REFRESH_TIME
+)
 
 from controllers.workflow_controller import (
     WorkflowController,
     CompleteWorkflowController
 )
 from controllers.mixins import TimeLogMixin
+from main_window import MainWindow
 from pomodoro_window import PomodoroWindow
 from time_log_window import TimeLogWindow
 from controllers.loading_indicator import LoadingIndicator, Thread
@@ -23,18 +31,21 @@ class MainController(TimeLogMixin):
     def __init__(self, jira_client):
         self.jira_client = jira_client
         self.issues_count = 0
+        self.current_filter = ''
         self.view = MainWindow(self)
         self.pomodoro_view = None
         self.time_log_view = None
+        self.config = configparser.ConfigParser()
+        self.filters = dict()
         self.current_issues = {}
 
     def show(self):
-        self.refresh_issue_list()
+        self.create_filters()
         self.view.show()
 
-    def load_more_issues(self):
+    def load_more_issues(self, filter_query):
         new_issues_list = []
-        issues = self.jira_client.get_issues(self.issues_count)
+        issues = self.jira_client.get_issues(self.issues_count, filter_query)
         new_issues_count = len(issues)
 
         for index, issue in enumerate(issues):
@@ -46,15 +57,12 @@ class MainController(TimeLogMixin):
         self.issues_count += new_issues_count
         return new_issues_list
 
-    def get_issues_list(self):
+    def get_issues_list(self, filter_query):
         # list of added issues for display on main window
         new_issues_list = []
         # list of updated issues for updated on main window
         update_issues_list = []
-
-        # get all loaded issues or default list
-        issues_count = self.issues_count if self.issues_count > ISSUES_COUNT else ISSUES_COUNT
-        issues = self.jira_client.get_issues(0, issues_count)
+        issues = self.jira_client.get_issues(0, filter_query)
 
         # create list of issues
         for index, issue in enumerate(issues):
@@ -117,11 +125,11 @@ class MainController(TimeLogMixin):
     def refresh_issue_list(self, load_more=False):
         try:
             if load_more:
-                new_issues_list = self.load_more_issues()
+                new_issues_list = self.load_more_issues(self.current_filter)
                 update_issues_list = []
                 delete_issues_list = []
             else:
-                new_issues_list, update_issues_list, delete_issues_list = self.get_issues_list()
+                new_issues_list, update_issues_list, delete_issues_list = self.get_issues_list(self.current_filter)
 
         except (ConnectionError,
                 ReadTimeout):
@@ -317,6 +325,142 @@ class MainController(TimeLogMixin):
                 **self.log_work_params)
         except JIRAError as e:
             raise ValueError(e.text)
+
+    def create_filters(self):
+        try:
+            self.config.read(FILTERS_PATH)
+        except configparser.Error:
+            self.config.clear()
+
+        self.set_default_section()
+        self.write_to_ini()
+        self.set_filters()
+
+        for filter_query in self.filters.values():
+            try:
+                self.jira_client.get_issues(query=filter_query)
+            except JIRAError:
+                self.config.clear()
+                self.set_default_section()
+                self.write_to_ini()
+                self.set_filters()
+                break
+        self.view.show_filters(self.filters)
+
+    def set_filters(self):
+        self.filters.clear()
+        self.filters.update(self.config.items(FILTERS_DEFAULT_SECTION_NAME))
+
+    def set_default_section(self):
+        if FILTERS_DEFAULT_SECTION_NAME not in self.config.sections():
+            self.config[FILTERS_DEFAULT_SECTION_NAME] = {}
+        for filter_name, filter in DEFAULT_FILTERS.items():
+            self.config[FILTERS_DEFAULT_SECTION_NAME][filter_name] = filter
+
+    def write_to_ini(self):
+        with open(FILTERS_PATH, 'w') as ini_file:
+            self.config.write(ini_file)
+
+    def search_issues_by_filter_name(self, filter):
+        self.current_filter = self.filters[filter.text().lower()]
+        self.refresh_issue_list()
+        self.view.filter_field.setText(self.current_filter)
+
+    def search_issues_by_filter(self):
+        self.current_filter = self.view.filter_field.text().lower()
+        try:
+            self.refresh_issue_list()
+        except JIRAError:
+            QMessageBox.about(
+                self.view, 'Error',
+                'The query is incorrect'
+            )
+
+    def delete_filter(self, filter_name):
+        self.config.remove_option(FILTERS_DEFAULT_SECTION_NAME, filter_name)
+        self.filters.pop(filter_name)
+        self.write_to_ini()
+
+    def overwrite_filter(self, filter_name, filter_query):
+        self.config[FILTERS_DEFAULT_SECTION_NAME][filter_name] = filter_query
+        self.write_to_ini()
+        self.set_filters()
+        items = self.view.filters_list.findItems(
+            filter_name, Qt.MatchExactly
+        )
+        self.view.filters_list.setCurrentItem(items[0])
+        self.view.on_filter_selected(items[0])
+
+    def add_filter(self, filter_name, filter_query):
+        self.config[FILTERS_DEFAULT_SECTION_NAME][filter_name] = filter_query
+        self.write_to_ini()
+        self.set_filters()
+        self.view.filters_list.addItem(filter_name)
+        self.view.filters_list.setCurrentItem(
+            self.view.filters_list.item(
+                self.view.filters_list.count() - 1
+            )
+        )
+        self.view.on_filter_selected(self.view.filters_list.currentItem())
+
+    def get_filter_by_name(self, name):
+        return self.filters[name.lower()]
+
+    def save_existing_filter(self):
+        filter_query = self.view.filter_field.text().lower()
+        filter_name = self.view.filters_list.currentItem().text().lower()
+
+        try:
+            self.jira_client.get_issues(query=filter_query)
+            self.overwrite_filter(filter_name, filter_query)
+            self.view.filter_edited_label.hide()
+            self.view.on_filter_selected(self.view.filters_list.currentItem())
+            self.view.tray_icon.showMessage(
+                'Save filter',
+                'The filter \'{}\' has been successfully saved'.format(filter_name),
+                msecs=1000
+            )
+        except JIRAError:
+            QMessageBox.about(
+                self.view, 'Error',
+                'The query is incorrect'
+            )
+
+    def save_filter(self):
+        filter_query = self.view.filter_field.text().lower()
+        try:
+            self.jira_client.get_issues(query=filter_query)
+            input_name_dialog = QInputDialog(self.view)
+            input_name_dialog.setWindowIconText('Save filter')
+            input_name_dialog.setLabelText(
+                'Enter filter name \n(you cannot use \' :, =, #\' symbols)'
+            )
+            input_name_dialog.setInputMode(QInputDialog.TextInput)
+
+            while input_name_dialog.exec_():
+                filter_name = input_name_dialog.textValue().lower()
+                if not filter_name or set(':=#') & set(filter_name):
+                    continue
+                elif filter_name in self.filters:
+                    reply = QMessageBox.question(
+                        self.view,
+                        'Warning',
+                        'A filter with name \'{}\' '
+                        'already exists. Overwrite?'.format(filter_name),
+                        QMessageBox.Yes | QMessageBox.Cancel
+                    )
+                    if reply == QMessageBox.Yes:
+                        self.overwrite_filter(filter_name, filter_query)
+                        break
+                else:
+                    self.add_filter(filter_name, filter_query)
+                    break
+
+        except JIRAError:
+            QMessageBox.about(
+                self.view, 'Error',
+                'The query is incorrect'
+            )
 
     def quit_app(self):
         if self.pomodoro_view:
