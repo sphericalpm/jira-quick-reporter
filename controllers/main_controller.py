@@ -3,7 +3,7 @@ import os
 
 from requests.exceptions import ReadTimeout, ConnectionError
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMessageBox, QApplication, QInputDialog
+from PyQt5.QtWidgets import QMessageBox, QInputDialog
 from jira import JIRAError
 
 from config import (
@@ -11,7 +11,6 @@ from config import (
     FILTERS_PATH,
     FILTERS_DEFAULT_SECTION_NAME,
     DEFAULT_FILTERS,
-    ISSUES_COUNT,
     REFRESH_TIME
 )
 
@@ -62,7 +61,7 @@ class MainController(TimeLogMixin):
         new_issues_list = []
         # list of updated issues for updated on main window
         update_issues_list = []
-        issues = self.jira_client.get_issues(0, filter_query)
+        issues = self.jira_client.get_issues(0, filter_query, self.issues_count)
 
         # create list of issues
         for index, issue in enumerate(issues):
