@@ -43,21 +43,8 @@ class MainController(TimeLogMixin):
         self.view.show()
 
     def load_more_issues(self, filter_query):
-        self.indicator = LoadingIndicator(self, self.view.vbox)
-        self.indicator.show()
-        self.filter_query = filter_query
-        self.new_thread = Thread(self.find_more_issues)
-        self.new_thread.start()
-        self.new_thread.finished.connect(self.stop_indicator_without_refresh)
-
-    def stop_indicator_without_refresh(self, result, error):
-        self.indicator.spinner.stop()
-        if error:
-            QMessageBox.about(self.view, 'Error', error)
-
-    def find_more_issues(self):
         new_issues_list = []
-        issues = self.jira_client.get_issues(self.issues_count, self.filter_query)
+        issues = self.jira_client.get_issues(self.issues_count, filter_query)
         new_issues_count = len(issues)
 
         for index, issue in enumerate(issues):
