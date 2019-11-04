@@ -203,7 +203,7 @@ class MainWindow(CenterWindow):
 
         self.btn_box = QHBoxLayout()
         self.refresh_btn = QPushButton('Refresh')
-        self.refresh_btn.clicked.connect(self.controller.refresh_issue_list)
+        self.refresh_btn.clicked.connect(self.controller.refresh_issue_list_with_indicator)
         self.btn_box.addWidget(self.refresh_btn, alignment=Qt.AlignRight)
         self.vbox.addLayout(self.btn_box)
 
