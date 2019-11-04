@@ -130,10 +130,10 @@ class MainController(TimeLogMixin):
 
     def stop_indicator_with_start_timer(self, result, error):
         self.indicator.spinner.stop()
-        if result:
-            self.view.timer_refresh.start(REFRESH_TIME)
         if error:
             QMessageBox.about(self.view, 'Error', error)
+        else:
+            self.view.timer_refresh.start(REFRESH_TIME)
 
     def refresh_issue_list(self, load_more=False):
         try:
@@ -146,13 +146,9 @@ class MainController(TimeLogMixin):
 
         except (ConnectionError,
                 ReadTimeout):
-            self.view.tray_icon.showMessage(
-                'Connection error',
-                'Please, check your internet connection'
-            )
             self.current_issues.clear()
             self.view.show_no_issues()
-            return
+            raise RuntimeError('Connection error!\nPlease, check your internet connection')
 
         if not self.issues_count:
             self.view.show_no_issues()
