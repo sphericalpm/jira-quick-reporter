@@ -147,11 +147,8 @@ class MainController(TimeLogMixin):
                 update_issues_list = []
                 delete_issues_list = []
             else:
-                (
-                    new_issues_list,
-                    update_issues_list,
-                    delete_issues_list
-                ) = self.get_issues_list(self.current_filter, change_filter)
+                issues = self.get_issues_list(self.current_filter, change_filter)
+                new_issues_list, update_issues_list, delete_issues_list = issues
 
         except (ConnectionError,
                 ReadTimeout):
