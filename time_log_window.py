@@ -26,9 +26,9 @@ class TimeLogWindow(CenterWindow):
         self.resize(600, 450)
         self.setWindowTitle('Log Work: {issue}'.format(issue=issue_key))
 
-        vbox = self.build_issue_form_vbox()
-        vbox = self.add_save_button(vbox)
-        self.setLayout(vbox)
+        self.vbox = self.build_issue_form_vbox()
+        self.vbox = self.add_save_button(self.vbox)
+        self.setLayout(self.vbox)
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Return:

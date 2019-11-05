@@ -1,5 +1,7 @@
 from PyQt5.QtWidgets import QMessageBox
 
+from controllers.loading_indicator import LoadingIndicator, Thread
+
 
 class TimeLogMixin:
     def take_timelog_values(self, remaining_estimate, target_window):
@@ -32,3 +34,20 @@ class TimeLogMixin:
             return
 
         return log_work_params
+
+
+class SavingWithThreadsMixin():
+    def save_click(self, issue_key):
+        self.indicator = LoadingIndicator(self, self.view.vbox)
+        self.indicator.show()
+        self.new_thread = Thread(self.save_into_jira)
+        self.new_thread.start()
+        self.new_thread.finished.connect(self.stop_indicator)
+
+    def stop_indicator(self, result, error):
+        self.indicator.spinner.stop()
+        if result:
+            self.controller.refresh_issue_list()
+            self.view.close()
+        elif error:
+            QMessageBox.about(self.view, 'Error', error)

@@ -1,12 +1,11 @@
-from PyQt5.QtWidgets import QMessageBox
 from jira import JIRAError
 
 from workflow_window import WorkflowWindow, CompleteWorflowWindow
-from .mixins import TimeLogMixin
+from controllers.mixins import TimeLogMixin, SavingWithThreadsMixin
 from utils.decorators import catch_timeout_exception
 
 
-class WorkflowController:
+class WorkflowController(SavingWithThreadsMixin):
     def __init__(
         self,
         jira_client,
@@ -37,7 +36,7 @@ class WorkflowController:
         self.view.show()
 
     @catch_timeout_exception
-    def save_click(self, *args):
+    def save_into_jira(self):
         assignee = self.view.assignee_line.text()
         original_estimate = self.view.original_estimate_line.text()
         remaining_estimate = self.view.remaining_estimate_line.text()
@@ -47,8 +46,7 @@ class WorkflowController:
             try:
                 self.issue.update(assignee={'name': assignee})
             except JIRAError as e:
-                QMessageBox.about(self.view, 'Error', e.text)
-                return
+                raise ValueError(e.text)
 
         if comment:
             self.jira_client.client.add_comment(self.issue, comment)
@@ -63,25 +61,23 @@ class WorkflowController:
                 }
             )
         except JIRAError as e:
-            QMessageBox.about(self.view, 'Error', e.text)
+            raise ValueError(e.text)
         try:
             self.jira_client.client.transition_issue(
                     self.issue,
                     transition=self.status_id
                 )
         except JIRAError as e:
-            QMessageBox.about(self.view, 'Error', e.text)
+            raise ValueError(e.text)
 
-        self.controller.refresh_issue_list()
         self.is_save = True
-        self.view.close()
 
     def close(self):
         if not self.is_save:
             self.controller.reset_workflow(self.issue)
 
 
-class CompleteWorkflowController(TimeLogMixin):
+class CompleteWorkflowController(TimeLogMixin, SavingWithThreadsMixin):
     def __init__(self, jira_client, issue, status, assignee, controller):
         self.controller = controller
         self.jira_client = jira_client
@@ -102,7 +98,7 @@ class CompleteWorkflowController(TimeLogMixin):
         self.view.show()
 
     @catch_timeout_exception
-    def save_click(self, *args):
+    def save_into_jira(self):
         time_spent = self.view.time_spent_line.text()
         start_date = self.view.date_start
         comment = self.view.work_description_line.toPlainText()
@@ -111,14 +107,13 @@ class CompleteWorkflowController(TimeLogMixin):
         log_work_params = self.take_timelog_values(remaining_estimate, self.view)
 
         if not start_date:
-            return
+            raise ValueError('Enter start date')
 
         if assignee != self.assignee:
             try:
                 self.issue.update(assignee={'name': assignee})
             except JIRAError as e:
-                QMessageBox.about(self.view, 'Error', e.text)
-                return
+                raise ValueError(e.text)
 
         try:
             # save timelog
@@ -129,8 +124,7 @@ class CompleteWorkflowController(TimeLogMixin):
                 comment,
                 **log_work_params)
         except JIRAError as e:
-            QMessageBox.about(self.view, "Error", e.text)
-            return
+            raise ValueError(e.text)
 
         try:
             # change resolution
@@ -143,20 +137,15 @@ class CompleteWorkflowController(TimeLogMixin):
                 }
             )
         except JIRAError as e:
-            QMessageBox.about(self.view, "Error", e.text)
-            return
+            raise ValueError(e.text)
 
         try:
             # save version
             version = self.view.set_version.currentText()
             self.issue.update(fields={'fixVersions': [{'name': version}]})
         except JIRAError as e:
-            QMessageBox.about(self.view, "Error", e.text)
-            return
-
-        self.controller.refresh_issue_list()
+            raise ValueError(e.text)
         self.is_save = True
-        self.view.close()
 
     def close(self):
         if not self.is_save:

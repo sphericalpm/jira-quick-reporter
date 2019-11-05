@@ -3,7 +3,7 @@ import os
 
 from requests.exceptions import ReadTimeout, ConnectionError
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMessageBox, QApplication, QInputDialog
+from PyQt5.QtWidgets import QMessageBox, QInputDialog
 from jira import JIRAError
 
 from config import (
@@ -11,7 +11,6 @@ from config import (
     FILTERS_PATH,
     FILTERS_DEFAULT_SECTION_NAME,
     DEFAULT_FILTERS,
-    ISSUES_COUNT,
     REFRESH_TIME
 )
 
@@ -23,6 +22,7 @@ from controllers.mixins import TimeLogMixin
 from main_window import MainWindow
 from pomodoro_window import PomodoroWindow
 from time_log_window import TimeLogWindow
+from controllers.loading_indicator import LoadingIndicator, Thread
 from utils.decorators import catch_timeout_exception
 
 
@@ -61,21 +61,7 @@ class MainController(TimeLogMixin):
         new_issues_list = []
         # list of updated issues for updated on main window
         update_issues_list = []
-
-        # get firs ISSUES_COUNT issues
-        issues = self.jira_client.get_issues(0, filter_query)
-
-        # if we have loaded issues before, then we need to get them
-        if self.issues_count > ISSUES_COUNT:
-            current_issues_count = len(issues)
-
-            while current_issues_count < self.issues_count:
-                loaded_issues = self.jira_client.get_issues(current_issues_count, filter_query)
-                loaded_issues_count = len(loaded_issues)
-                if not loaded_issues_count:
-                    break
-                current_issues_count += loaded_issues_count
-                issues += loaded_issues
+        issues = self.jira_client.get_issues(0, filter_query, self.issues_count)
 
         # create list of issues
         for index, issue in enumerate(issues):
@@ -108,12 +94,17 @@ class MainController(TimeLogMixin):
         return new_issues_list, update_issues_list, delete_issues_list
 
     def get_issue_parameters(self, issue):
+
+        workflow = self.jira_client.client.transitions(issue)
+        possible_workflow = {status['name']: status['id'] for status in workflow}
         issue_dict = dict(
             title=issue.fields.summary,
             key=issue.key,
             link=issue.permalink(),
-            workflow=self.jira_client.get_possible_workflows(issue)
+            issue_obj=issue,
+            workflow=possible_workflow
         )
+
         # if the task was logged
         if issue.fields.timetracking.raw:
             timetracking = issue.fields.timetracking.raw
@@ -130,26 +121,34 @@ class MainController(TimeLogMixin):
             })
         return issue_dict
 
+    def refresh_issue_list_with_indicator(self, load_more=False):
+        self.indicator = LoadingIndicator(self, self.view.vbox)
+        self.indicator.show()
+        self.new_thread = Thread(self.refresh_issue_list)
+        self.new_thread.start()
+        self.new_thread.finished.connect(self.stop_indicator_with_start_timer)
+
+    def stop_indicator_with_start_timer(self, result, error):
+        self.indicator.spinner.stop()
+        if error:
+            QMessageBox.about(self.view, 'Error', error)
+        else:
+            self.view.timer_refresh.start(REFRESH_TIME)
+
     def refresh_issue_list(self, load_more=False):
-        QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
             if load_more:
                 new_issues_list = self.load_more_issues(self.current_filter)
+                update_issues_list = []
+                delete_issues_list = []
             else:
                 new_issues_list, update_issues_list, delete_issues_list = self.get_issues_list(self.current_filter)
 
         except (ConnectionError,
                 ReadTimeout):
-            self.view.tray_icon.showMessage(
-                'Connection error',
-                'Please, check your internet connection'
-            )
             self.current_issues.clear()
             self.view.show_no_issues()
-            return
-        finally:
-            QApplication.restoreOverrideCursor()
-            self.view.timer_refresh.start(REFRESH_TIME)
+            raise RuntimeError('Connection error!\nPlease, check your internet connection')
 
         if not self.issues_count:
             self.view.show_no_issues()
@@ -157,50 +156,35 @@ class MainController(TimeLogMixin):
         # if we have issues, make the widget for issues enable
         self.view.issue_list_widget.show()
         self.view.label_info.hide()
-
         if new_issues_list:
             self.view.insert_issues(new_issues_list)
-        if not load_more:
-            if update_issues_list:
-                self.view.update_issues(update_issues_list)
-            if delete_issues_list:
-                self.view.delete_issues(delete_issues_list)
+        if update_issues_list:
+            self.view.update_issues(update_issues_list)
+        if delete_issues_list:
+            self.view.delete_issues(delete_issues_list)
 
-    @catch_timeout_exception
-    def change_workflow(self, issue_key, workflow_items, status):
-        current_status = workflow_items.itemText(0)
-        if current_status == status:
+    def change_workflow(self, workflow, issue_obj, status):
+        self.issue = issue_obj
+        self.status_id = workflow.get(status)
+        existing_estimate = self.jira_client.get_remaining_estimate(self.issue)
+        original_estimate = self.jira_client.get_original_estimate(self.issue)
+        assignee = self.issue.fields.assignee.emailAddress
+
+        if not self.status_id:
             return
 
-        issue = self.current_issues[issue_key]
-        existing_estimate = self.jira_client.get_remaining_estimate(issue)
-        original_estimate = self.jira_client.get_original_estimate(issue)
-        assignee = issue.fields.assignee.emailAddress
-
-        status_id = self.jira_client.client.find_transitionid_by_name(
-            issue,
-            status
-        )
-
-        if not status_id:
-            return
         if status in ['Put on hold', 'Select for development']:
-            # we do not need to open workflow window with detail information
-            try:
-                self.jira_client.client.transition_issue(
-                        issue,
-                        transition=status_id
-                    )
-                self.refresh_issue_list()
-            except JIRAError as e:
-                QMessageBox.about(self.view, 'Error', e.text)
-                self.view.set_workflow_current_state(issue_key)
+            self.indicator = LoadingIndicator(self, self.view.main_box)
+            self.indicator.show()
+            self.new_thread = Thread(self.simple_workflow_change)
+            self.new_thread.start()
+            self.new_thread.finished.connect(self.stop_indicator)
 
         elif status in ['Complete', 'Declare done']:
             # open complete workflow window
             self.complete_workflow_controller = CompleteWorkflowController(
                 self.jira_client,
-                issue,
+                self.issue,
                 status,
                 assignee,
                 self
@@ -213,14 +197,42 @@ class MainController(TimeLogMixin):
         else:
             self.workflow_controller = WorkflowController(
                 self.jira_client,
-                issue,
-                status_id,
+                self.issue,
+                self.status_id,
                 existing_estimate,
                 original_estimate,
                 assignee,
                 self
             )
             self.workflow_controller.show()
+
+    def stop_indicator(self, result, error):
+        self.indicator.spinner.stop()
+        if result:
+            self.refresh_issue_list()
+        elif error:
+            QMessageBox.about(self.view, 'Error', error)
+
+    def simple_workflow_change(self):
+        try:
+            self.jira_client.client.transition_issue(
+                    self.issue,
+                    transition=self.status_id
+                )
+        except JIRAError as e:
+            raise ValueError(e.text)
+
+    def get_possible_workflows(self, issue):
+        current_workflow = issue['issue_obj'].fields.status
+        possible_workflows = list(issue['workflow'].keys())
+
+        if current_workflow.name != 'Backlog':  # when it's 'Backlog' status,
+            # JIRA API provides possibility to change it to 'Return to backlog'.
+            # Cause it's the same that we already have we won't show it one more time
+            possible_workflows.insert(0, current_workflow.name)  # insert because of
+            # setCurrentIndex() can have only positive value
+
+        return possible_workflows
 
     def reset_workflow(self, issue):
         self.view.set_workflow_current_state(issue.key)
@@ -281,37 +293,45 @@ class MainController(TimeLogMixin):
         show popup for successfully save or exception
         """
 
-        issue = self.jira_client.issue(issue_key)
-        time_spent = self.time_log_view.time_spent_line.text()
-        start_date = self.time_log_view.date_start
-        if not start_date:
+        self.current_issue = self.jira_client.issue(issue_key)
+        self.time_spent = self.time_log_view.time_spent_line.text()
+        self.start_date = self.time_log_view.date_start
+        if not self.start_date:
             return
-        comment = self.time_log_view.work_description_line.toPlainText()
+        self.comment = self.time_log_view.work_description_line.toPlainText()
         remaining_estimate = self.time_log_view.new_remaining_estimate
-        log_work_params = self.take_timelog_values(
+        self.log_work_params = self.take_timelog_values(
             remaining_estimate,
             self.time_log_view
         )
-        try:
-            self.jira_client.log_work(
-                issue,
-                time_spent,
-                start_date,
-                comment,
-                **log_work_params)
+
+        self.timelog_indicator = LoadingIndicator(self, self.time_log_view.vbox)
+        self.timelog_indicator.show()
+        self.new_thread = Thread(self.save_worklog_into_jira)
+        self.new_thread.start()
+        self.new_thread.finished.connect(self.timelog_stop_indicator)
+
+    def timelog_stop_indicator(self, result, error):
+        self.timelog_indicator.spinner.stop()
+        if result:
             self.time_log_view.close()
             self.refresh_issue_list()
             self.view.timer_log_work.start(LOG_TIME)
-            self.view.tray_icon.showMessage(
-                'Saving work log',
-                'Successfully saved',
-                msecs=200
-            )
             if self.pomodoro_view:
                 self.pomodoro_view.reset_timer()
+        elif error:
+            QMessageBox.about(self.time_log_view, 'Error', error)
 
+    def save_worklog_into_jira(self):
+        try:
+            self.jira_client.log_work(
+                self.current_issue,
+                self.time_spent,
+                self.start_date,
+                self.comment,
+                **self.log_work_params)
         except JIRAError as e:
-            QMessageBox.about(self.time_log_view, "Error", e.text)
+            raise ValueError(e.text)
 
     def create_filters(self):
         try:

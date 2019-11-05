@@ -203,7 +203,7 @@ class MainWindow(CenterWindow):
 
         self.btn_box = QHBoxLayout()
         self.refresh_btn = QPushButton('Refresh')
-        self.refresh_btn.clicked.connect(self.controller.refresh_issue_list)
+        self.refresh_btn.clicked.connect(self.controller.refresh_issue_list_with_indicator)
         self.btn_box.addWidget(self.refresh_btn, alignment=Qt.AlignRight)
         self.vbox.addLayout(self.btn_box)
 
@@ -261,8 +261,17 @@ class MainWindow(CenterWindow):
                 issue['remaining']
             )
             issue_widget.set_workflow.clear()
-            issue_widget.set_workflow.addItems(issue['workflow'])
+            issue_widget.set_workflow.addItems(self.controller.get_possible_workflows(issue))
             issue_widget.set_workflow.setCurrentIndex(0)
+
+            issue_widget.set_workflow.activated[str].disconnect()
+            issue_widget.set_workflow.activated[str].connect(
+                partial(
+                    self.controller.change_workflow,
+                    issue['workflow'],
+                    issue['issue_obj'],
+                )
+            )
 
     def delete_issues(self, delete_list):
         for issue in delete_list:
@@ -299,14 +308,15 @@ class MainWindow(CenterWindow):
             )
 
             # add workflow statuses to dropdown
-            issue_widget.set_workflow.addItems(issue['workflow'])
-            issue_widget.set_workflow.setCurrentIndex(0)
+            possible_workflows = self.controller.get_possible_workflows(issue)
 
+            issue_widget.set_workflow.addItems(possible_workflows)
+            issue_widget.set_workflow.setCurrentIndex(0)
             issue_widget.set_workflow.activated[str].connect(
                 partial(
                     self.controller.change_workflow,
-                    issue['key'],
-                    issue_widget.set_workflow
+                    issue['workflow'],
+                    issue['issue_obj'],
                 )
             )
 
