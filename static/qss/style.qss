@@ -104,7 +104,7 @@ QListWidget#filters_list::item:selected{
     border: none;
 }
 
-#filter_field, #search_issues_button {
+#query_field, #search_issues_button {
     margin: 5px 0 5px 0;
     padding: 5px;
 }

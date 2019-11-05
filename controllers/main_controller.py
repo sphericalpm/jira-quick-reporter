@@ -382,12 +382,12 @@ class MainController(TimeLogMixin):
             self.config.write(ini_file)
 
     def search_issues_by_filter_name(self, filter):
-        self.current_filter = self.filters[filter.text().lower()]
+        self.current_filter = self.filters[filter.lower()]
         self.refresh_issue_list(change_filter=True)
-        self.view.filter_field.setText(self.current_filter)
+        self.view.query_field.setText(self.current_filter)
 
-    def search_issues_by_filter(self):
-        self.current_filter = self.view.filter_field.text().lower()
+    def search_issues_by_query(self):
+        self.current_filter = self.view.query_field.text().lower()
         try:
             self.refresh_issue_list(change_filter=True)
         except JIRAError:
@@ -427,7 +427,7 @@ class MainController(TimeLogMixin):
         return self.filters[name.lower()]
 
     def save_existing_filter(self):
-        filter_query = self.view.filter_field.text().lower()
+        filter_query = self.view.query_field.text().lower()
         filter_name = self.view.filters_list.currentItem().text().lower()
 
         try:
@@ -447,7 +447,7 @@ class MainController(TimeLogMixin):
             )
 
     def save_filter(self):
-        filter_query = self.view.filter_field.text().lower()
+        filter_query = self.view.query_field.text().lower()
         try:
             self.jira_client.get_issues(query=filter_query)
             input_name_dialog = QInputDialog(self.view)
