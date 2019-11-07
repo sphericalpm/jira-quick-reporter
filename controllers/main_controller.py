@@ -358,15 +358,15 @@ class MainController(TimeLogMixin, ProcessWithThreadsMixin):
     def set_default_section(self):
         if FILTERS_DEFAULT_SECTION_NAME not in self.config.sections():
             self.config[FILTERS_DEFAULT_SECTION_NAME] = {}
-        for filter_name, filter in DEFAULT_FILTERS.items():
-            self.config[FILTERS_DEFAULT_SECTION_NAME][filter_name] = filter
+        for filter_name, filter_query in DEFAULT_FILTERS.items():
+            self.config[FILTERS_DEFAULT_SECTION_NAME][filter_name] = filter_query
 
     def write_to_ini(self):
         with open(FILTERS_PATH, 'w') as ini_file:
             self.config.write(ini_file)
 
-    def search_issues_by_filter_name(self, filter):
-        self.current_filter = self.filters[filter.text().lower()]
+    def search_issues_by_filter_name(self, filter_name):
+        self.current_filter = self.filters[filter_name.lower()]
         self.refresh_issue_list()
         self.view.filter_field.setText(self.current_filter)
 

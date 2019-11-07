@@ -371,7 +371,7 @@ class MainWindow(CenterWindow):
             return
         self.current_item = item
         self.filter_name_label.setText(item.text())
-        self.controller.search_issues_by_filter_name(item)
+        self.controller.search_issues_by_filter_name(item.text())
         self.filter_edited_label.hide()
 
         # if current filter is not 'Search issues'
@@ -404,9 +404,9 @@ class MainWindow(CenterWindow):
         self.controller.current_issues.clear()
         self.show_no_issues()
 
-    def eventFilter(self, object, event):
+    def eventFilter(self, obj, event):
         # if user started typing in filter field
-        if object is self.filter_field and event.type() == QEvent.KeyRelease:
+        if obj is self.filter_field and event.type() == QEvent.KeyRelease:
             # if current filter is not 'Search issues'
             if self.filters_list.currentRow() > 0:
                 current_filter_name = self.filters_list.currentItem().text()
@@ -420,13 +420,13 @@ class MainWindow(CenterWindow):
                     self.overwrite_filter_button.setEnabled(False)
 
         if event.type() == QEvent.ContextMenu:
-            if object is not self.filters_list:
-                return super().eventFilter(object, event)
+            if obj is not self.filters_list:
+                return super().eventFilter(obj, event)
             self.filters_list.setCurrentItem(self.current_item)
-            if object.itemAt(event.pos()) is self.filters_list.currentItem():
+            if obj.itemAt(event.pos()) is self.filters_list.currentItem():
                 item_text = self.filters_list.currentItem().text().lower()
                 if item_text in DEFAULT_FILTERS:
-                    return super().eventFilter(object, event)
+                    return super().eventFilter(obj, event)
                 context_menu = QMenu()
                 action_delete = QAction('Delete', self)
                 context_menu.addAction(action_delete)
@@ -448,7 +448,7 @@ class MainWindow(CenterWindow):
                                 MY_ISSUES_ITEM_NAME, Qt.MatchExactly
                             )[0])
                         self.on_filter_selected(self.filters_list.currentItem())
-        return super().eventFilter(object, event)
+        return super().eventFilter(obj, event)
 
     def show_no_issues(self):
         self.issue_list_widget.clear()
@@ -467,6 +467,6 @@ class MainWindow(CenterWindow):
             self.controller.refresh_issue_list(True)
             event.accept()
 
-    def closeEvent(self, QCloseEvent):
-        QCloseEvent.ignore()
+    def closeEvent(self, event):
+        event.ignore()
         self.hide()
