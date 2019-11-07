@@ -367,6 +367,8 @@ class MainWindow(CenterWindow):
         QDesktopServices.openUrl(self.help_filter_url)
 
     def on_filter_selected(self, item):
+        if not item.text():
+            return
         self.current_item = item
         self.filter_name_label.setText(item.text())
         self.controller.search_issues_by_filter_name(item)
@@ -418,6 +420,8 @@ class MainWindow(CenterWindow):
                     self.overwrite_filter_button.setEnabled(False)
 
         if event.type() == QEvent.ContextMenu:
+            if object is not self.filters_list:
+                return super().eventFilter(object, event)
             self.filters_list.setCurrentItem(self.current_item)
             if object.itemAt(event.pos()) is self.filters_list.currentItem():
                 item_text = self.filters_list.currentItem().text().lower()
