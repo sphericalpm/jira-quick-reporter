@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from PyQt5.QtCore import QEvent
 from PyQt5 import QtCore
+from PyQt5.QtCore import QEvent
 from PyQt5.QtWidgets import (
     QPushButton,
     QLineEdit,
@@ -18,6 +18,7 @@ from config import QSS
 class TimeLogWindow(CenterWindow):
     def __init__(self, issue_key, time_spent=None, save_callback=None):
         super().__init__()
+        self.center()
         self.issue_key = issue_key
         self.time_spent = time_spent
         self.save_callback = save_callback

@@ -117,12 +117,12 @@ class MainWindow(CenterWindow):
     """
     def __init__(self, controller):
         super().__init__()
-
         self.setStyleSheet(QSS)
         self.controller = controller
-        self.resize(800, 450)
+        self.resize(1000, 600)
         self.setWindowTitle('JIRA Quick Reporter')
         self.setWindowIcon(QIcon(LOGO_PATH))
+        self.center()
         self.current_item = None
 
         self.vbox = QVBoxLayout()
@@ -145,7 +145,7 @@ class MainWindow(CenterWindow):
         self.overwrite_filter_button.setToolTip('You need to edit filter query first')
         self.overwrite_filter_button.setObjectName('save_filter_btn')
         self.overwrite_filter_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.overwrite_filter_button.clicked.connect(self.controller.save_existing_filter)
+        self.overwrite_filter_button.clicked.connect(lambda: self.controller.save_filter(True))
 
         self.save_btn_box.addWidget(self.filter_name_label, Qt.AlignLeft)
         self.save_btn_box.addWidget(self.filter_edited_label, Qt.AlignLeft)
@@ -203,7 +203,7 @@ class MainWindow(CenterWindow):
 
         self.btn_box = QHBoxLayout()
         self.refresh_btn = QPushButton('Refresh')
-        self.refresh_btn.clicked.connect(self.controller.refresh_issue_list_with_indicator)
+        self.refresh_btn.clicked.connect(self.controller.refresh_issue_list)
         self.btn_box.addWidget(self.refresh_btn, alignment=Qt.AlignRight)
         self.vbox.addLayout(self.btn_box)
 
@@ -328,6 +328,12 @@ class MainWindow(CenterWindow):
             self.issue_list_widget.setItemWidget(
                 issue_list_widget_item, issue_widget
             )
+        self.issue_list_widget.setMinimumWidth(
+            self.issue_list_widget.sizeHintForColumn(0) + 100
+        )
+        self.issue_list_widget.setMinimumHeight(
+            self.issue_list_widget.sizeHintForRow(0) * 2
+        )
 
     def show_filters(self, filters_dict):
         for key in filters_dict:
@@ -352,9 +358,10 @@ class MainWindow(CenterWindow):
             )[0])
 
         self.on_filter_selected(self.filters_list.currentItem())
-        self.filters_list.setMaximumWidth(
-            self.filters_list.sizeHintForColumn(0) + 10
-        )
+        width = self.filters_list.fontMetrics().boundingRect(
+            self.filters_list.item(2).text()
+        ).width() + 5
+        self.filters_list.setMaximumWidth(width)
 
     def filter_field_help(self):
         QDesktopServices.openUrl(self.help_filter_url)

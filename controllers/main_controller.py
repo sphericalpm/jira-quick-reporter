@@ -1,7 +1,7 @@
 import configparser
 import os
+from functools import partial
 
-from requests.exceptions import ReadTimeout, ConnectionError
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMessageBox, QInputDialog
 from jira import JIRAError
@@ -13,21 +13,20 @@ from config import (
     DEFAULT_FILTERS,
     REFRESH_TIME
 )
-
+from controllers.loading_indicator import LoadingIndicator
+from controllers.mixins import TimeLogMixin, ProcessWithThreadsMixin
 from controllers.workflow_controller import (
     WorkflowController,
     CompleteWorkflowController
 )
-from controllers.mixins import TimeLogMixin
 from main_window import MainWindow
 from pomodoro_window import PomodoroWindow
 from time_log_window import TimeLogWindow
-from controllers.loading_indicator import LoadingIndicator, Thread
-from utils.decorators import catch_timeout_exception
 
 
-class MainController(TimeLogMixin):
+class MainController(TimeLogMixin, ProcessWithThreadsMixin):
     def __init__(self, jira_client):
+        super().__init__()
         self.jira_client = jira_client
         self.issues_count = 0
         self.current_filter = ''
@@ -37,13 +36,17 @@ class MainController(TimeLogMixin):
         self.config = configparser.ConfigParser()
         self.filters = dict()
         self.current_issues = {}
+        self.insert_issue_list = []
+        self.update_issue_list = []
+        self.delete_issue_list = []
+        self.main_indicator = LoadingIndicator(self.view, self.view.main_box)
+        self.indicator = self.main_indicator
 
     def show(self):
         self.create_filters()
         self.view.show()
 
     def load_more_issues(self, filter_query):
-        new_issues_list = []
         issues = self.jira_client.get_issues(self.issues_count, filter_query)
         new_issues_count = len(issues)
 
@@ -51,16 +54,11 @@ class MainController(TimeLogMixin):
             self.current_issues[issue.key] = issue
             issue_dict = self.get_issue_parameters(issue)
             issue_dict['index'] = index + self.issues_count
-            new_issues_list.append(issue_dict)
+            self.insert_issue_list.append(issue_dict)
 
         self.issues_count += new_issues_count
-        return new_issues_list
 
     def get_issues_list(self, filter_query):
-        # list of added issues for display on main window
-        new_issues_list = []
-        # list of updated issues for updated on main window
-        update_issues_list = []
         issues = self.jira_client.get_issues(0, filter_query, self.issues_count)
 
         # create list of issues
@@ -72,29 +70,27 @@ class MainController(TimeLogMixin):
                 issue_dict = self.get_issue_parameters(issue)
                 issue_dict['index'] = index
                 # add issue to the list for new issues
-                new_issues_list.append(issue_dict)
+                self.insert_issue_list.append(issue_dict)
             # if issue has been changed
             elif issue.raw['fields'] != self.current_issues[issue.key].raw['fields']:
                 self.current_issues[issue.key] = issue
                 issue_dict = self.get_issue_parameters(issue)
                 # add issue to the list for updated issues
-                update_issues_list.append(issue_dict)
+                self.update_issue_list.append(issue_dict)
 
         # update count of all available issues
         self.issues_count = len(self.current_issues)
         # get list of deleted issues
-        delete_issues_list = [
+        self.delete_issue_list = [
             self.get_issue_parameters(issue) for issue in self.current_issues.values() if issue not in issues
         ]
         # remove deleted issues from the list of all available issues
-        for issue in delete_issues_list:
+        for issue in self.delete_issue_list:
             del self.current_issues[issue['key']]
 
-        self.issues_count -= len(delete_issues_list)
-        return new_issues_list, update_issues_list, delete_issues_list
+        self.issues_count -= len(self.delete_issue_list)
 
     def get_issue_parameters(self, issue):
-
         workflow = self.jira_client.client.transitions(issue)
         possible_workflow = {status['name']: status['id'] for status in workflow}
         issue_dict = dict(
@@ -121,34 +117,12 @@ class MainController(TimeLogMixin):
             })
         return issue_dict
 
-    def refresh_issue_list_with_indicator(self, load_more=False):
-        self.indicator = LoadingIndicator(self, self.view.vbox)
-        self.indicator.show()
-        self.new_thread = Thread(self.refresh_issue_list)
-        self.new_thread.start()
-        self.new_thread.finished.connect(self.stop_indicator_with_start_timer)
-
-    def stop_indicator_with_start_timer(self, result, error):
-        self.indicator.spinner.stop()
+    def refresh_issue_list_widget(self, error):
         if error:
-            QMessageBox.about(self.view, 'Error', error)
-        else:
-            self.view.timer_refresh.start(REFRESH_TIME)
-
-    def refresh_issue_list(self, load_more=False):
-        try:
-            if load_more:
-                new_issues_list = self.load_more_issues(self.current_filter)
-                update_issues_list = []
-                delete_issues_list = []
-            else:
-                new_issues_list, update_issues_list, delete_issues_list = self.get_issues_list(self.current_filter)
-
-        except (ConnectionError,
-                ReadTimeout):
             self.current_issues.clear()
             self.view.show_no_issues()
-            raise RuntimeError('Connection error!\nPlease, check your internet connection')
+            QMessageBox.about(self.view, 'Error', error)
+            return
 
         if not self.issues_count:
             self.view.show_no_issues()
@@ -156,12 +130,24 @@ class MainController(TimeLogMixin):
         # if we have issues, make the widget for issues enable
         self.view.issue_list_widget.show()
         self.view.label_info.hide()
-        if new_issues_list:
-            self.view.insert_issues(new_issues_list)
-        if update_issues_list:
-            self.view.update_issues(update_issues_list)
-        if delete_issues_list:
-            self.view.delete_issues(delete_issues_list)
+        if self.insert_issue_list:
+            self.view.insert_issues(self.insert_issue_list)
+        if self.update_issue_list:
+            self.view.update_issues(self.update_issue_list)
+        if self.delete_issue_list:
+            self.view.delete_issues(self.delete_issue_list)
+        self.insert_issue_list.clear()
+        self.update_issue_list.clear()
+        self.delete_issue_list.clear()
+        self.view.timer_refresh.start(REFRESH_TIME)
+
+    def refresh_issue_list(self, load_more=False):
+        if load_more:
+            callback = partial(self.load_more_issues, self.current_filter)
+        else:
+            callback = partial(self.get_issues_list, self.current_filter)
+        self.indicator = self.main_indicator
+        self.start_loading(callback, self.refresh_issue_list_widget)
 
     def change_workflow(self, workflow, issue_obj, status):
         self.issue = issue_obj
@@ -174,11 +160,11 @@ class MainController(TimeLogMixin):
             return
 
         if status in ['Put on hold', 'Select for development']:
-            self.indicator = LoadingIndicator(self, self.view.main_box)
-            self.indicator.show()
-            self.new_thread = Thread(self.simple_workflow_change)
-            self.new_thread.start()
-            self.new_thread.finished.connect(self.stop_indicator)
+            self.indicator = self.main_indicator
+            self.start_loading(
+                self.simple_workflow_change,
+                self.simple_workflow_change_handler
+            )
 
         elif status in ['Complete', 'Declare done']:
             # open complete workflow window
@@ -206,13 +192,6 @@ class MainController(TimeLogMixin):
             )
             self.workflow_controller.show()
 
-    def stop_indicator(self, result, error):
-        self.indicator.spinner.stop()
-        if result:
-            self.refresh_issue_list()
-        elif error:
-            QMessageBox.about(self.view, 'Error', error)
-
     def simple_workflow_change(self):
         try:
             self.jira_client.client.transition_issue(
@@ -221,6 +200,12 @@ class MainController(TimeLogMixin):
                 )
         except JIRAError as e:
             raise ValueError(e.text)
+
+    def simple_workflow_change_handler(self, error):
+        if error:
+            QMessageBox.about(self.view, 'Error', error)
+        else:
+            self.refresh_issue_list()
 
     def get_possible_workflows(self, issue):
         current_workflow = issue['issue_obj'].fields.status
@@ -274,19 +259,28 @@ class MainController(TimeLogMixin):
                     params.append('{}h {}m'.format(hours, minutes))
         self.open_timelog_window(*params)
 
-    @catch_timeout_exception
     def open_timelog_window(self, issue_key, time_spent=None):
-        issue = self.jira_client.issue(issue_key)
-        self.time_log_view = TimeLogWindow(
-            issue_key,
-            time_spent,
-            save_callback=self.save_issue_worklog
-        )
-        existing_estimate = self.jira_client.get_remaining_estimate(issue)
-        self.time_log_view.set_existing_estimate(existing_estimate)
-        self.time_log_view.show()
+        self.indicator = self.main_indicator
+        started_callback = partial(self.set_timelog_parameters, issue_key, time_spent)
+        self.start_loading(started_callback, self.show_timelog_window)
 
-    @catch_timeout_exception
+    def set_timelog_parameters(self, issue_key, time_spent):
+        self.issue = self.jira_client.issue(issue_key)
+        self.time_spent = time_spent
+        self.existing_estimate = self.jira_client.get_remaining_estimate(self.issue)
+
+    def show_timelog_window(self, error_text):
+        if error_text:
+            QMessageBox.about(self.time_log_view, 'Error', error_text)
+        else:
+            self.time_log_view = TimeLogWindow(
+                self.issue.key,
+                self.time_spent,
+                save_callback=self.save_issue_worklog
+            )
+            self.time_log_view.set_existing_estimate(self.existing_estimate)
+            self.time_log_view.show()
+
     def save_issue_worklog(self, issue_key):
         """Save button event handler
         take user input values, save JIRAalues into Jira time tracking,
@@ -305,22 +299,8 @@ class MainController(TimeLogMixin):
             self.time_log_view
         )
 
-        self.timelog_indicator = LoadingIndicator(self, self.time_log_view.vbox)
-        self.timelog_indicator.show()
-        self.new_thread = Thread(self.save_worklog_into_jira)
-        self.new_thread.start()
-        self.new_thread.finished.connect(self.timelog_stop_indicator)
-
-    def timelog_stop_indicator(self, result, error):
-        self.timelog_indicator.spinner.stop()
-        if result:
-            self.time_log_view.close()
-            self.refresh_issue_list()
-            self.view.timer_log_work.start(LOG_TIME)
-            if self.pomodoro_view:
-                self.pomodoro_view.reset_timer()
-        elif error:
-            QMessageBox.about(self.time_log_view, 'Error', error)
+        self.indicator = LoadingIndicator(self.time_log_view, self.time_log_view.vbox)
+        self.start_loading(self.save_worklog_into_jira, self.save_worklog_handler)
 
     def save_worklog_into_jira(self):
         try:
@@ -332,6 +312,16 @@ class MainController(TimeLogMixin):
                 **self.log_work_params)
         except JIRAError as e:
             raise ValueError(e.text)
+
+    def save_worklog_handler(self, error):
+        if error:
+            QMessageBox.about(self.time_log_view, 'Error', error)
+        else:
+            self.time_log_view.close()
+            self.refresh_issue_list()
+            self.view.timer_log_work.start(LOG_TIME)
+            if self.pomodoro_view:
+                self.pomodoro_view.reset_timer()
 
     def create_filters(self):
         try:
@@ -352,6 +342,13 @@ class MainController(TimeLogMixin):
                 self.write_to_ini()
                 self.set_filters()
                 break
+            except (ConnectionError,
+                    TimeoutError):
+                QMessageBox.warning(
+                    None,
+                    'Connection error',
+                    'Please, check your internet connection and try again'
+                )
         self.view.show_filters(self.filters)
 
     def set_filters(self):
@@ -375,13 +372,8 @@ class MainController(TimeLogMixin):
 
     def search_issues_by_filter(self):
         self.current_filter = self.view.filter_field.text().lower()
-        try:
-            self.refresh_issue_list()
-        except JIRAError:
-            QMessageBox.about(
-                self.view, 'Error',
-                'The query is incorrect'
-            )
+        self.error_message = 'The query is incorrect'
+        self.refresh_issue_list()
 
     def delete_filter(self, filter_name):
         self.config.remove_option(FILTERS_DEFAULT_SECTION_NAME, filter_name)
@@ -413,61 +405,61 @@ class MainController(TimeLogMixin):
     def get_filter_by_name(self, name):
         return self.filters[name.lower()]
 
-    def save_existing_filter(self):
-        filter_query = self.view.filter_field.text().lower()
+    def existing_filter_saving_process(self, error_text):
+        if error_text:
+            QMessageBox.about(
+                self.view, 'Error',
+                error_text
+            )
+            return
         filter_name = self.view.filters_list.currentItem().text().lower()
 
-        try:
-            self.jira_client.get_issues(query=filter_query)
-            self.overwrite_filter(filter_name, filter_query)
-            self.view.filter_edited_label.hide()
-            self.view.on_filter_selected(self.view.filters_list.currentItem())
-            self.view.tray_icon.showMessage(
-                'Save filter',
-                'The filter \'{}\' has been successfully saved'.format(filter_name),
-                msecs=1000
-            )
-        except JIRAError:
+        self.overwrite_filter(filter_name, self.current_filter)
+        self.view.filter_edited_label.hide()
+
+    def filter_saving_process(self, error_text):
+        if error_text:
             QMessageBox.about(
                 self.view, 'Error',
-                'The query is incorrect'
+                error_text
             )
+            return
+        input_name_dialog = QInputDialog(self.view)
+        input_name_dialog.setWindowIconText('Save filter')
+        input_name_dialog.setLabelText(
+            'Enter filter name \n(you cannot use \' :, =, #\' symbols)'
+        )
+        input_name_dialog.setInputMode(QInputDialog.TextInput)
 
-    def save_filter(self):
-        filter_query = self.view.filter_field.text().lower()
-        try:
-            self.jira_client.get_issues(query=filter_query)
-            input_name_dialog = QInputDialog(self.view)
-            input_name_dialog.setWindowIconText('Save filter')
-            input_name_dialog.setLabelText(
-                'Enter filter name \n(you cannot use \' :, =, #\' symbols)'
-            )
-            input_name_dialog.setInputMode(QInputDialog.TextInput)
-
-            while input_name_dialog.exec_():
-                filter_name = input_name_dialog.textValue().lower()
-                if not filter_name or set(':=#') & set(filter_name):
-                    continue
-                elif filter_name in self.filters:
-                    reply = QMessageBox.question(
-                        self.view,
-                        'Warning',
-                        'A filter with name \'{}\' '
-                        'already exists. Overwrite?'.format(filter_name),
-                        QMessageBox.Yes | QMessageBox.Cancel
-                    )
-                    if reply == QMessageBox.Yes:
-                        self.overwrite_filter(filter_name, filter_query)
-                        break
-                else:
-                    self.add_filter(filter_name, filter_query)
+        while input_name_dialog.exec_():
+            filter_name = input_name_dialog.textValue().lower()
+            if not filter_name or set(':=#') & set(filter_name):
+                continue
+            elif filter_name in self.filters:
+                reply = QMessageBox.question(
+                    self.view,
+                    'Warning',
+                    'A filter with name \'{}\' '
+                    'already exists. Overwrite?'.format(filter_name),
+                    QMessageBox.Yes | QMessageBox.Cancel
+                )
+                if reply == QMessageBox.Yes:
+                    self.overwrite_filter(filter_name, self.current_filter)
                     break
+            else:
+                self.add_filter(filter_name, self.current_filter)
+                break
 
-        except JIRAError:
-            QMessageBox.about(
-                self.view, 'Error',
-                'The query is incorrect'
-            )
+    def save_filter(self, is_existing=False):
+        self.current_filter = self.view.filter_field.text().lower()
+        self.error_message = 'The query is incorrect'
+        self.indicator = self.main_indicator
+        started_callback = partial(self.jira_client.get_issues, query=self.current_filter)
+        if is_existing:
+            finished_callback = self.existing_filter_saving_process
+        else:
+            finished_callback = self.filter_saving_process
+        self.start_loading(started_callback, finished_callback)
 
     def quit_app(self):
         if self.pomodoro_view:

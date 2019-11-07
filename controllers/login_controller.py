@@ -4,35 +4,27 @@ import stat
 from jira import JIRAError
 
 from config import CREDENTIALS_PATH
+from controllers.mixins import ProcessWithThreadsMixin
 from controllers.main_controller import MainController
-from controllers.loading_indicator import LoadingIndicator, Thread
+from controllers.loading_indicator import LoadingIndicator
 from jiraclient import JiraClient
 from login_window import LoginWindow
-from utils.decorators import catch_timeout_exception
 
 
-class LoginController:
-    def show(self):
+class LoginController(ProcessWithThreadsMixin):
+    def __init__(self):
+        super().__init__()
         self.view = LoginWindow(self)
-        self.view.show()
+        self.indicator = LoadingIndicator(self.view, self.view.form)
         self.jira_client = None
 
-    @catch_timeout_exception
-    def login(self, *args):
-        self.indicator = LoadingIndicator(self, self.view.form)
-        self.indicator.show()
-        self.new_thread = Thread(self.save_and_open_issue_list)
-        self.new_thread.start()
-        self.new_thread.finished.connect(self.stop_indicator)
+    def show(self):
+        self.view.show()
 
-    def stop_indicator(self, result, error):
-        self.indicator.spinner.stop()
-        if result:
-            self.open_main_window()
-        elif error:
-            self.view.set_error_to_label(error)
+    def login(self):
+        self.start_loading(self.connect_to_jira, self.open_main_window)
 
-    def save_and_open_issue_list(self):
+    def connect_to_jira(self):
         email = self.view.email_field.text()
         token = self.view.token_field.text()
         try:
@@ -47,7 +39,7 @@ class LoginController:
         except JIRAError:
             raise ValueError('Email or token is incorrect')
         except UnicodeEncodeError:
-            return ValueError('English letters only')
+            raise ValueError('English letters only')
 
     def remember_me(self, email, token):
         """
@@ -60,7 +52,10 @@ class LoginController:
 
         os.chmod(CREDENTIALS_PATH, stat.S_IRUSR | stat.S_IWUSR)
 
-    def open_main_window(self):
-        main_controller = MainController(self.jira_client)
-        main_controller.show()
-        self.view.close()
+    def open_main_window(self, error_text):
+        if error_text:
+            self.view.set_error_to_label(error_text)
+        else:
+            main_controller = MainController(self.jira_client)
+            main_controller.show()
+            self.view.close()

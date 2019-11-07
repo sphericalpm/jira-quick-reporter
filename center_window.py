@@ -6,6 +6,8 @@ from config import QSS_PATH
 class CenterWindow(QWidget):
     def __init__(self):
         super().__init__()
+
+    def center(self):
         frame_gm = self.frameGeometry()
         screen = QApplication.desktop().screenNumber(
             QApplication.desktop().cursor().pos()

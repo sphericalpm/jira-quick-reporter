@@ -18,13 +18,13 @@ from config import QSS, LOGO_PATH
 class LoginWindow(CenterWindow, QMainWindow):
     def __init__(self, controller):
         super().__init__()
-
         self.setStyleSheet(QSS)
         self.controller = controller
         self.resize(380, 200)
         self.setWindowTitle('JIRA Quick Reporter')
         self.setWindowIcon(QIcon(LOGO_PATH))
         self.setMaximumSize(self.size())
+        self.center()
 
         self.form = QFormLayout()
         self.setLayout(self.form)
