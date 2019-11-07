@@ -274,8 +274,8 @@ class MainController(TimeLogMixin, ProcessWithThreadsMixin):
         else:
             self.time_log_view = TimeLogWindow(
                 self.issue.key,
-                self.time_spent,
-                save_callback=self.save_issue_worklog
+                partial(self.save_issue_worklog, self.issue.key),
+                self.time_spent
             )
             self.time_log_view.set_existing_estimate(self.existing_estimate)
             self.time_log_view.show()

@@ -111,7 +111,7 @@ class CompleteWorkflowController(TimeLogMixin, ProcessWithThreadsMixin):
     def show(self):
         self.view.show()
 
-    def save_click(self, issue_key):
+    def save_click(self):
         self.start_loading(self.save_workflow, self.save_worflow_handler)
 
     def save_workflow(self):

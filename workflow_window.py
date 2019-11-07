@@ -85,7 +85,7 @@ class CompleteWorflowWindow(TimeLogWindow):
         issue,
         assignee,
         possible_resolutions,
-        save_callback=None
+        save_callback
     ):
         self.controller = controller
         self.issue = issue

@@ -16,7 +16,7 @@ from config import QSS
 
 
 class TimeLogWindow(CenterWindow):
-    def __init__(self, issue_key, time_spent=None, save_callback=None):
+    def __init__(self, issue_key, save_callback, time_spent=None):
         super().__init__()
         self.center()
         self.issue_key = issue_key
@@ -38,10 +38,7 @@ class TimeLogWindow(CenterWindow):
     def add_save_button(self, vbox):
         self.save_button = QPushButton('Save')
         self.save_button.setToolTip('save new time tracking values into Jira')
-        if self.save_callback:
-            self.save_button.clicked.connect(
-                lambda: self.save_callback(self.issue_key)
-            )
+        self.save_button.clicked.connect(self.save_callback)
         vbox.addWidget(self.save_button)
         return vbox
 
