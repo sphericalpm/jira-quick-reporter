@@ -328,8 +328,11 @@ class MainWindow(CenterWindow):
             self.issue_list_widget.setItemWidget(
                 issue_list_widget_item, issue_widget
             )
+            self.set_size_hint()
+
+    def set_size_hint(self):
         self.issue_list_widget.setMinimumWidth(
-            self.issue_list_widget.sizeHintForColumn(0) + 100
+            self.issue_list_widget.sizeHintForColumn(0) + 50
         )
         self.issue_list_widget.setMinimumHeight(
             self.issue_list_widget.sizeHintForRow(0) * 2
@@ -341,6 +344,8 @@ class MainWindow(CenterWindow):
                 self.filters_list.insertItem(0, key)
             else:
                 self.filters_list.addItem(key)
+            if key == MY_ISSUES_ITEM_NAME:
+                self.filters_list.setMaximumWidth(self.filters_list.sizeHintForColumn(0))
         self.filters_list.item(0).setText(self.filters_list.item(0).text().capitalize())
 
         # add separator after first item
@@ -358,10 +363,6 @@ class MainWindow(CenterWindow):
             )[0])
 
         self.on_filter_selected(self.filters_list.currentItem())
-        width = self.filters_list.fontMetrics().boundingRect(
-            self.filters_list.item(2).text()
-        ).width() + 5
-        self.filters_list.setMaximumWidth(width)
 
     def filter_field_help(self):
         QDesktopServices.openUrl(self.help_filter_url)

@@ -123,7 +123,6 @@ class MainController(TimeLogMixin, ProcessWithThreadsMixin):
             self.view.show_no_issues()
             QMessageBox.about(self.view, 'Error', error)
             return
-
         if not self.issues_count:
             self.view.show_no_issues()
             return
