@@ -34,6 +34,7 @@ class WorkflowWindow(CenterWindow, QMainWindow):
             issue=self.issue
             )
         )
+        self.center()
         # vbox elements description
         assignee = QLabel('Assignee (eg. vsmith):')
         original_estimate = QLabel('Original Estimate (eg. 13w 4d 12h):')
@@ -94,7 +95,7 @@ class CompleteWorflowWindow(TimeLogWindow):
         super().__init__(issue, save_callback=save_callback)
 
     def build_issue_form_vbox(self):
-        self.vbox = super().build_issue_form_vbox()
+        super().build_issue_form_vbox()
 
         assignee = QLabel('Assignee (eg. vsmith):')
         self.assignee_line = QLineEdit('{}'.format(self.assignee))
@@ -117,7 +118,6 @@ class CompleteWorflowWindow(TimeLogWindow):
         possible_versions = self.controller.jira_client.get_possible_versions(self.issue)
         self.set_version.addItems(possible_versions)
         self.set_version.setCurrentIndex(0)
-        return self.vbox
 
     def closeEvent(self, event):
         self.controller.close()

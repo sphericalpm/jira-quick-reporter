@@ -22,25 +22,24 @@ class TimeLogWindow(CenterWindow):
         self.issue_key = issue_key
         self.time_spent = time_spent
         self.save_callback = save_callback
-        # main window characteristics
         self.setStyleSheet(QSS)
         self.resize(600, 450)
         self.setWindowTitle('Log Work: {issue}'.format(issue=issue_key))
 
-        self.vbox = self.build_issue_form_vbox()
-        self.vbox = self.add_save_button(self.vbox)
+        self.vbox = QGridLayout()
+        self.build_issue_form_vbox()
+        self.add_save_button()
         self.setLayout(self.vbox)
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Return:
             self.save_callback(self.issue_key)
 
-    def add_save_button(self, vbox):
+    def add_save_button(self):
         self.save_button = QPushButton('Save')
         self.save_button.setToolTip('save new time tracking values into Jira')
         self.save_button.clicked.connect(self.save_callback)
-        vbox.addWidget(self.save_button)
-        return vbox
+        self.vbox.addWidget(self.save_button)
 
     def build_issue_form_vbox(self):
         # vbox elements description
@@ -86,26 +85,24 @@ class TimeLogWindow(CenterWindow):
         self.work_description_line = QTextEdit()
 
         # add elements to box
-        vbox = QGridLayout()
+        self.vbox = QGridLayout()
 
-        vbox.addWidget(time_spent_label)
-        vbox.addWidget(self.time_spent_line)
+        self.vbox.addWidget(time_spent_label)
+        self.vbox.addWidget(self.time_spent_line)
 
-        vbox.addWidget(date_start)
-        vbox.addWidget(self.date_start_line)
+        self.vbox.addWidget(date_start)
+        self.vbox.addWidget(self.date_start_line)
 
-        vbox.addWidget(self.remaining_estimate)
-        vbox.addWidget(self.automatically_estimate)
-        vbox.addWidget(self.existing_estimate)
-        vbox.addWidget(self.set_new_estimate)
-        vbox.addWidget(self.set_new_estimate_value)
-        vbox.addWidget(self.reduce_estimate)
-        vbox.addWidget(self.reduce_estimate_value)
+        self.vbox.addWidget(self.remaining_estimate)
+        self.vbox.addWidget(self.automatically_estimate)
+        self.vbox.addWidget(self.existing_estimate)
+        self.vbox.addWidget(self.set_new_estimate)
+        self.vbox.addWidget(self.set_new_estimate_value)
+        self.vbox.addWidget(self.reduce_estimate)
+        self.vbox.addWidget(self.reduce_estimate_value)
 
-        vbox.addWidget(work_description)
-        vbox.addWidget(self.work_description_line)
-
-        return vbox
+        self.vbox.addWidget(work_description)
+        self.vbox.addWidget(self.work_description_line)
 
     def set_existing_estimate(self, existing_estimate):
         self.existing_estimate.setText(
