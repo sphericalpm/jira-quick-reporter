@@ -19,7 +19,8 @@ from PyQt5.QtWidgets import (
     QAction,
     QSizePolicy,
     QFrame,
-    QStyle
+    QStyle,
+    QAbstractScrollArea
 )
 
 from redefined_QComboBox import MyQComboBox
@@ -172,6 +173,7 @@ class MainWindow(CenterWindow):
         self.list_box = QVBoxLayout()
         self.issue_list_widget = QListWidget()
         self.issue_list_widget.setObjectName('issue_list')
+        self.issue_list_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.label_info = QLabel('You have no issues.')
         self.label_info.setAlignment(Qt.AlignCenter)
         self.list_box.addWidget(self.issue_list_widget)
@@ -186,7 +188,6 @@ class MainWindow(CenterWindow):
         self.filters_frame.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
         self.filters_frame.setFrameShape(QFrame.StyledPanel)
         self.filters_frame.setObjectName('filters_frame')
-        self.filters_frame.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
         self.filters_box = QVBoxLayout(self.filters_frame)
         self.filters_box_label = QLabel('Issues and filters')
         self.filters_box_label.setObjectName('filters_box_label')
@@ -195,6 +196,8 @@ class MainWindow(CenterWindow):
         self.filters_list.installEventFilter(self)
         self.filters_list.itemClicked.connect(self.on_filter_selected)
         self.filters_list.setObjectName('filters_list')
+        self.filters_list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.filters_list.setWordWrap(True)
         self.filters_box.addWidget(self.filters_list)
         self.add_filter_button = QPushButton('+')
         self.add_filter_button.clicked.connect(self.add_filter)
@@ -344,8 +347,6 @@ class MainWindow(CenterWindow):
                 self.filters_list.insertItem(0, key)
             else:
                 self.filters_list.addItem(key)
-            if key == MY_ISSUES_ITEM_NAME:
-                self.filters_list.setMaximumWidth(self.filters_list.sizeHintForColumn(0))
         self.filters_list.item(0).setText(self.filters_list.item(0).text().capitalize())
 
         # add separator after first item
@@ -362,6 +363,7 @@ class MainWindow(CenterWindow):
                 MY_ISSUES_ITEM_NAME, Qt.MatchExactly
             )[0])
 
+        self.filters_list.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
         self.on_filter_selected(self.filters_list.currentItem())
 
     def filter_field_help(self):
