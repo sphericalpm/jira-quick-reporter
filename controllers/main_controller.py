@@ -11,7 +11,8 @@ from config import (
     FILTERS_PATH,
     FILTERS_DEFAULT_SECTION_NAME,
     DEFAULT_FILTERS,
-    REFRESH_TIME
+    REFRESH_TIME,
+    ISSUES_COUNT
 )
 from controllers.loading_indicator import LoadingIndicator
 from controllers.mixins import TimeLogMixin, ProcessWithThreadsMixin
@@ -58,8 +59,12 @@ class MainController(TimeLogMixin, ProcessWithThreadsMixin):
 
         self.issues_count += new_issues_count
 
-    def get_issues_list(self, filter_query):
-        issues = self.jira_client.get_issues(0, filter_query, self.issues_count)
+    def get_issues_list(self, filter_query, change_filter=False):
+        if change_filter or self.issues_count < ISSUES_COUNT:
+            limit = ISSUES_COUNT
+        else:
+            limit = self.issues_count
+        issues = self.jira_client.get_issues(0, filter_query, limit)
 
         # create list of issues
         for index, issue in enumerate(issues):
@@ -140,11 +145,11 @@ class MainController(TimeLogMixin, ProcessWithThreadsMixin):
         self.delete_issue_list.clear()
         self.view.timer_refresh.start(REFRESH_TIME)
 
-    def refresh_issue_list(self, load_more=False):
+    def refresh_issue_list(self, load_more=False, change_filter=False):
         if load_more:
             callback = partial(self.load_more_issues, self.current_filter)
         else:
-            callback = partial(self.get_issues_list, self.current_filter)
+            callback = partial(self.get_issues_list, self.current_filter, change_filter)
         self.indicator = self.main_indicator
         self.start_loading(callback, self.refresh_issue_list_widget)
 
@@ -366,13 +371,13 @@ class MainController(TimeLogMixin, ProcessWithThreadsMixin):
 
     def search_issues_by_filter_name(self, filter_name):
         self.current_filter = self.filters[filter_name.lower()]
-        self.refresh_issue_list()
-        self.view.filter_field.setText(self.current_filter)
+        self.refresh_issue_list(change_filter=True)
+        self.view.query_field.setText(self.current_filter)
 
     def search_issues_by_filter(self):
-        self.current_filter = self.view.filter_field.text().lower()
+        self.current_filter = self.view.query_field.text().lower()
         self.error_message = 'The query is incorrect'
-        self.refresh_issue_list()
+        self.refresh_issue_list(change_filter=True)
 
     def delete_filter(self, filter_name):
         self.config.remove_option(FILTERS_DEFAULT_SECTION_NAME, filter_name)
@@ -450,7 +455,7 @@ class MainController(TimeLogMixin, ProcessWithThreadsMixin):
                 break
 
     def save_filter(self, is_existing=False):
-        self.current_filter = self.view.filter_field.text().lower()
+        self.current_filter = self.view.query_field.text().lower()
         self.error_message = 'The query is incorrect'
         self.indicator = self.main_indicator
         started_callback = partial(self.jira_client.get_issues, query=self.current_filter)
