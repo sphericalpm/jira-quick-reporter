@@ -374,7 +374,7 @@ class MainController(TimeLogMixin, ProcessWithThreadsMixin):
         self.refresh_issue_list(change_filter=True)
         self.view.query_field.setText(self.current_filter)
 
-    def search_issues_by_filter(self):
+    def search_issues_by_query(self):
         self.current_filter = self.view.query_field.text().lower()
         self.error_message = 'The query is incorrect'
         self.refresh_issue_list(change_filter=True)

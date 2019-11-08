@@ -377,6 +377,7 @@ class MainWindow(CenterWindow):
             set_text = '{}...'.format(self.current_item.text()[:50])
         else:
             set_text = self.current_item.text()
+        self.issue_list_widget.scrollToTop()
         self.controller.search_issues_by_filter_name(item.text())
         self.filter_name_label.setText(set_text)
         self.filter_edited_label.hide()
