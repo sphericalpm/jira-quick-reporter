@@ -197,7 +197,6 @@ class MainWindow(CenterWindow):
         self.filters_list.itemClicked.connect(self.on_filter_selected)
         self.filters_list.setObjectName('filters_list')
         self.filters_list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.filters_list.setWordWrap(True)
         self.filters_box.addWidget(self.filters_list)
         self.add_filter_button = QPushButton('+')
         self.add_filter_button.clicked.connect(self.add_filter)
@@ -342,11 +341,12 @@ class MainWindow(CenterWindow):
         )
 
     def show_filters(self, filters_dict):
-        for key in filters_dict:
+        for index, key in enumerate(filters_dict):
             if key == SEARCH_ITEM_NAME:
                 self.filters_list.insertItem(0, key)
             else:
                 self.filters_list.addItem(key)
+                self.filters_list.item(index).setToolTip(key)
         self.filters_list.item(0).setText(self.filters_list.item(0).text().capitalize())
 
         # add separator after first item
@@ -373,8 +373,12 @@ class MainWindow(CenterWindow):
         if not item.text():
             return
         self.current_item = item
-        self.filter_name_label.setText(item.text())
+        if len(self.current_item.text()) > 50:
+            set_text = '{}...'.format(self.current_item.text()[:50])
+        else:
+            set_text = self.current_item.text()
         self.controller.search_issues_by_filter_name(item.text())
+        self.filter_name_label.setText(set_text)
         self.filter_edited_label.hide()
 
         # if current filter is not 'Search issues'
