@@ -11,7 +11,8 @@ from config import (
     FILTERS_PATH,
     FILTERS_DEFAULT_SECTION_NAME,
     DEFAULT_FILTERS,
-    REFRESH_TIME
+    REFRESH_TIME,
+    ISSUES_COUNT
 )
 
 from controllers.workflow_controller import (
@@ -56,12 +57,16 @@ class MainController(TimeLogMixin):
         self.issues_count += new_issues_count
         return new_issues_list
 
-    def get_issues_list(self, filter_query):
+    def get_issues_list(self, filter_query, change_filter=False):
         # list of added issues for display on main window
         new_issues_list = []
         # list of updated issues for updated on main window
         update_issues_list = []
-        issues = self.jira_client.get_issues(0, filter_query, self.issues_count)
+        if change_filter or self.issues_count < ISSUES_COUNT:
+            limit = ISSUES_COUNT
+        else:
+            limit = self.issues_count
+        issues = self.jira_client.get_issues(0, filter_query, limit)
 
         # create list of issues
         for index, issue in enumerate(issues):
@@ -135,14 +140,15 @@ class MainController(TimeLogMixin):
         else:
             self.view.timer_refresh.start(REFRESH_TIME)
 
-    def refresh_issue_list(self, load_more=False):
+    def refresh_issue_list(self, load_more=False, change_filter=False):
         try:
             if load_more:
                 new_issues_list = self.load_more_issues(self.current_filter)
                 update_issues_list = []
                 delete_issues_list = []
             else:
-                new_issues_list, update_issues_list, delete_issues_list = self.get_issues_list(self.current_filter)
+                issues = self.get_issues_list(self.current_filter, change_filter)
+                new_issues_list, update_issues_list, delete_issues_list = issues
 
         except (ConnectionError,
                 ReadTimeout):
@@ -369,14 +375,14 @@ class MainController(TimeLogMixin):
             self.config.write(ini_file)
 
     def search_issues_by_filter_name(self, filter):
-        self.current_filter = self.filters[filter.text().lower()]
-        self.refresh_issue_list()
-        self.view.filter_field.setText(self.current_filter)
+        self.current_filter = self.filters[filter.lower()]
+        self.refresh_issue_list(change_filter=True)
+        self.view.query_field.setText(self.current_filter)
 
-    def search_issues_by_filter(self):
-        self.current_filter = self.view.filter_field.text().lower()
+    def search_issues_by_query(self):
+        self.current_filter = self.view.query_field.text().lower()
         try:
-            self.refresh_issue_list()
+            self.refresh_issue_list(change_filter=True)
         except JIRAError:
             QMessageBox.about(
                 self.view, 'Error',
@@ -414,7 +420,7 @@ class MainController(TimeLogMixin):
         return self.filters[name.lower()]
 
     def save_existing_filter(self):
-        filter_query = self.view.filter_field.text().lower()
+        filter_query = self.view.query_field.text().lower()
         filter_name = self.view.filters_list.currentItem().text().lower()
 
         try:
@@ -434,7 +440,7 @@ class MainController(TimeLogMixin):
             )
 
     def save_filter(self):
-        filter_query = self.view.filter_field.text().lower()
+        filter_query = self.view.query_field.text().lower()
         try:
             self.jira_client.get_issues(query=filter_query)
             input_name_dialog = QInputDialog(self.view)

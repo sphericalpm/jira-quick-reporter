@@ -154,19 +154,19 @@ class MainWindow(CenterWindow):
         self.save_btn_box.addStretch()
 
         self.create_filter_box = QHBoxLayout()
-        self.filter_field = QLineEdit()
-        self.filter_field.setObjectName('filter_field')
-        self.filter_field.setPlaceholderText('You need to write a query here')
+        self.query_field = QLineEdit()
+        self.query_field.setObjectName('query_field')
+        self.query_field.setPlaceholderText('You need to write a query here')
         self.action_help = QAction()
         self.action_help.setIcon(self.style().standardIcon(QStyle.SP_MessageBoxQuestion))
         self.help_filter_url = QUrl(FILTER_FIELD_HELP_URL)
         self.action_help.triggered.connect(self.filter_field_help)
-        self.filter_field.addAction(self.action_help, QLineEdit.TrailingPosition)
-        self.filter_field.installEventFilter(self)
+        self.query_field.addAction(self.action_help, QLineEdit.TrailingPosition)
+        self.query_field.installEventFilter(self)
         self.search_issues_button = QPushButton('Search')
         self.search_issues_button.setObjectName('search_issues_button')
-        self.search_issues_button.clicked.connect(self.controller.search_issues_by_filter)
-        self.create_filter_box.addWidget(self.filter_field)
+        self.search_issues_button.clicked.connect(self.controller.search_issues_by_query)
+        self.create_filter_box.addWidget(self.query_field)
         self.create_filter_box.addWidget(self.search_issues_button)
 
         self.list_box = QVBoxLayout()
@@ -362,7 +362,7 @@ class MainWindow(CenterWindow):
     def on_filter_selected(self, item):
         self.current_item = item
         self.filter_name_label.setText(item.text())
-        self.controller.search_issues_by_filter_name(item)
+        self.controller.search_issues_by_filter_name(item.text())
         self.filter_edited_label.hide()
 
         # if current filter is not 'Search issues'
@@ -389,7 +389,7 @@ class MainWindow(CenterWindow):
         self.save_filter_btn.show()
         self.filter_edited_label.hide()
         self.filters_list.setCurrentItem(None)
-        self.filter_field.setText('')
+        self.query_field.setText('')
         self.filter_name_label.setText('Add new filter')
         self.filter_edited_label.hide()
         self.controller.current_issues.clear()
@@ -397,12 +397,12 @@ class MainWindow(CenterWindow):
 
     def eventFilter(self, object, event):
         # if user started typing in filter field
-        if object is self.filter_field and event.type() == QEvent.KeyRelease:
+        if object is self.query_field and event.type() == QEvent.KeyRelease:
             # if current filter is not 'Search issues'
             if self.filters_list.currentRow() > 0:
                 current_filter_name = self.filters_list.currentItem().text()
                 # if query of current filter has not changed
-                if self.controller.get_filter_by_name(current_filter_name) != self.filter_field.text():
+                if self.controller.get_filter_by_name(current_filter_name) != self.query_field.text():
                     # show that filter has been edited
                     self.filter_edited_label.show()
                     self.overwrite_filter_button.setEnabled(True)

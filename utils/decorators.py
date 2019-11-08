@@ -1,5 +1,4 @@
-from PyQt5.QtWidgets import QMessageBox, QApplication
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QMessageBox
 from requests.exceptions import ConnectionError, ReadTimeout
 import functools
 
