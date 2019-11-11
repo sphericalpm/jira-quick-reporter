@@ -1,4 +1,3 @@
-from requests.exceptions import ConnectionError, ReadTimeout
 import configparser
 
 from jira import JIRAError
