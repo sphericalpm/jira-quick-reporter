@@ -23,7 +23,6 @@ from PyQt5.QtWidgets import (
     QAbstractScrollArea
 )
 
-from redefined_QComboBox import MyQComboBox
 from center_window import CenterWindow
 from config import (
     QSS,
@@ -35,6 +34,7 @@ from config import (
     SEARCH_ITEM_NAME,
     MY_ISSUES_ITEM_NAME
 )
+from redefined_QComboBox import MyQComboBox
 
 
 class QCustomWidget(QWidget):
@@ -297,7 +297,7 @@ class MainWindow(CenterWindow):
 
             issue_widget.action_log_work.triggered.connect(
                 partial(
-                    self.controller.open_timelog_window,
+                    self.controller.open_time_log,
                     issue['key']
                 )
             )

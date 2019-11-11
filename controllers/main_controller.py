@@ -7,7 +7,6 @@ from PyQt5.QtWidgets import QMessageBox, QInputDialog
 from jira import JIRAError
 
 from config import (
-    LOG_TIME,
     FILTERS_PATH,
     FILTERS_DEFAULT_SECTION_NAME,
     DEFAULT_FILTERS,
@@ -15,17 +14,17 @@ from config import (
     ISSUES_COUNT
 )
 from controllers.loading_indicator import LoadingIndicator
-from controllers.mixins import TimeLogMixin, ProcessWithThreadsMixin
+from controllers.mixins import ProcessWithThreadsMixin
+from controllers.time_log_controller import TimeLogController
 from controllers.workflow_controller import (
     WorkflowController,
     CompleteWorkflowController
 )
 from main_window import MainWindow
 from pomodoro_window import PomodoroWindow
-from time_log_window import TimeLogWindow
 
 
-class MainController(TimeLogMixin, ProcessWithThreadsMixin):
+class MainController(ProcessWithThreadsMixin):
     def __init__(self, jira_client):
         super().__init__()
         self.jira_client = jira_client
@@ -33,15 +32,14 @@ class MainController(TimeLogMixin, ProcessWithThreadsMixin):
         self.current_filter = ''
         self.view = MainWindow(self)
         self.pomodoro_view = None
-        self.time_log_view = None
+        self.time_log_controller = None
         self.config = configparser.ConfigParser()
         self.filters = dict()
         self.current_issues = {}
         self.insert_issue_list = []
         self.update_issue_list = []
         self.delete_issue_list = []
-        self.main_indicator = LoadingIndicator(self.view, self.view.main_box)
-        self.indicator = self.main_indicator
+        self.indicator = LoadingIndicator(self.view, self.view.main_box)
 
     def show(self):
         self.create_filters()
@@ -150,7 +148,6 @@ class MainController(TimeLogMixin, ProcessWithThreadsMixin):
             callback = partial(self.load_more_issues, self.current_filter)
         else:
             callback = partial(self.get_issues_list, self.current_filter, change_filter)
-        self.indicator = self.main_indicator
         self.start_loading(callback, self.refresh_issue_list_widget)
 
     def change_workflow(self, workflow, issue_obj, status):
@@ -164,7 +161,6 @@ class MainController(TimeLogMixin, ProcessWithThreadsMixin):
             return
 
         if status in ['Put on hold', 'Select for development']:
-            self.indicator = self.main_indicator
             self.start_loading(
                 self.simple_workflow_change,
                 self.simple_workflow_change_handler
@@ -180,10 +176,6 @@ class MainController(TimeLogMixin, ProcessWithThreadsMixin):
                 self
             )
             self.complete_workflow_controller.show()
-            self.complete_workflow_controller.view.set_existing_estimate(
-                existing_estimate,
-            )
-
         else:
             self.workflow_controller = WorkflowController(
                 self.jira_client,
@@ -245,9 +237,9 @@ class MainController(TimeLogMixin, ProcessWithThreadsMixin):
         self.pomodoro_view.show()
         self.pomodoro_view.log_work_if_file_exists()
 
-    def open_timelog_from_pomodoro(self, issue_key):
-        params = [issue_key]
-        if not os.path.exists(self.pomodoro_view.LOG_PATH):
+    def open_time_log(self, issue_key):
+        params = [self, self.jira_client, self.current_issues[issue_key]]
+        if not self.pomodoro_view or not os.path.exists(self.pomodoro_view.LOG_PATH):
             params.append('0m')
         else:
             with open(self.pomodoro_view.LOG_PATH, 'r') as log_file:
@@ -261,71 +253,8 @@ class MainController(TimeLogMixin, ProcessWithThreadsMixin):
                     params.append('{}h'.format(hours))
                 else:
                     params.append('{}h {}m'.format(hours, minutes))
-        self.open_timelog_window(*params)
-
-    def open_timelog_window(self, issue_key, time_spent=None):
-        self.indicator = self.main_indicator
-        started_callback = partial(self.set_timelog_parameters, issue_key, time_spent)
-        self.start_loading(started_callback, self.show_timelog_window)
-
-    def set_timelog_parameters(self, issue_key, time_spent):
-        self.issue = self.jira_client.issue(issue_key)
-        self.time_spent = time_spent
-        self.existing_estimate = self.jira_client.get_remaining_estimate(self.issue)
-
-    def show_timelog_window(self, error_text):
-        if error_text:
-            QMessageBox.about(self.time_log_view, 'Error', error_text)
-        else:
-            self.time_log_view = TimeLogWindow(
-                self.issue.key,
-                partial(self.save_issue_worklog, self.issue.key),
-                self.time_spent
-            )
-            self.time_log_view.set_existing_estimate(self.existing_estimate)
-            self.time_log_view.show()
-
-    def save_issue_worklog(self, issue_key):
-        """Save button event handler
-        take user input values, save JIRAalues into Jira time tracking,
-        show popup for successfully save or exception
-        """
-
-        self.current_issue = self.jira_client.issue(issue_key)
-        self.time_spent = self.time_log_view.time_spent_line.text()
-        self.start_date = self.time_log_view.date_start
-        if not self.start_date:
-            return
-        self.comment = self.time_log_view.work_description_line.toPlainText()
-        remaining_estimate = self.time_log_view.new_remaining_estimate
-        self.log_work_params = self.take_timelog_values(
-            remaining_estimate,
-            self.time_log_view
-        )
-
-        self.indicator = LoadingIndicator(self.time_log_view, self.time_log_view.vbox)
-        self.start_loading(self.save_worklog_into_jira, self.save_worklog_handler)
-
-    def save_worklog_into_jira(self):
-        try:
-            self.jira_client.log_work(
-                self.current_issue,
-                self.time_spent,
-                self.start_date,
-                self.comment,
-                **self.log_work_params)
-        except JIRAError as e:
-            raise ValueError(e.text)
-
-    def save_worklog_handler(self, error):
-        if error:
-            QMessageBox.about(self.time_log_view, 'Error', error)
-        else:
-            self.time_log_view.close()
-            self.refresh_issue_list()
-            self.view.timer_log_work.start(LOG_TIME)
-            if self.pomodoro_view:
-                self.pomodoro_view.reset_timer()
+        self.time_log_controller = TimeLogController(*params)
+        self.time_log_controller.view.show()
 
     def create_filters(self):
         try:
@@ -457,7 +386,6 @@ class MainController(TimeLogMixin, ProcessWithThreadsMixin):
     def save_filter(self, is_existing=False):
         self.current_filter = self.view.query_field.text().lower()
         self.error_message = 'The query is incorrect'
-        self.indicator = self.main_indicator
         started_callback = partial(self.jira_client.get_issues, query=self.current_filter)
         if is_existing:
             finished_callback = self.existing_filter_saving_process

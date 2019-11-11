@@ -1,8 +1,10 @@
 from PyQt5.QtWidgets import QMessageBox
 from jira import JIRAError
 
+from config import LOG_TIME
 from controllers.loading_indicator import LoadingIndicator
-from controllers.mixins import TimeLogMixin, ProcessWithThreadsMixin
+from controllers.mixins import ProcessWithThreadsMixin
+from controllers.time_log_controller import TimeLogController
 from workflow_window import WorkflowWindow, CompleteWorflowWindow
 
 
@@ -33,12 +35,12 @@ class WorkflowController(ProcessWithThreadsMixin):
             self.assignee,
             self
         )
-        self.indicator = LoadingIndicator(self.view, self.view.vbox)
+        self.indicator = LoadingIndicator(self.view, self.view.main_box)
 
     def show(self):
         self.view.show()
 
-    def save_click(self):
+    def save(self):
         self.start_loading(self.save_workflow, self.save_worflow_handler)
 
     def save_workflow(self):
@@ -89,42 +91,33 @@ class WorkflowController(ProcessWithThreadsMixin):
             self.controller.reset_workflow(self.issue)
 
 
-class CompleteWorkflowController(TimeLogMixin, ProcessWithThreadsMixin):
-    def __init__(self, jira_client, issue, status, assignee, controller):
-        super().__init__()
-        self.controller = controller
-        self.jira_client = jira_client
-        self.issue = issue
+class CompleteWorkflowController(TimeLogController):
+    def __init__(self, jira_client, issue, status, assignee, main_controller):
+        super().__init__(main_controller, jira_client, issue)
         self.status = status
         self.assignee = assignee
         self.is_save = False
-        self.possible_resolutions = self.controller.jira_client.get_possible_resolutions()
+        self.possible_resolutions = self.jira_client.get_possible_resolutions()
+        self.possible_versions = self.jira_client.get_possible_versions(issue)
         self.view = CompleteWorflowWindow(
             self,
-            self.issue,
+            self.issue.key,
             self.assignee,
             self.possible_resolutions,
-            save_callback=self.save_click
+            self.possible_versions
         )
-        self.indicator = LoadingIndicator(self.view, self.view.vbox)
+        self.view.set_existing_estimate(self.existing_estimate)
+        self.indicator = LoadingIndicator(self.view, self.view.main_box)
 
     def show(self):
         self.view.show()
 
-    def save_click(self):
-        self.start_loading(self.save_workflow, self.save_worflow_handler)
+    def save(self):
+        if self.get_timelog_parameters():
+            self.start_loading(self.save_workflow, self.save_handler)
 
     def save_workflow(self):
-        time_spent = self.view.time_spent_line.text()
-        start_date = self.view.date_start
-        comment = self.view.work_description_line.toPlainText()
-        remaining_estimate = self.view.new_remaining_estimate
         assignee = self.view.assignee_line.text()
-        log_work_params = self.take_timelog_values(remaining_estimate, self.view)
-
-        if not start_date:
-            raise ValueError('Enter start date')
-
         if assignee != self.assignee:
             try:
                 self.issue.update(assignee={'name': assignee})
@@ -135,10 +128,10 @@ class CompleteWorkflowController(TimeLogMixin, ProcessWithThreadsMixin):
             # save timelog
             self.jira_client.log_work(
                 self.issue,
-                time_spent,
-                start_date,
-                comment,
-                **log_work_params)
+                self.time_spent,
+                self.start_date,
+                self.comment,
+                **self.log_work_params)
         except JIRAError as e:
             raise ValueError(e.text)
 
@@ -161,15 +154,16 @@ class CompleteWorkflowController(TimeLogMixin, ProcessWithThreadsMixin):
             self.issue.update(fields={'fixVersions': [{'name': version}]})
         except JIRAError as e:
             raise ValueError(e.text)
-        self.is_save = True
 
-    def save_worflow_handler(self, error_text):
+    def save_handler(self, error_text):
         if error_text:
             QMessageBox.about(self.view, 'Error', error_text)
         else:
-            self.controller.refresh_issue_list()
+            self.is_save = True
+            self.main_controller.view.timer_log_work.start(LOG_TIME)
+            self.main_controller.refresh_issue_list()
             self.view.close()
 
     def close(self):
         if not self.is_save:
-            self.controller.reset_workflow(self.issue)
+            self.main_controller.reset_workflow(self.issue)
