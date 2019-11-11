@@ -1,20 +1,13 @@
-import configparser
 import os
 from functools import partial
 
-from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMessageBox, QInputDialog
 from jira import JIRAError
 
-from config import (
-    FILTERS_PATH,
-    FILTERS_DEFAULT_SECTION_NAME,
-    DEFAULT_FILTERS,
-    REFRESH_TIME,
-    ISSUES_COUNT
-)
+from config import REFRESH_TIME, ISSUES_COUNT
 from controllers.loading_indicator import LoadingIndicator
 from controllers.mixins import ProcessWithThreadsMixin
+from controllers.filters import IssueFiltersHandler
 from controllers.time_log_controller import TimeLogController
 from controllers.workflow_controller import (
     WorkflowController,
@@ -33,8 +26,7 @@ class MainController(ProcessWithThreadsMixin):
         self.view = MainWindow(self)
         self.pomodoro_view = None
         self.time_log_controller = None
-        self.config = configparser.ConfigParser()
-        self.filters = dict()
+        self.filters_handler = IssueFiltersHandler(self.jira_client)
         self.current_issues = {}
         self.insert_issue_list = []
         self.update_issue_list = []
@@ -42,7 +34,7 @@ class MainController(ProcessWithThreadsMixin):
         self.indicator = LoadingIndicator(self.view, self.view.main_box)
 
     def show(self):
-        self.create_filters()
+        self.start_loading(self.filters_handler.create_filters, self.create_filters_handler)
         self.view.show()
 
     def load_more_issues(self, filter_query):
@@ -256,50 +248,18 @@ class MainController(ProcessWithThreadsMixin):
         self.time_log_controller = TimeLogController(*params)
         self.time_log_controller.view.show()
 
-    def create_filters(self):
-        try:
-            self.config.read(FILTERS_PATH)
-        except configparser.Error:
-            self.config.clear()
-
-        self.set_default_section()
-        self.write_to_ini()
-        self.set_filters()
-
-        for filter_query in self.filters.values():
-            try:
-                self.jira_client.get_issues(query=filter_query)
-            except JIRAError:
-                self.config.clear()
-                self.set_default_section()
-                self.write_to_ini()
-                self.set_filters()
-                break
-            except (ConnectionError,
-                    TimeoutError):
-                QMessageBox.warning(
-                    None,
-                    'Connection error',
-                    'Please, check your internet connection and try again'
-                )
-        self.view.show_filters(self.filters)
-
-    def set_filters(self):
-        self.filters.clear()
-        self.filters.update(self.config.items(FILTERS_DEFAULT_SECTION_NAME))
-
-    def set_default_section(self):
-        if FILTERS_DEFAULT_SECTION_NAME not in self.config.sections():
-            self.config[FILTERS_DEFAULT_SECTION_NAME] = {}
-        for filter_name, filter_query in DEFAULT_FILTERS.items():
-            self.config[FILTERS_DEFAULT_SECTION_NAME][filter_name] = filter_query
-
-    def write_to_ini(self):
-        with open(FILTERS_PATH, 'w') as ini_file:
-            self.config.write(ini_file)
+    def create_filters_handler(self, error_text):
+        if error_text:
+            QMessageBox.warning(
+                None,
+                'Error',
+                error_text
+            )
+        else:
+            self.view.show_filters(self.filters_handler.items)
 
     def search_issues_by_filter_name(self, filter_name):
-        self.current_filter = self.filters[filter_name.lower()]
+        self.current_filter = self.filters_handler.get_filter_by_name(filter_name.lower())
         self.refresh_issue_list(change_filter=True)
         self.view.query_field.setText(self.current_filter)
 
@@ -307,36 +267,6 @@ class MainController(ProcessWithThreadsMixin):
         self.current_filter = self.view.query_field.text().lower()
         self.error_message = 'The query is incorrect'
         self.refresh_issue_list(change_filter=True)
-
-    def delete_filter(self, filter_name):
-        self.config.remove_option(FILTERS_DEFAULT_SECTION_NAME, filter_name)
-        self.filters.pop(filter_name)
-        self.write_to_ini()
-
-    def overwrite_filter(self, filter_name, filter_query):
-        self.config[FILTERS_DEFAULT_SECTION_NAME][filter_name] = filter_query
-        self.write_to_ini()
-        self.set_filters()
-        items = self.view.filters_list.findItems(
-            filter_name, Qt.MatchExactly
-        )
-        self.view.filters_list.setCurrentItem(items[0])
-        self.view.on_filter_selected(items[0])
-
-    def add_filter(self, filter_name, filter_query):
-        self.config[FILTERS_DEFAULT_SECTION_NAME][filter_name] = filter_query
-        self.write_to_ini()
-        self.set_filters()
-        self.view.filters_list.addItem(filter_name)
-        self.view.filters_list.setCurrentItem(
-            self.view.filters_list.item(
-                self.view.filters_list.count() - 1
-            )
-        )
-        self.view.on_filter_selected(self.view.filters_list.currentItem())
-
-    def get_filter_by_name(self, name):
-        return self.filters[name.lower()]
 
     def existing_filter_saving_process(self, error_text):
         if error_text:
@@ -346,8 +276,8 @@ class MainController(ProcessWithThreadsMixin):
             )
             return
         filter_name = self.view.filters_list.currentItem().text().lower()
-
-        self.overwrite_filter(filter_name, self.current_filter)
+        self.filters_handler.add_filter(filter_name, self.current_filter)
+        self.view.overwrite_filter(filter_name)
         self.view.filter_edited_label.hide()
 
     def filter_saving_process(self, error_text):
@@ -368,7 +298,7 @@ class MainController(ProcessWithThreadsMixin):
             filter_name = input_name_dialog.textValue().lower()
             if not filter_name or set(':=#') & set(filter_name):
                 continue
-            elif filter_name in self.filters:
+            elif filter_name in self.filters_handler.items:
                 reply = QMessageBox.question(
                     self.view,
                     'Warning',
@@ -377,10 +307,12 @@ class MainController(ProcessWithThreadsMixin):
                     QMessageBox.Yes | QMessageBox.Cancel
                 )
                 if reply == QMessageBox.Yes:
-                    self.overwrite_filter(filter_name, self.current_filter)
+                    self.filters_handler.add_filter(filter_name, self.current_filter)
+                    self.view.overwrite_filter(filter_name)
                     break
             else:
-                self.add_filter(filter_name, self.current_filter)
+                self.filters_handler.add_filter(filter_name, self.current_filter)
+                self.view.add_filter(filter_name)
                 break
 
     def save_filter(self, is_existing=False):

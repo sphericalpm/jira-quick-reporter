@@ -199,7 +199,7 @@ class MainWindow(CenterWindow):
         self.filters_list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.filters_box.addWidget(self.filters_list)
         self.add_filter_button = QPushButton('+')
-        self.add_filter_button.clicked.connect(self.add_filter)
+        self.add_filter_button.clicked.connect(self.add_filter_btn_click)
         self.add_filter_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.filters_box.addWidget(self.add_filter_button, alignment=Qt.AlignRight)
 
@@ -383,7 +383,12 @@ class MainWindow(CenterWindow):
         self.filter_edited_label.hide()
 
         # if current filter is not 'Search issues'
-        if self.filters_list.currentRow():
+        if self.filters_list.currentRow() == 2:
+            self.save_filter_btn.hide()
+            self.overwrite_filter_button.hide()
+            self.filter_edited_label.hide()
+
+        elif self.filters_list.currentRow():
             # activate overwrite button
             self.overwrite_filter_button.show()
             self.overwrite_filter_button.setEnabled(False)
@@ -401,7 +406,7 @@ class MainWindow(CenterWindow):
             self.toggle_frame_filters_btn.setText('<')
             self.filters_frame.show()
 
-    def add_filter(self):
+    def add_filter_btn_click(self):
         self.overwrite_filter_button.hide()
         self.save_filter_btn.show()
         self.filter_edited_label.hide()
@@ -415,11 +420,13 @@ class MainWindow(CenterWindow):
     def eventFilter(self, obj, event):
         # if user started typing in filter field
         if obj is self.query_field and event.type() == QEvent.KeyRelease:
-            # if current filter is not 'Search issues'
-            if self.filters_list.currentRow() > 0:
+            # if current filter is not 'Search issues' or 'my open issues'
+            if self.filters_list.currentRow() > 2:
                 current_filter_name = self.filters_list.currentItem().text()
                 # if query of current filter has not changed
-                if self.controller.get_filter_by_name(current_filter_name) != self.query_field.text():
+                if self.controller.filters_handler.get_filter_by_name(
+                        current_filter_name
+                ) != self.query_field.text():
                     # show that filter has been edited
                     self.filter_edited_label.show()
                     self.overwrite_filter_button.setEnabled(True)
@@ -447,7 +454,7 @@ class MainWindow(CenterWindow):
                         QMessageBox.Yes | QMessageBox.Cancel
                     )
                     if reply == QMessageBox.Yes:
-                        self.controller.delete_filter(item_text)
+                        self.controller.filters_handler.delete_filter(item_text)
                         self.filters_list.takeItem(
                             self.filters_list.currentRow()
                         )
@@ -457,6 +464,22 @@ class MainWindow(CenterWindow):
                             )[0])
                         self.on_filter_selected(self.filters_list.currentItem())
         return super().eventFilter(obj, event)
+
+    def overwrite_filter(self, filter_name):
+        items = self.filters_list.findItems(
+            filter_name, Qt.MatchExactly
+        )
+        self.filters_list.setCurrentItem(items[0])
+        self.on_filter_selected(items[0])
+
+    def add_filter(self, filter_name):
+        self.filters_list.addItem(filter_name)
+        self.filters_list.setCurrentItem(
+            self.filters_list.item(
+                self.filters_list.count() - 1
+            )
+        )
+        self.on_filter_selected(self.filters_list.currentItem())
 
     def show_no_issues(self):
         self.issue_list_widget.clear()
