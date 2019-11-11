@@ -382,21 +382,20 @@ class MainWindow(CenterWindow):
         self.filter_name_label.setText(set_text)
         self.filter_edited_label.hide()
 
-        # if current filter is not 'Search issues'
-        if self.filters_list.currentRow() == 2:
+        if self.filters_list.currentItem().text() == MY_ISSUES_ITEM_NAME:
             self.save_filter_btn.hide()
             self.overwrite_filter_button.hide()
             self.filter_edited_label.hide()
 
-        elif self.filters_list.currentRow():
+        elif self.filters_list.currentItem().text() == SEARCH_ITEM_NAME.capitalize():
+            # activate save button
+            self.overwrite_filter_button.hide()
+            self.save_filter_btn.show()
+        else:
             # activate overwrite button
             self.overwrite_filter_button.show()
             self.overwrite_filter_button.setEnabled(False)
             self.save_filter_btn.hide()
-        else:
-            # activate save button
-            self.overwrite_filter_button.hide()
-            self.save_filter_btn.show()
 
     def toggle_frame_filters(self):
         if self.toggle_frame_filters_btn.text() == '<':
@@ -465,7 +464,7 @@ class MainWindow(CenterWindow):
                         self.on_filter_selected(self.filters_list.currentItem())
         return super().eventFilter(obj, event)
 
-    def overwrite_filter(self, filter_name):
+    def set_current_filter(self, filter_name):
         items = self.filters_list.findItems(
             filter_name, Qt.MatchExactly
         )
@@ -474,12 +473,7 @@ class MainWindow(CenterWindow):
 
     def add_filter(self, filter_name):
         self.filters_list.addItem(filter_name)
-        self.filters_list.setCurrentItem(
-            self.filters_list.item(
-                self.filters_list.count() - 1
-            )
-        )
-        self.on_filter_selected(self.filters_list.currentItem())
+        self.set_current_filter(filter_name)
 
     def show_no_issues(self):
         self.issue_list_widget.clear()

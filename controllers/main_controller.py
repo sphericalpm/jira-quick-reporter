@@ -278,7 +278,7 @@ class MainController(ProcessWithThreadsMixin):
             return
         filter_name = self.view.filters_list.currentItem().text().lower()
         self.filters_handler.add_filter(filter_name, self.current_filter)
-        self.view.overwrite_filter(filter_name)
+        self.view.set_current_filter(filter_name)
         self.view.filter_edited_label.hide()
 
     def filter_saving_process(self, error_text):
@@ -291,13 +291,13 @@ class MainController(ProcessWithThreadsMixin):
         input_name_dialog = QInputDialog(self.view)
         input_name_dialog.setWindowIconText('Save filter')
         input_name_dialog.setLabelText(
-            'Enter filter name \n(you cannot use \' :, =, #\' symbols)'
+            'Enter filter name \n(you cannot use \' : = # ;\' symbols)'
         )
         input_name_dialog.setInputMode(QInputDialog.TextInput)
 
         while input_name_dialog.exec_():
             filter_name = input_name_dialog.textValue().lower()
-            if not filter_name or set(':=#') & set(filter_name):
+            if not filter_name or set(':=#;') & set(filter_name):
                 continue
             elif filter_name in self.filters_handler.items:
                 reply = QMessageBox.question(
@@ -309,7 +309,7 @@ class MainController(ProcessWithThreadsMixin):
                 )
                 if reply == QMessageBox.Yes:
                     self.filters_handler.add_filter(filter_name, self.current_filter)
-                    self.view.overwrite_filter(filter_name)
+                    self.view.set_current_filter(filter_name)
                     break
             else:
                 self.filters_handler.add_filter(filter_name, self.current_filter)
