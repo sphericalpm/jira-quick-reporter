@@ -1,6 +1,6 @@
 from functools import partial
 
-from PyQt5.QtCore import Qt, QTimer, QEvent, QUrl
+from PyQt5.QtCore import Qt, QTimer, QEvent, QUrl, QSize
 from PyQt5.QtGui import QIcon, QDesktopServices
 from PyQt5.QtMultimedia import QSound
 from PyQt5.QtWidgets import (
@@ -30,9 +30,9 @@ from config import (
     LOG_TIME,
     RING_SOUND_PATH,
     FILTER_FIELD_HELP_URL,
-    DEFAULT_FILTERS,
     SEARCH_ITEM_NAME,
-    MY_ISSUES_ITEM_NAME
+    MY_ISSUES_ITEM_NAME,
+    DELETE_FILTER_ICON
 )
 from redefined_QComboBox import MyQComboBox
 
@@ -148,11 +148,25 @@ class MainWindow(CenterWindow):
         self.overwrite_filter_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.overwrite_filter_button.clicked.connect(lambda: self.controller.save_filter(True))
 
+        self.delete_filter_btn = QPushButton()
+        self.delete_filter_btn.setObjectName('delete_filter_btn')
+        self.delete_filter_btn.clicked.connect(self.delete_filter)
+        self.delete_filter_btn.setIcon(QIcon(DELETE_FILTER_ICON))
+        self.delete_filter_btn.setIconSize(
+            QSize(
+                self.delete_filter_btn.sizeHint().height(),
+                self.delete_filter_btn.sizeHint().height()
+            )
+        )
+        self.delete_filter_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.delete_filter_btn.setToolTip('Delete filter')
+
         self.save_btn_box.addWidget(self.filter_name_label, Qt.AlignLeft)
         self.save_btn_box.addWidget(self.filter_edited_label, Qt.AlignLeft)
         self.save_btn_box.addWidget(self.save_filter_btn, Qt.AlignLeft)
         self.save_btn_box.addWidget(self.overwrite_filter_button, Qt.AlignLeft)
         self.save_btn_box.addStretch()
+        self.save_btn_box.addWidget(self.delete_filter_btn, Qt.AlignRight)
 
         self.create_filter_box = QHBoxLayout()
         self.query_field = QLineEdit()
@@ -386,16 +400,19 @@ class MainWindow(CenterWindow):
             self.save_filter_btn.hide()
             self.overwrite_filter_button.hide()
             self.filter_edited_label.hide()
+            self.delete_filter_btn.hide()
 
         elif self.filters_list.currentItem().text() == SEARCH_ITEM_NAME.capitalize():
             # activate save button
             self.overwrite_filter_button.hide()
             self.save_filter_btn.show()
+            self.delete_filter_btn.hide()
         else:
             # activate overwrite button
             self.overwrite_filter_button.show()
             self.overwrite_filter_button.setEnabled(False)
             self.save_filter_btn.hide()
+            self.delete_filter_btn.show()
 
     def toggle_frame_filters(self):
         if self.toggle_frame_filters_btn.text() == '<':
@@ -419,9 +436,9 @@ class MainWindow(CenterWindow):
     def eventFilter(self, obj, event):
         # if user started typing in filter field
         if obj is self.query_field and event.type() == QEvent.KeyRelease:
+            current_filter_name = self.filters_list.currentItem().text().lower()
             # if current filter is not 'Search issues' or 'my open issues'
-            if self.filters_list.currentRow() > 2:
-                current_filter_name = self.filters_list.currentItem().text()
+            if current_filter_name not in (SEARCH_ITEM_NAME, MY_ISSUES_ITEM_NAME):
                 # if query of current filter has not changed
                 if self.controller.filters_handler.get_filter_by_name(
                         current_filter_name
@@ -432,36 +449,6 @@ class MainWindow(CenterWindow):
                 else:
                     self.filter_edited_label.hide()
                     self.overwrite_filter_button.setEnabled(False)
-
-        if event.type() == QEvent.ContextMenu:
-            if obj is not self.filters_list:
-                return super().eventFilter(obj, event)
-            self.filters_list.setCurrentItem(self.current_item)
-            if obj.itemAt(event.pos()) is self.filters_list.currentItem():
-                item_text = self.filters_list.currentItem().text().lower()
-                if item_text in DEFAULT_FILTERS:
-                    return super().eventFilter(obj, event)
-                context_menu = QMenu()
-                action_delete = QAction('Delete', self)
-                context_menu.addAction(action_delete)
-                if context_menu.exec_(event.globalPos()):
-                    reply = QMessageBox.question(
-                        self,
-                        'Delete filter',
-                        "Are you sure you want to delete "
-                        "'{}' filter?".format(item_text),
-                        QMessageBox.Yes | QMessageBox.Cancel
-                    )
-                    if reply == QMessageBox.Yes:
-                        self.controller.filters_handler.delete_filter(item_text)
-                        self.filters_list.takeItem(
-                            self.filters_list.currentRow()
-                        )
-                        self.filters_list.setCurrentItem(
-                            self.filters_list.findItems(
-                                MY_ISSUES_ITEM_NAME, Qt.MatchExactly
-                            )[0])
-                        self.on_filter_selected(self.filters_list.currentItem())
         return super().eventFilter(obj, event)
 
     def set_current_filter(self, filter_name):
@@ -474,6 +461,26 @@ class MainWindow(CenterWindow):
     def add_filter(self, filter_name):
         self.filters_list.addItem(filter_name)
         self.set_current_filter(filter_name)
+
+    def delete_filter(self):
+        filter_name = self.filters_list.currentItem().text()
+        reply = QMessageBox.question(
+            self,
+            'Delete filter',
+            "Are you sure you want to delete "
+            "'{}' filter?".format(filter_name),
+            QMessageBox.Yes | QMessageBox.Cancel
+        )
+        if reply == QMessageBox.Yes:
+            self.controller.filters_handler.delete_filter(filter_name)
+            self.filters_list.takeItem(
+                self.filters_list.currentRow()
+            )
+            self.filters_list.setCurrentItem(
+                self.filters_list.findItems(
+                    MY_ISSUES_ITEM_NAME, Qt.MatchExactly
+                )[0])
+            self.on_filter_selected(self.filters_list.currentItem())
 
     def show_no_issues(self):
         self.issue_list_widget.clear()
