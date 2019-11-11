@@ -1,3 +1,4 @@
+from requests.exceptions import ConnectionError, ReadTimeout
 import configparser
 
 from jira import JIRAError
@@ -24,16 +25,15 @@ class IssueFiltersHandler:
         self.set_default_section()
         self.write_to_ini()
         self.set_filters()
+        delete_filters = []
 
-        for filter_query in self.items.values():
+        for filter_name, filter_query in self.items.items():
             try:
                 self.jira_client.get_issues(query=filter_query)
             except JIRAError:
-                self.config.clear()
-                self.set_default_section()
-                self.write_to_ini()
-                self.set_filters()
-                raise ValueError('The query is incorrect')
+                delete_filters.append(filter_name)
+        for filter_name in delete_filters:
+            self.delete_filter(filter_name)
 
     def set_filters(self):
         self.items.clear()

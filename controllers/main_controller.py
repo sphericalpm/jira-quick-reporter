@@ -35,7 +35,6 @@ class MainController(ProcessWithThreadsMixin):
 
     def show(self):
         self.start_loading(self.filters_handler.create_filters, self.create_filters_handler)
-        self.view.show()
 
     def load_more_issues(self, filter_query):
         issues = self.jira_client.get_issues(self.issues_count, filter_query)
@@ -255,8 +254,10 @@ class MainController(ProcessWithThreadsMixin):
                 'Error',
                 error_text
             )
+            self.quit_app()
         else:
             self.view.show_filters(self.filters_handler.items)
+            self.view.show()
 
     def search_issues_by_filter_name(self, filter_name):
         self.current_filter = self.filters_handler.get_filter_by_name(filter_name.lower())
