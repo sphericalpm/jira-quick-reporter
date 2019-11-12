@@ -425,17 +425,19 @@ class MainWindow(CenterWindow):
     def add_filter_btn_click(self):
         self.overwrite_filter_button.hide()
         self.save_filter_btn.show()
+        self.delete_filter_btn.hide()
         self.filter_edited_label.hide()
         self.filters_list.setCurrentItem(None)
         self.query_field.setText('')
         self.filter_name_label.setText('Add new filter')
-        self.filter_edited_label.hide()
         self.controller.current_issues.clear()
         self.show_no_issues()
 
     def eventFilter(self, obj, event):
         # if user started typing in filter field
         if obj is self.query_field and event.type() == QEvent.KeyRelease:
+            if not self.filters_list.currentItem():
+                return super().eventFilter(obj, event)
             current_filter_name = self.filters_list.currentItem().text().lower()
             # if current filter is not 'Search issues' or 'my open issues'
             if current_filter_name not in (SEARCH_ITEM_NAME, MY_ISSUES_ITEM_NAME):
