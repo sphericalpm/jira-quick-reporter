@@ -237,7 +237,7 @@ class MainWindow(CenterWindow):
         self.timer_log_work.start(LOG_TIME)
 
         self.timer_refresh = QTimer()
-        self.timer_refresh.timeout.connect(self.controller.refresh_issue_list)
+        self.timer_refresh.timeout.connect(self.controller.auto_refresh_issue_list)
 
     def notification_to_log_work(self):
         QSound.play(RING_SOUND_PATH)
