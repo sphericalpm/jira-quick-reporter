@@ -82,7 +82,6 @@ class MainController(TimeLogMixin, ProcessWithThreadsMixin):
                 issue_dict = self.get_issue_parameters(issue)
                 # add issue to the list for updated issues
                 self.update_issue_list.append(issue_dict)
-
         # update count of all available issues
         self.issues_count = len(self.current_issues)
         # get list of deleted issues
@@ -134,12 +133,12 @@ class MainController(TimeLogMixin, ProcessWithThreadsMixin):
         # if we have issues, make the widget for issues enable
         self.view.issue_list_widget.show()
         self.view.label_info.hide()
-        if self.insert_issue_list:
-            self.view.insert_issues(self.insert_issue_list)
-        if self.update_issue_list:
-            self.view.update_issues(self.update_issue_list)
         if self.delete_issue_list:
             self.view.delete_issues(self.delete_issue_list)
+        if self.update_issue_list:
+            self.view.update_issues(self.update_issue_list)
+        if self.insert_issue_list:
+            self.view.insert_issues(self.insert_issue_list)
         self.insert_issue_list.clear()
         self.update_issue_list.clear()
         self.delete_issue_list.clear()

@@ -330,7 +330,7 @@ class MainWindow(CenterWindow):
             self.issue_list_widget.setItemWidget(
                 issue_list_widget_item, issue_widget
             )
-            self.set_size_hint()
+        self.set_size_hint()
 
     def set_size_hint(self):
         self.issue_list_widget.setMinimumWidth(
