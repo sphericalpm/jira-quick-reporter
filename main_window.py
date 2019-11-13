@@ -19,7 +19,8 @@ from PyQt5.QtWidgets import (
     QAction,
     QSizePolicy,
     QFrame,
-    QStyle
+    QStyle,
+    QAbstractScrollArea
 )
 
 from redefined_QComboBox import MyQComboBox
@@ -117,12 +118,12 @@ class MainWindow(CenterWindow):
     """
     def __init__(self, controller):
         super().__init__()
-
         self.setStyleSheet(QSS)
         self.controller = controller
-        self.resize(800, 450)
+        self.resize(1000, 600)
         self.setWindowTitle('JIRA Quick Reporter')
         self.setWindowIcon(QIcon(LOGO_PATH))
+        self.center()
         self.current_item = None
 
         self.vbox = QVBoxLayout()
@@ -145,7 +146,7 @@ class MainWindow(CenterWindow):
         self.overwrite_filter_button.setToolTip('You need to edit filter query first')
         self.overwrite_filter_button.setObjectName('save_filter_btn')
         self.overwrite_filter_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.overwrite_filter_button.clicked.connect(self.controller.save_existing_filter)
+        self.overwrite_filter_button.clicked.connect(lambda: self.controller.save_filter(True))
 
         self.save_btn_box.addWidget(self.filter_name_label, Qt.AlignLeft)
         self.save_btn_box.addWidget(self.filter_edited_label, Qt.AlignLeft)
@@ -172,6 +173,7 @@ class MainWindow(CenterWindow):
         self.list_box = QVBoxLayout()
         self.issue_list_widget = QListWidget()
         self.issue_list_widget.setObjectName('issue_list')
+        self.issue_list_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.label_info = QLabel('You have no issues.')
         self.label_info.setAlignment(Qt.AlignCenter)
         self.list_box.addWidget(self.issue_list_widget)
@@ -186,7 +188,6 @@ class MainWindow(CenterWindow):
         self.filters_frame.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
         self.filters_frame.setFrameShape(QFrame.StyledPanel)
         self.filters_frame.setObjectName('filters_frame')
-        self.filters_frame.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
         self.filters_box = QVBoxLayout(self.filters_frame)
         self.filters_box_label = QLabel('Issues and filters')
         self.filters_box_label.setObjectName('filters_box_label')
@@ -195,6 +196,7 @@ class MainWindow(CenterWindow):
         self.filters_list.installEventFilter(self)
         self.filters_list.itemClicked.connect(self.on_filter_selected)
         self.filters_list.setObjectName('filters_list')
+        self.filters_list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.filters_box.addWidget(self.filters_list)
         self.add_filter_button = QPushButton('+')
         self.add_filter_button.clicked.connect(self.add_filter)
@@ -203,7 +205,7 @@ class MainWindow(CenterWindow):
 
         self.btn_box = QHBoxLayout()
         self.refresh_btn = QPushButton('Refresh')
-        self.refresh_btn.clicked.connect(self.controller.refresh_issue_list_with_indicator)
+        self.refresh_btn.clicked.connect(self.controller.refresh_issue_list)
         self.btn_box.addWidget(self.refresh_btn, alignment=Qt.AlignRight)
         self.vbox.addLayout(self.btn_box)
 
@@ -328,13 +330,23 @@ class MainWindow(CenterWindow):
             self.issue_list_widget.setItemWidget(
                 issue_list_widget_item, issue_widget
             )
+            self.set_size_hint()
+
+    def set_size_hint(self):
+        self.issue_list_widget.setMinimumWidth(
+            self.issue_list_widget.sizeHintForColumn(0) + 50
+        )
+        self.issue_list_widget.setMinimumHeight(
+            self.issue_list_widget.sizeHintForRow(0) * 2
+        )
 
     def show_filters(self, filters_dict):
-        for key in filters_dict:
+        for index, key in enumerate(filters_dict):
             if key == SEARCH_ITEM_NAME:
                 self.filters_list.insertItem(0, key)
             else:
                 self.filters_list.addItem(key)
+                self.filters_list.item(index).setToolTip(key)
         self.filters_list.item(0).setText(self.filters_list.item(0).text().capitalize())
 
         # add separator after first item
@@ -351,18 +363,23 @@ class MainWindow(CenterWindow):
                 MY_ISSUES_ITEM_NAME, Qt.MatchExactly
             )[0])
 
+        self.filters_list.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
         self.on_filter_selected(self.filters_list.currentItem())
-        self.filters_list.setMaximumWidth(
-            self.filters_list.sizeHintForColumn(0) + 10
-        )
 
     def filter_field_help(self):
         QDesktopServices.openUrl(self.help_filter_url)
 
     def on_filter_selected(self, item):
+        if not item.text():
+            return
         self.current_item = item
-        self.filter_name_label.setText(item.text())
+        if len(self.current_item.text()) > 50:
+            set_text = '{}...'.format(self.current_item.text()[:50])
+        else:
+            set_text = self.current_item.text()
+        self.issue_list_widget.scrollToTop()
         self.controller.search_issues_by_filter_name(item.text())
+        self.filter_name_label.setText(set_text)
         self.filter_edited_label.hide()
 
         # if current filter is not 'Search issues'
@@ -395,9 +412,9 @@ class MainWindow(CenterWindow):
         self.controller.current_issues.clear()
         self.show_no_issues()
 
-    def eventFilter(self, object, event):
+    def eventFilter(self, obj, event):
         # if user started typing in filter field
-        if object is self.query_field and event.type() == QEvent.KeyRelease:
+        if obj is self.query_field and event.type() == QEvent.KeyRelease:
             # if current filter is not 'Search issues'
             if self.filters_list.currentRow() > 0:
                 current_filter_name = self.filters_list.currentItem().text()
@@ -411,11 +428,13 @@ class MainWindow(CenterWindow):
                     self.overwrite_filter_button.setEnabled(False)
 
         if event.type() == QEvent.ContextMenu:
+            if obj is not self.filters_list:
+                return super().eventFilter(obj, event)
             self.filters_list.setCurrentItem(self.current_item)
-            if object.itemAt(event.pos()) is self.filters_list.currentItem():
+            if obj.itemAt(event.pos()) is self.filters_list.currentItem():
                 item_text = self.filters_list.currentItem().text().lower()
                 if item_text in DEFAULT_FILTERS:
-                    return super().eventFilter(object, event)
+                    return super().eventFilter(obj, event)
                 context_menu = QMenu()
                 action_delete = QAction('Delete', self)
                 context_menu.addAction(action_delete)
@@ -437,7 +456,7 @@ class MainWindow(CenterWindow):
                                 MY_ISSUES_ITEM_NAME, Qt.MatchExactly
                             )[0])
                         self.on_filter_selected(self.filters_list.currentItem())
-        return super().eventFilter(object, event)
+        return super().eventFilter(obj, event)
 
     def show_no_issues(self):
         self.issue_list_widget.clear()
@@ -456,6 +475,6 @@ class MainWindow(CenterWindow):
             self.controller.refresh_issue_list(True)
             event.accept()
 
-    def closeEvent(self, QCloseEvent):
-        QCloseEvent.ignore()
+    def closeEvent(self, event):
+        event.ignore()
         self.hide()

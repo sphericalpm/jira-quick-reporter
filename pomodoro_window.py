@@ -133,6 +133,7 @@ class Settings(QWidget):
 class PomodoroWindow(CenterWindow):
     def __init__(self, controller, issue_key, issue_title, tray_icon):
         super().__init__()
+        self.center()
         self.setStyleSheet(QSS)
         self.controller = controller
         self.tray_icon = tray_icon

@@ -1,11 +1,12 @@
+from PyQt5.QtWidgets import QMessageBox
 from jira import JIRAError
 
+from controllers.loading_indicator import LoadingIndicator
+from controllers.mixins import TimeLogMixin, ProcessWithThreadsMixin
 from workflow_window import WorkflowWindow, CompleteWorflowWindow
-from controllers.mixins import TimeLogMixin, SavingWithThreadsMixin
-from utils.decorators import catch_timeout_exception
 
 
-class WorkflowController(SavingWithThreadsMixin):
+class WorkflowController(ProcessWithThreadsMixin):
     def __init__(
         self,
         jira_client,
@@ -16,6 +17,7 @@ class WorkflowController(SavingWithThreadsMixin):
         assignee,
         controller
     ):
+        super().__init__()
         self.controller = controller
         self.jira_client = jira_client
         self.issue = issue
@@ -24,8 +26,6 @@ class WorkflowController(SavingWithThreadsMixin):
         self.status_id = status_id
         self.assignee = assignee
         self.is_save = False
-
-    def show(self):
         self.view = WorkflowWindow(
             self.issue,
             self.existing_estimate,
@@ -33,10 +33,15 @@ class WorkflowController(SavingWithThreadsMixin):
             self.assignee,
             self
         )
+        self.indicator = LoadingIndicator(self.view, self.view.vbox)
+
+    def show(self):
         self.view.show()
 
-    @catch_timeout_exception
-    def save_into_jira(self):
+    def save_click(self):
+        self.start_loading(self.save_workflow, self.save_worflow_handler)
+
+    def save_workflow(self):
         assignee = self.view.assignee_line.text()
         original_estimate = self.view.original_estimate_line.text()
         remaining_estimate = self.view.remaining_estimate_line.text()
@@ -72,33 +77,44 @@ class WorkflowController(SavingWithThreadsMixin):
 
         self.is_save = True
 
+    def save_worflow_handler(self, error_text):
+        if error_text:
+            QMessageBox.about(self.view, 'Error', error_text)
+        else:
+            self.controller.refresh_issue_list()
+            self.view.close()
+
     def close(self):
         if not self.is_save:
             self.controller.reset_workflow(self.issue)
 
 
-class CompleteWorkflowController(TimeLogMixin, SavingWithThreadsMixin):
+class CompleteWorkflowController(TimeLogMixin, ProcessWithThreadsMixin):
     def __init__(self, jira_client, issue, status, assignee, controller):
+        super().__init__()
         self.controller = controller
         self.jira_client = jira_client
         self.issue = issue
         self.status = status
         self.assignee = assignee
         self.is_save = False
-
-    def show(self):
-        possible_resolutions = self.controller.jira_client.get_possible_resolutions()
+        self.possible_resolutions = self.controller.jira_client.get_possible_resolutions()
         self.view = CompleteWorflowWindow(
             self,
             self.issue,
             self.assignee,
-            possible_resolutions,
+            self.possible_resolutions,
             save_callback=self.save_click
-            )
+        )
+        self.indicator = LoadingIndicator(self.view, self.view.vbox)
+
+    def show(self):
         self.view.show()
 
-    @catch_timeout_exception
-    def save_into_jira(self):
+    def save_click(self):
+        self.start_loading(self.save_workflow, self.save_worflow_handler)
+
+    def save_workflow(self):
         time_spent = self.view.time_spent_line.text()
         start_date = self.view.date_start
         comment = self.view.work_description_line.toPlainText()
@@ -146,6 +162,13 @@ class CompleteWorkflowController(TimeLogMixin, SavingWithThreadsMixin):
         except JIRAError as e:
             raise ValueError(e.text)
         self.is_save = True
+
+    def save_worflow_handler(self, error_text):
+        if error_text:
+            QMessageBox.about(self.view, 'Error', error_text)
+        else:
+            self.controller.refresh_issue_list()
+            self.view.close()
 
     def close(self):
         if not self.is_save:

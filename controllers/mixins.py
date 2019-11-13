@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QMessageBox
 
-from controllers.loading_indicator import LoadingIndicator, Thread
+from controllers.loading_indicator import Thread
 
 
 class TimeLogMixin:
@@ -36,18 +36,20 @@ class TimeLogMixin:
         return log_work_params
 
 
-class SavingWithThreadsMixin():
-    def save_click(self, issue_key):
-        self.indicator = LoadingIndicator(self, self.view.vbox)
-        self.indicator.show()
-        self.new_thread = Thread(self.save_into_jira)
-        self.new_thread.start()
-        self.new_thread.finished.connect(self.stop_indicator)
+class ProcessWithThreadsMixin:
+    def __init__(self):
+        self.finish_thread_callback = None
+        self.error_message = None
+        self.indicator = None
 
-    def stop_indicator(self, result, error):
+    def start_loading(self, started_callback, finished_callback):
+        self.finish_thread_callback = finished_callback
+        self.indicator.spinner.start()
+        self.new_thread = Thread(started_callback, self.error_message)
+        self.new_thread.start()
+        self.new_thread.finished.connect(self.stop_loading)
+
+    def stop_loading(self, error_text):
         self.indicator.spinner.stop()
-        if result:
-            self.controller.refresh_issue_list()
-            self.view.close()
-        elif error:
-            QMessageBox.about(self.view, 'Error', error)
+        self.finish_thread_callback(error_text)
+        self.error_message = None
