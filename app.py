@@ -21,6 +21,10 @@ if __name__ == '__main__':
             try:
                 email, token = content.split(';')
                 jira_client = JiraClient(email, token)
+                jira_client.client.search_issues(
+                    'assignee = currentUser()',
+                    maxResults=1
+                )
                 controller = MainController(jira_client)
                 app.setQuitOnLastWindowClosed(False)
             except (ValueError, JIRAError):
