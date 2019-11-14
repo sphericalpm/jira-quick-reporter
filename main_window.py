@@ -239,6 +239,10 @@ class MainWindow(CenterWindow):
         self.timer_refresh = QTimer()
         self.timer_refresh.timeout.connect(self.controller.refresh_issue_list)
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Return:
+            self.controller.search_issues_by_query()
+
     def notification_to_log_work(self):
         QSound.play(RING_SOUND_PATH)
         self.tray_icon.showMessage(
