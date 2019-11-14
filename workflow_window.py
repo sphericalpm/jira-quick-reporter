@@ -52,27 +52,27 @@ class WorkflowWindow(CenterWindow, QMainWindow):
         self.save_button.setToolTip('Save changes')
 
         # add elements to box
-        self.vbox = QGridLayout()
+        self.main_box = QGridLayout()
 
-        self.vbox.addWidget(assignee)
-        self.vbox.addWidget(self.assignee_line)
+        self.main_box.addWidget(assignee)
+        self.main_box.addWidget(self.assignee_line)
 
-        self.vbox.addWidget(original_estimate)
-        self.vbox.addWidget(self.original_estimate_line)
+        self.main_box.addWidget(original_estimate)
+        self.main_box.addWidget(self.original_estimate_line)
 
-        self.vbox.addWidget(remaining_estimate)
-        self.vbox.addWidget(self.remaining_estimate_line)
+        self.main_box.addWidget(remaining_estimate)
+        self.main_box.addWidget(self.remaining_estimate_line)
 
-        self.vbox.addWidget(comment)
-        self.vbox.addWidget(self.comment_line)
-        self.vbox.addWidget(self.save_button)
+        self.main_box.addWidget(comment)
+        self.main_box.addWidget(self.comment_line)
+        self.main_box.addWidget(self.save_button)
 
-        self.setLayout(self.vbox)
-        self.save_button.clicked.connect(self.controller.save_click)
+        self.setLayout(self.main_box)
+        self.save_button.clicked.connect(self.controller.save)
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Return:
-            self.controller.save_click()
+            self.controller.save()
 
     def closeEvent(self, event):
         self.controller.close()
@@ -83,40 +83,40 @@ class CompleteWorflowWindow(TimeLogWindow):
     def __init__(
         self,
         controller,
-        issue,
+        issue_key,
         assignee,
         possible_resolutions,
-        save_callback
+        possible_versions
     ):
         self.controller = controller
-        self.issue = issue
+        self.issue_key = issue_key
         self.assignee = assignee
         self.possible_resolutions = possible_resolutions
-        super().__init__(issue, save_callback=save_callback)
+        self.possible_versions = possible_versions
+        super().__init__(self.controller, issue_key)
 
     def build_issue_form_vbox(self):
         super().build_issue_form_vbox()
 
         assignee = QLabel('Assignee (eg. vsmith):')
         self.assignee_line = QLineEdit('{}'.format(self.assignee))
-        self.vbox.addWidget(assignee)
-        self.vbox.addWidget(self.assignee_line)
+        self.main_box.addWidget(assignee)
+        self.main_box.addWidget(self.assignee_line)
 
         resolution = QLabel('Resolution:')
-        self.vbox.addWidget(resolution)
+        self.main_box.addWidget(resolution)
         self.set_resolution = QComboBox(self)
-        self.vbox.addWidget(self.set_resolution)
+        self.main_box.addWidget(self.set_resolution)
 
         self.set_resolution.addItems(self.possible_resolutions)
         self.set_resolution.setCurrentIndex(0)
 
         fix_versions = QLabel('Fix versions:')
-        self.vbox.addWidget(fix_versions)
+        self.main_box.addWidget(fix_versions)
         self.set_version = QComboBox(self)
-        self.vbox.addWidget(self.set_version)
+        self.main_box.addWidget(self.set_version)
 
-        possible_versions = self.controller.jira_client.get_possible_versions(self.issue)
-        self.set_version.addItems(possible_versions)
+        self.set_version.addItems(self.possible_versions)
         self.set_version.setCurrentIndex(0)
 
     def closeEvent(self, event):
