@@ -241,7 +241,7 @@ class MainWindow(CenterWindow):
         self.action_open = QAction('Open JQR', self)
         self.action_quit = QAction('Quit JQR', self)
         self.tray_menu.addAction(self.action_open)
-        self.action_open.triggered.connect(self.show)
+        self.action_open.triggered.connect(self.show_jqr_from_tray)
         self.tray_menu.addAction(self.action_quit)
         self.action_quit.triggered.connect(self.controller.quit_app)
         self.tray_icon.setContextMenu(self.tray_menu)
@@ -252,6 +252,10 @@ class MainWindow(CenterWindow):
 
         self.timer_refresh = QTimer()
         self.timer_refresh.timeout.connect(self.controller.refresh_issue_list)
+
+    def show_jqr_from_tray(self):
+        self.hide()
+        self.show()
 
     def notification_to_log_work(self):
         QSound.play(RING_SOUND_PATH)
@@ -502,5 +506,4 @@ class MainWindow(CenterWindow):
             event.accept()
 
     def closeEvent(self, event):
-        event.ignore()
-        self.hide()
+        self.controller.quit_app()
