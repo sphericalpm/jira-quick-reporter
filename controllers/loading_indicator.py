@@ -1,4 +1,5 @@
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from jira import JIRAError
 from pyqtspinner.spinner import WaitingSpinner
 from requests.exceptions import ConnectionError, ReadTimeout
 
@@ -29,6 +30,9 @@ class Thread(QThread):
         except (ConnectionError,
                 ReadTimeout):
             self.error_text = 'Connection error!\nPlease, check your internet connection'
+        except JIRAError as ex:
+            if self.error_text is None:
+                self.error_text = ex.text
         except Exception as ex:
             if self.error_text is None:
                 self.error_text = str(ex)

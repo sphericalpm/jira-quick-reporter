@@ -24,7 +24,7 @@ if __name__ == '__main__':
                 controller = MainController(jira_client)
                 app.setQuitOnLastWindowClosed(False)
             except (ValueError, JIRAError):
-                controller = LoginController()
+                controller = LoginController(app)
             except (ConnectionError,
                     ReadTimeout):
                 QMessageBox.warning(
@@ -34,6 +34,6 @@ if __name__ == '__main__':
                 )
                 sys.exit()
     else:
-        controller = LoginController()
+        controller = LoginController(app)
     controller.show()
     sys.exit(app.exec_())

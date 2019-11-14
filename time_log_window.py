@@ -16,33 +16,33 @@ from config import QSS
 
 
 class TimeLogWindow(CenterWindow):
-    def __init__(self, issue_key, save_callback, time_spent=None):
+    def __init__(self, controller, issue_key, time_spent=None):
         super().__init__()
         self.center()
         self.issue_key = issue_key
         self.time_spent = time_spent
-        self.save_callback = save_callback
+        self.controller = controller
         self.setStyleSheet(QSS)
         self.resize(600, 450)
         self.setWindowTitle('Log Work: {issue}'.format(issue=issue_key))
 
-        self.vbox = QGridLayout()
+        self.main_box = QGridLayout()
         self.build_issue_form_vbox()
         self.add_save_button()
-        self.setLayout(self.vbox)
+        self.setLayout(self.main_box)
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Return:
-            self.save_callback(self.issue_key)
+            self.controller.save()
 
     def add_save_button(self):
         self.save_button = QPushButton('Save')
         self.save_button.setToolTip('save new time tracking values into Jira')
-        self.save_button.clicked.connect(self.save_callback)
-        self.vbox.addWidget(self.save_button)
+        self.save_button.clicked.connect(self.controller.save)
+        self.main_box.addWidget(self.save_button)
 
     def build_issue_form_vbox(self):
-        # vbox elements description
+        # main_box elements description
         time_spent_label = QLabel('Time Spent (eg. 3w 4d 12h):')
         date_start = QLabel('Date Started (eg. 12-05-2019 13:15):')
 
@@ -85,24 +85,24 @@ class TimeLogWindow(CenterWindow):
         self.work_description_line = QTextEdit()
 
         # add elements to box
-        self.vbox = QGridLayout()
+        self.main_box = QGridLayout()
 
-        self.vbox.addWidget(time_spent_label)
-        self.vbox.addWidget(self.time_spent_line)
+        self.main_box.addWidget(time_spent_label)
+        self.main_box.addWidget(self.time_spent_line)
 
-        self.vbox.addWidget(date_start)
-        self.vbox.addWidget(self.date_start_line)
+        self.main_box.addWidget(date_start)
+        self.main_box.addWidget(self.date_start_line)
 
-        self.vbox.addWidget(self.remaining_estimate)
-        self.vbox.addWidget(self.automatically_estimate)
-        self.vbox.addWidget(self.existing_estimate)
-        self.vbox.addWidget(self.set_new_estimate)
-        self.vbox.addWidget(self.set_new_estimate_value)
-        self.vbox.addWidget(self.reduce_estimate)
-        self.vbox.addWidget(self.reduce_estimate_value)
+        self.main_box.addWidget(self.remaining_estimate)
+        self.main_box.addWidget(self.automatically_estimate)
+        self.main_box.addWidget(self.existing_estimate)
+        self.main_box.addWidget(self.set_new_estimate)
+        self.main_box.addWidget(self.set_new_estimate_value)
+        self.main_box.addWidget(self.reduce_estimate)
+        self.main_box.addWidget(self.reduce_estimate_value)
 
-        self.vbox.addWidget(work_description)
-        self.vbox.addWidget(self.work_description_line)
+        self.main_box.addWidget(work_description)
+        self.main_box.addWidget(self.work_description_line)
 
     def set_existing_estimate(self, existing_estimate):
         self.existing_estimate.setText(
