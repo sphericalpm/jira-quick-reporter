@@ -12,8 +12,9 @@ from login_window import LoginWindow
 
 
 class LoginController(ProcessWithThreadsMixin):
-    def __init__(self):
+    def __init__(self, app):
         super().__init__()
+        self.app = app
         self.view = LoginWindow(self)
         self.indicator = LoadingIndicator(self.view, self.view.form)
         self.jira_client = None
@@ -58,4 +59,5 @@ class LoginController(ProcessWithThreadsMixin):
         else:
             main_controller = MainController(self.jira_client)
             main_controller.show()
+            self.app.setQuitOnLastWindowClosed(False)
             self.view.close()
