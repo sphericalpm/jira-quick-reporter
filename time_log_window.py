@@ -78,7 +78,7 @@ class TimeLogWindow(CenterWindow):
         if self.time_spent:
             self.time_spent_line.setText(self.time_spent)
         self.date_start_line = QLineEdit(
-            datetime.strftime(datetime.now(), '%d-%m-%Y %H:%M')
+            datetime.now().strftime('%d-%m-%Y %H:%M')
         )
         self.date_start_line.installEventFilter(self)
         self.date_start = self.get_date_from_line()

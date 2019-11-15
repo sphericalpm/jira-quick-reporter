@@ -8,7 +8,7 @@ from config import REFRESH_TIME, ISSUES_COUNT
 from controllers.loading_indicator import LoadingIndicator
 from controllers.mixins import ProcessWithThreadsMixin
 from controllers.filters import IssueFiltersHandler
-from controllers.time_log_controller import TimeLogController
+from controllers.time_log_controller import TimeLogController, QuickTimeLog
 from controllers.workflow_controller import (
     WorkflowController,
     CompleteWorkflowController
@@ -246,6 +246,14 @@ class MainController(ProcessWithThreadsMixin):
                     params.append('{}h {}m'.format(hours, minutes))
         self.time_log_controller = TimeLogController(*params)
         self.time_log_controller.view.show()
+
+    def log_work_from_list(self, issue_key):
+        quick_time_log = QuickTimeLog(
+            self,
+            self.jira_client,
+            self.current_issues[issue_key]
+        )
+        quick_time_log.save()
 
     def create_filters_handler(self, error_text):
         if error_text:

@@ -1,11 +1,13 @@
 from functools import partial
 
 from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtCore import Qt
 
 from config import LOG_TIME
 from controllers.loading_indicator import LoadingIndicator
 from controllers.mixins import ProcessWithThreadsMixin
 from time_log_window import TimeLogWindow
+from main_window import MainWindow
 
 
 class TimeLogController(ProcessWithThreadsMixin):
@@ -17,7 +19,11 @@ class TimeLogController(ProcessWithThreadsMixin):
         self.issue = issue
         self.existing_estimate = self.jira_client.get_remaining_estimate(self.issue)
         self.log_work_params = None
-        self.view = TimeLogWindow(self, self.issue.key, time_spent)
+        self.start_date = None
+        self.init_view()
+
+    def init_view(self):
+        self.view = TimeLogWindow(self, self.issue.key, self.time_spent)
         self.view.set_existing_estimate(self.existing_estimate)
         self.indicator = LoadingIndicator(self.view, self.view.main_box)
 
@@ -70,8 +76,30 @@ class TimeLogController(ProcessWithThreadsMixin):
         if error:
             QMessageBox.about(self.view, 'Error', error)
         else:
-            self.view.close()
+            if not isinstance(self.view, MainWindow):
+                self.view.close()
             self.main_controller.refresh_issue_list()
             self.main_controller.view.timer_log_work.start(LOG_TIME)
-            if self.main_controller.pomodoro_view:
+            if self.main_controller.pomodoro_view and \
+                    self.main_controller.pomodoro_view.issue_key == self.issue.key:
                 self.main_controller.pomodoro_view.reset_timer()
+
+
+class QuickTimeLog(TimeLogController):
+    def init_view(self):
+        self.view = self.main_controller.view
+        self.indicator = self.main_controller.indicator
+
+    def get_timelog_parameters(self):
+        issue_item = self.view.issue_list_widget.findItems(
+            self.issue.key, Qt.MatchExactly
+        )[0]
+        self.issue_widget = self.view.issue_list_widget.itemWidget(issue_item)
+        self.time_spent = self.issue_widget.time_spent_line.text()
+        self.comment = self.issue_widget.comment_line.text()
+        self.log_work_params = dict()
+        return True
+
+    def save_handler(self, error):
+        self.issue_widget.time_spent_line.clear()
+        self.issue_widget.comment_line.clear()
