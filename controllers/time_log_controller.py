@@ -101,5 +101,6 @@ class QuickTimeLog(TimeLogController):
         return True
 
     def save_handler(self, error):
+        super().save_handler(error)
         self.issue_widget.time_spent_line.clear()
         self.issue_widget.comment_line.clear()
