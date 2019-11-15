@@ -506,4 +506,5 @@ class MainWindow(CenterWindow):
             event.accept()
 
     def closeEvent(self, event):
-        self.controller.quit_app()
+        event.ignore()
+        self.hide()
