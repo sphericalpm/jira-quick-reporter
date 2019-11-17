@@ -255,6 +255,7 @@ class MainWindow(CenterWindow):
 
     def show_jqr_from_tray(self):
         self.hide()
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowStaysOnTopHint)
         self.show()
 
     def notification_to_log_work(self):
