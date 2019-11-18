@@ -139,7 +139,7 @@ class MainController(ProcessWithThreadsMixin):
         else:
             callback = partial(self.get_issues_list, self.current_filter, change_filter)
         self.start_loading(callback, self.refresh_issue_list_widget)
-        
+
     def auto_refresh_issue_list(self):
         callback = partial(self.get_issues_list, self.current_filter)
         self.start_loading(callback, self.refresh_issue_list_widget, False)
