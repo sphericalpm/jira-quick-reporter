@@ -259,6 +259,10 @@ class MainWindow(CenterWindow):
         self.activateWindow()
         self.show()
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Return:
+            self.controller.search_issues_by_query()
+
     def notification_to_log_work(self):
         QSound.play(RING_SOUND_PATH)
         self.tray_icon.showMessage(
