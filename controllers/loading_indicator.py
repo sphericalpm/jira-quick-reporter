@@ -18,12 +18,14 @@ class LoadingIndicator:
 class Thread(QThread):
     finished = pyqtSignal(str)
 
-    def __init__(self, callback, error_text=None):
+    def __init__(self, callback, mutex, error_text=None):
         super().__init__()
         self.error_text = error_text
         self.callback = callback
+        self.mutex = mutex
 
     def run(self):
+        self.mutex.lock()
         try:
             self.callback()
             self.error_text = None
