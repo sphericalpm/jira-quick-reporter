@@ -241,7 +241,7 @@ class MainWindow(CenterWindow):
         self.action_open = QAction('Open JQR', self)
         self.action_quit = QAction('Quit JQR', self)
         self.tray_menu.addAction(self.action_open)
-        self.action_open.triggered.connect(self.show)
+        self.action_open.triggered.connect(self.show_jqr_from_tray)
         self.tray_menu.addAction(self.action_quit)
         self.action_quit.triggered.connect(self.controller.quit_app)
         self.tray_icon.setContextMenu(self.tray_menu)
@@ -252,6 +252,16 @@ class MainWindow(CenterWindow):
 
         self.timer_refresh = QTimer()
         self.timer_refresh.timeout.connect(self.controller.auto_refresh_issue_list)
+
+    def show_jqr_from_tray(self):
+        self.hide()
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowStaysOnTopHint)
+        self.activateWindow()
+        self.show()
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Return:
+            self.controller.search_issues_by_query()
 
     def notification_to_log_work(self):
         QSound.play(RING_SOUND_PATH)
@@ -344,7 +354,7 @@ class MainWindow(CenterWindow):
             self.issue_list_widget.setItemWidget(
                 issue_list_widget_item, issue_widget
             )
-            self.set_size_hint()
+        self.set_size_hint()
 
     def set_size_hint(self):
         self.issue_list_widget.setMinimumWidth(
