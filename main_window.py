@@ -187,7 +187,6 @@ class MainWindow(CenterWindow):
         self.list_box = QVBoxLayout()
         self.issue_list_widget = QListWidget()
         self.issue_list_widget.setObjectName('issue_list')
-        self.issue_list_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.label_info = QLabel('You have no issues.')
         self.label_info.setAlignment(Qt.AlignCenter)
         self.list_box.addWidget(self.issue_list_widget)
