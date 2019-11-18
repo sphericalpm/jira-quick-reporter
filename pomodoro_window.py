@@ -198,7 +198,7 @@ class PomodoroWindow(CenterWindow):
 
         self.logwork_btn = QPushButton('Log work')
         self.logwork_btn.clicked.connect(
-            lambda: self.controller.open_timelog_from_pomodoro(issue_key)
+            lambda: self.controller.open_time_log(issue_key)
         )
         self.logwork_btn.setEnabled(False)
 
@@ -239,7 +239,7 @@ class PomodoroWindow(CenterWindow):
         self.action_stop_timer.triggered.connect(self.toggle_timer)
         self.action_log_work = QAction('Log work', self)
         self.action_log_work.triggered.connect(
-            lambda: self.controller.open_timelog_from_pomodoro(issue_key)
+            lambda: self.controller.open_time_log(issue_key)
         )
         self.action_log_work.setEnabled(False)
 
@@ -264,7 +264,7 @@ class PomodoroWindow(CenterWindow):
                 QMessageBox.Yes | QMessageBox.No
             )
             if reply == QMessageBox.Yes:
-                self.controller.open_timelog_from_pomodoro(self.issue_key)
+                self.controller.open_time_log(self.issue_key)
             else:
                 os.remove(self.LOG_PATH)
 

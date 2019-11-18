@@ -1,4 +1,5 @@
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from jira import JIRAError
 from pyqtspinner.spinner import WaitingSpinner
 from requests.exceptions import ConnectionError, ReadTimeout
 
@@ -17,18 +18,23 @@ class LoadingIndicator:
 class Thread(QThread):
     finished = pyqtSignal(str)
 
-    def __init__(self, callback, error_text=None):
+    def __init__(self, callback, mutex, error_text=None):
         super().__init__()
         self.error_text = error_text
         self.callback = callback
+        self.mutex = mutex
 
     def run(self):
+        self.mutex.lock()
         try:
             self.callback()
             self.error_text = None
         except (ConnectionError,
                 ReadTimeout):
             self.error_text = 'Connection error!\nPlease, check your internet connection'
+        except JIRAError as ex:
+            if self.error_text is None:
+                self.error_text = ex.text
         except Exception as ex:
             if self.error_text is None:
                 self.error_text = str(ex)
