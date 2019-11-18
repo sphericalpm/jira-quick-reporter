@@ -76,6 +76,8 @@ class JiraClient:
             original_estimate = issue.fields.timetracking.originalEstimate
         except JIRAError as e:
             return e.text
+        except TypeError:
+            original_estimate = '0m'
         return original_estimate
 
     def issue(self, key):
