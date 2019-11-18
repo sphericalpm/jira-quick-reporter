@@ -190,6 +190,7 @@ class MainController(ProcessWithThreadsMixin):
     def simple_workflow_change_handler(self, error):
         if error:
             QMessageBox.about(self.view, 'Error', error)
+            self.reset_workflow(self.issue)
         else:
             self.refresh_issue_list()
 
