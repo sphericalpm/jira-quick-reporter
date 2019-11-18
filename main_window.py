@@ -116,6 +116,10 @@ class QCustomWidget(QWidget):
         self.spent_label.setText('Logged: {}'.format(spent))
         self.remaining_label.setText('Remaining: {}'.format(remaining))
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Return:
+            self.quick_log_btn.click()
+
 
 class MainWindow(CenterWindow):
     """
