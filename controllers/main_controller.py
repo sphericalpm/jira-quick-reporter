@@ -152,7 +152,7 @@ class MainController(ProcessWithThreadsMixin):
         if not self.status_id:
             return
 
-        elif new_status in backlog_statuses and  current_status in backlog_statuses:
+        elif new_status in backlog_statuses and current_status in backlog_statuses:
             # if it is backlog now and user press backlog one more
             # time we should not show worklog window
             return
