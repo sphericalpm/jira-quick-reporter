@@ -68,18 +68,23 @@ class QCustomWidget(QWidget):
         self.issue_key_label.setOpenExternalLinks(True)
 
         self.hbox = QHBoxLayout()
-        self.issue_menu_btn = QPushButton('. . .')
-        self.issue_menu_btn.setObjectName('issue_menu_btn')
-        issue_menu = QMenu()
-        self.action_log_work = QAction('Log work', self)
-        self.action_pomodoro_timer = QAction('Pomodoro timer', self)
-        issue_menu.addAction(self.action_log_work)
-        issue_menu.addAction(self.action_pomodoro_timer)
-        self.issue_menu_btn.setMenu(issue_menu)
-
-        self.hbox.addWidget(self.issue_key_label, Qt.AlignLeft)
-        self.hbox.addWidget(self.issue_menu_btn, Qt.AlignRight)
-        self.issue_menu_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.time_spent_line = QLineEdit()
+        self.time_spent_line.setPlaceholderText('0m')
+        self.time_spent_line.setObjectName('time_spent_line')
+        self.comment_line = QLineEdit()
+        self.comment_line.setPlaceholderText('Add a comment...')
+        self.quick_log_btn = QPushButton('Log')
+        self.quick_log_btn.setObjectName('quick_log_btn')
+        self.log_work_btn = QPushButton('Log work')
+        self.log_work_btn.setObjectName('issue_list_btn')
+        self.open_pomodoro_btn = QPushButton('Pomodoro')
+        self.open_pomodoro_btn.setObjectName('issue_list_btn')
+        self.hbox.addWidget(self.issue_key_label, alignment=Qt.AlignLeft)
+        self.hbox.addWidget(self.time_spent_line, alignment=Qt.AlignLeft)
+        self.hbox.addWidget(self.comment_line)
+        self.hbox.addWidget(self.quick_log_btn, alignment=Qt.AlignRight)
+        self.hbox.addWidget(self.log_work_btn, alignment=Qt.AlignRight)
+        self.hbox.addWidget(self.open_pomodoro_btn, alignment=Qt.AlignRight)
 
         # create main box layout
         vbox = QVBoxLayout()
@@ -110,6 +115,10 @@ class QCustomWidget(QWidget):
         self.estimated_label.setText('Estimated: {}'.format(estimated))
         self.spent_label.setText('Logged: {}'.format(spent))
         self.remaining_label.setText('Remaining: {}'.format(remaining))
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Return:
+            self.quick_log_btn.click()
 
 
 class MainWindow(CenterWindow):
@@ -318,14 +327,21 @@ class MainWindow(CenterWindow):
                 issue['remaining']
             )
 
-            issue_widget.action_log_work.triggered.connect(
+            issue_widget.quick_log_btn.clicked.connect(
+                partial(
+                    self.controller.log_work_from_list,
+                    issue['key']
+                )
+            )
+
+            issue_widget.log_work_btn.clicked.connect(
                 partial(
                     self.controller.open_time_log,
                     issue['key']
                 )
             )
 
-            issue_widget.action_pomodoro_timer.triggered.connect(
+            issue_widget.open_pomodoro_btn.clicked.connect(
                 partial(
                     self.controller.open_pomodoro_window,
                     issue['key'], issue['title']
