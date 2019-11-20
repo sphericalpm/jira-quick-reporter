@@ -2,10 +2,23 @@ QLabel#issue_title_label{
     font-weight: bold;
 }
 
-QPushButton#issue_menu_btn{
-    border: none;
-    font-size: 12pt;
-    font-weight: bold;
+QPushButton#issue_list_btn, #quick_log_btn{
+	background-color:transparent;
+	border:1px solid #9fb4f2;
+	padding: 4px 10px;
+	border-radius: 10px;
+}
+
+QPushButton#issue_list_btn::hover, #quick_log_btn::hover{
+    background-color:#9fb4f2;
+}
+
+#time_spent_line{
+    margin-left: 50px;
+}
+
+#quick_log_btn{
+    margin-right: 50px;
 }
 
 QPushButton#toggle_filters_btn{
@@ -18,6 +31,11 @@ QPushButton#toggle_filters_btn{
 QListWidget#issue_list::item{
     border-bottom: 1px solid lightgray
 }
+
+QListWidget#issue_list::item:hover{
+    background: #e8eeff;
+}
+
 
 QListWidget::item::text{
     color:transparent;

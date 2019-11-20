@@ -93,12 +93,14 @@ class WorkflowController(ProcessWithThreadsMixin):
 
 class CompleteWorkflowController(TimeLogController):
     def __init__(self, jira_client, issue, status, assignee, main_controller):
-        super().__init__(main_controller, jira_client, issue)
         self.status = status
         self.assignee = assignee
         self.is_save = False
-        self.possible_resolutions = self.jira_client.get_possible_resolutions()
-        self.possible_versions = self.jira_client.get_possible_versions(issue)
+        self.possible_resolutions = jira_client.get_possible_resolutions()
+        self.possible_versions = jira_client.get_possible_versions(issue)
+        super().__init__(main_controller, jira_client, issue)
+
+    def init_view(self):
         self.view = CompleteWorflowWindow(
             self,
             self.issue.key,

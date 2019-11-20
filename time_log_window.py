@@ -1,4 +1,5 @@
 from datetime import datetime
+from time import gmtime, strftime, strptime, mktime
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QEvent
@@ -78,7 +79,7 @@ class TimeLogWindow(CenterWindow):
         if self.time_spent:
             self.time_spent_line.setText(self.time_spent)
         self.date_start_line = QLineEdit(
-            datetime.strftime(datetime.now(), '%d-%m-%Y %H:%M')
+            datetime.now().strftime('%d-%m-%Y %H:%M')
         )
         self.date_start_line.installEventFilter(self)
         self.date_start = self.get_date_from_line()
@@ -114,7 +115,16 @@ class TimeLogWindow(CenterWindow):
         }
 
     def get_date_from_line(self):
-        date = self.date_start_line.text()
+        # create time object from date_start_line
+        date_line = strptime(
+            self.date_start_line.text(),
+            '%d-%m-%Y %H:%M'
+        )
+        # convert local time to utc
+        date = strftime(
+            '%d-%m-%Y %H:%M',
+            gmtime(mktime(date_line))
+        )
         return datetime.strptime(date, '%d-%m-%Y %H:%M')
 
     def eventFilter(self, obj, event):
