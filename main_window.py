@@ -196,7 +196,6 @@ class MainWindow(CenterWindow):
         self.list_box = QVBoxLayout()
         self.issue_list_widget = QListWidget()
         self.issue_list_widget.setObjectName('issue_list')
-        self.issue_list_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.label_info = QLabel('You have no issues.')
         self.label_info.setAlignment(Qt.AlignCenter)
         self.list_box.addWidget(self.issue_list_widget)
@@ -260,7 +259,7 @@ class MainWindow(CenterWindow):
         self.timer_log_work.start(LOG_TIME)
 
         self.timer_refresh = QTimer()
-        self.timer_refresh.timeout.connect(self.controller.refresh_issue_list)
+        self.timer_refresh.timeout.connect(self.controller.auto_refresh_issue_list)
 
     def show_jqr_from_tray(self):
         self.hide()
