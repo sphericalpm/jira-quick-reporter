@@ -144,28 +144,35 @@ class MainController(ProcessWithThreadsMixin):
         callback = partial(self.get_issues_list, self.current_filter)
         self.start_loading(callback, self.refresh_issue_list_widget, False)
 
-    def change_workflow(self, workflow, issue_obj, status):
+    def change_workflow(self, workflow, issue_obj, new_status):
         self.issue = issue_obj
-        self.status_id = workflow.get(status)
+        self.status_id = workflow.get(new_status)
         existing_estimate = self.jira_client.get_remaining_estimate(self.issue)
         original_estimate = self.jira_client.get_original_estimate(self.issue)
         assignee = self.issue.fields.assignee.emailAddress
+        backlog_statuses = ['Backlog', 'Return to Backlog']
+        current_status = str(issue_obj.fields.status)
 
         if not self.status_id:
             return
 
-        if status in ['Put on hold', 'Select for development']:
+        elif new_status in backlog_statuses and current_status in backlog_statuses:
+            # if it is backlog now and user press backlog one more
+            # time we should not show worklog window
+            return
+
+        elif new_status in ['Put on hold', 'Select for development']:
             self.start_loading(
                 self.simple_workflow_change,
                 self.simple_workflow_change_handler
             )
 
-        elif status in ['Complete', 'Declare done']:
+        elif new_status in ['Complete', 'Declare done']:
             # open complete workflow window
             self.complete_workflow_controller = CompleteWorkflowController(
                 self.jira_client,
                 self.issue,
-                status,
+                new_status,
                 assignee,
                 self
             )
