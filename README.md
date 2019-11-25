@@ -17,6 +17,9 @@ JIRA Quick Reporter has the following features:
 * Pomodoro timer window (you can start new pomodoro and log work from it. Has all classical pomodoro features).
 * Log work window (you can simply log work use main window but also you can open Log work window and add detail information for you work).
 * Filters on the main window (you can make advanced issue search for all possible projects in your company).
+
+![](static/JQR_preview.gif)
+
 &nbsp;
 
 ### How to build an executable application:
