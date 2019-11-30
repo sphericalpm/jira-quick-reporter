@@ -29,8 +29,7 @@ if __name__ == '__main__':
                 app.setQuitOnLastWindowClosed(False)
             except (ValueError, JIRAError):
                 controller = LoginController(app)
-            except (ConnectionError,
-                    ReadTimeout):
+            except (ConnectionError, ReadTimeout):
                 QMessageBox.warning(
                     None,
                     'Connection error',

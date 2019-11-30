@@ -18,8 +18,7 @@ class Thread(QThread):
         try:
             self.callback()
             self.error_text = None
-        except (ConnectionError,
-                ReadTimeout):
+        except (ConnectionError, ReadTimeout):
             self.error_text = 'Connection error!\nPlease, check your internet connection'
         except JIRAError as ex:
             self.error_text = ex.text
