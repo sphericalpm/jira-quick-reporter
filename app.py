@@ -2,6 +2,7 @@ import sys
 import os
 
 from requests.exceptions import ConnectionError, ReadTimeout
+from tendo import singleton
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from jira import JIRAError
 
@@ -12,6 +13,8 @@ from config import CREDENTIALS_PATH
 
 
 if __name__ == '__main__':
+    me = singleton.SingleInstance()
+    # possibility to open only one application at time
     app = QApplication(sys.argv)
     path = os.path.dirname(os.path.realpath(__file__))
 
