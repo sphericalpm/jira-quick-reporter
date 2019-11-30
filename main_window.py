@@ -522,7 +522,9 @@ class MainWindow(CenterWindow):
         custom_item.set_workflow.setCurrentIndex(0)
 
     def wheelEvent(self, event):
+        # top left corner coordinates of the issue list
         list_pos = self.issue_list_widget.pos()
+        # check if cursor position is on the issue list
         if event.pos().x() >= list_pos.x() and event.pos().y() >= list_pos.y():
             if event.angleDelta().y() < 0:
                 self.controller.refresh_issue_list(True)
