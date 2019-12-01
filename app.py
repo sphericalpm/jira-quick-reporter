@@ -11,10 +11,7 @@ from controllers.main_controller import MainController
 from controllers.login_controller import LoginController
 from config import CREDENTIALS_PATH
 
-
 if __name__ == '__main__':
-    me = singleton.SingleInstance()
-    # possibility to open only one application at time
     app = QApplication(sys.argv)
     path = os.path.dirname(os.path.realpath(__file__))
 
@@ -42,5 +39,17 @@ if __name__ == '__main__':
                 sys.exit()
     else:
         controller = LoginController(app)
+
+    # possibility to open only one application at time
+    try:
+        me = singleton.SingleInstance()
+    except singleton.SingleInstanceException:
+        QMessageBox.warning(
+            None,
+            'Warning',
+            'Another instance of JQR is running'
+        )
+        sys.exit()
+
     controller.show()
     sys.exit(app.exec_())
