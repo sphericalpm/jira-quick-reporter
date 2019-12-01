@@ -24,15 +24,9 @@ JIRA Quick Reporter has the following features:
 
 ### How to build an executable application:
 ------------
-* First you should create pyenv based on your system version of python and activate it.
+* First you should create pyenv or other virtual environment based on your system version of python (python3.6 or later) and activate it.
 
-How to create pyenv:
-
-https://github.com/pyenv/pyenv-installer
-
-https://github.com/pyenv/pyenv-virtualenv
-
-* Next you should install all the necessary libraries and dependencies:
+* Next you need to install all the necessary libraries and dependencies:
 ```pip install -r requirements.txt```
 
 * Then you should run build_app.py:
