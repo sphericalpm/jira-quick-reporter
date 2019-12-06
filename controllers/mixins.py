@@ -24,6 +24,8 @@ class Thread(QThread):
             self.error_text = ex.text
         except Exception as ex:
             self.error_text = str(ex)
+        finally:
+            self.mutex.unlock()
         self.finished.emit(self.error_text)
 
 
@@ -32,6 +34,7 @@ class ProcessWithThreadsMixin:
 
     def __init__(self):
         self.finish_thread_callback = None
+        self.thread_list = []
 
     def set_loading_indicator(self):
         self.indicator = WaitingSpinner(
@@ -45,11 +48,12 @@ class ProcessWithThreadsMixin:
         self.finish_thread_callback = finished_callback
         if with_indicator:
             self.indicator.start()
-        self.new_thread = Thread(started_callback, self.mutex)
-        self.new_thread.start()
-        self.new_thread.finished.connect(self.stop_loading)
+        thread = Thread(started_callback, self.mutex)
+        thread.finished.connect(self.stop_loading)
+        thread.start()
+        self.thread_list.append(thread)
 
     def stop_loading(self, error_text):
         self.indicator.stop()
+        self.thread_list = [thread for thread in self.thread_list if not thread.isFinished()]
         self.finish_thread_callback(error_text)
-        self.mutex.unlock()

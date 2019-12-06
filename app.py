@@ -2,6 +2,7 @@ import sys
 import os
 
 from requests.exceptions import ConnectionError, ReadTimeout
+from tendo import singleton
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from jira import JIRAError
 
@@ -9,7 +10,6 @@ from jiraclient import JiraClient
 from controllers.main_controller import MainController
 from controllers.login_controller import LoginController
 from config import CREDENTIALS_PATH
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
@@ -38,5 +38,17 @@ if __name__ == '__main__':
                 sys.exit()
     else:
         controller = LoginController(app)
+
+    # possibility to open only one application at time
+    try:
+        me = singleton.SingleInstance()
+    except singleton.SingleInstanceException:
+        QMessageBox.warning(
+            None,
+            'Warning',
+            'Another instance of JQR is running'
+        )
+        sys.exit()
+
     controller.show()
     sys.exit(app.exec_())
