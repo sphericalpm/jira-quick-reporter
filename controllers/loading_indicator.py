@@ -38,4 +38,6 @@ class Thread(QThread):
         except Exception as ex:
             if self.error_text is None:
                 self.error_text = str(ex)
+        finally:
+            self.mutex.unlock()
         self.finished.emit(self.error_text)
