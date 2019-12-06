@@ -10,17 +10,19 @@ class ProcessWithThreadsMixin:
         self.finish_thread_callback = None
         self.error_message = None
         self.indicator = None
+        self.thread_list = []
 
     def start_loading(self, started_callback, finished_callback, with_indicator=True):
         self.finish_thread_callback = finished_callback
         if with_indicator:
             self.indicator.spinner.start()
-        self.new_thread = Thread(started_callback, self.mutex, self.error_message)
-        self.new_thread.start()
-        self.new_thread.finished.connect(self.stop_loading)
+        thread = Thread(started_callback, self.mutex, self.error_message)
+        thread.finished.connect(self.stop_loading)
+        thread.start()
+        self.thread_list.append(thread)
 
     def stop_loading(self, error_text):
         self.indicator.spinner.stop()
+        self.thread_list = [thread for thread in self.thread_list if not thread.isFinished()]
         self.finish_thread_callback(error_text)
         self.error_message = None
-        self.mutex.unlock()
