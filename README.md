@@ -2,21 +2,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/sphericalpm/jira-quick-reporter/blob/master/LICENSE)
 
 
-JIRA Quick Reporter (JQR, pronounced "zheeker") is a desktop application that helps automate your time management and reporting.
+JIRA Quick Reporter (JQR, pronounced "zheeker") is a free desktop application that helps automate your time management and reporting.
 
 With JQR you can simply manage your issues, workflow, spent time, etc.
 &nbsp;
 
-
-### Brief description of the JQR functionality:
-------------
-JIRA Quick Reporter has the following features:
-* Authentification window (you can login with Jira token. There you can find a link for token creation)
-* Main window with list of your issues (default). Main window contains filters, workflow dropdown, pomodoro timer, log work
-* Wokflow window (you can change ticket status and add detail information about workflow change)
-* Pomodoro timer window (you can start new pomodoro and log work from it. Has all classical pomodoro features).
-* Log work window (you can simply log work use main window but also you can open Log work window and add detail information for you work).
-* Filters on the main window (you can make advanced issue search for all possible projects in your company).
 
 ![](static/JQR_preview.gif)
 
@@ -24,7 +14,7 @@ JIRA Quick Reporter has the following features:
 
 ### How to build an executable application:
 ------------
-* First you should create pyenv or other virtual environment based on your system version of python (python3.6 or later) and activate it.
+* Create and activate a virtual environment with python3.6 or later.
 
 * Next you need to install all the necessary libraries and dependencies:
 ```pip install -r requirements.txt```
