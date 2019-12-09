@@ -6,7 +6,6 @@ from jira import JIRAError
 from config import CREDENTIALS_PATH
 from controllers.mixins import ProcessWithThreadsMixin
 from controllers.main_controller import MainController
-from controllers.loading_indicator import LoadingIndicator
 from jiraclient import JiraClient
 from login_window import LoginWindow
 
@@ -16,8 +15,8 @@ class LoginController(ProcessWithThreadsMixin):
         super().__init__()
         self.app = app
         self.view = LoginWindow(self)
-        self.indicator = LoadingIndicator(self.view, self.view.form)
         self.jira_client = None
+        self.set_loading_indicator()
 
     def show(self):
         self.view.show()

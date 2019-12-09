@@ -4,7 +4,6 @@ from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtCore import Qt
 
 from config import LOG_TIME
-from controllers.loading_indicator import LoadingIndicator
 from controllers.mixins import ProcessWithThreadsMixin
 from time_log_window import TimeLogWindow
 from main_window import MainWindow
@@ -21,11 +20,11 @@ class TimeLogController(ProcessWithThreadsMixin):
         self.log_work_params = None
         self.start_date = None
         self.init_view()
+        self.set_loading_indicator()
 
     def init_view(self):
         self.view = TimeLogWindow(self, self.issue.key, self.time_spent)
         self.view.set_existing_estimate(self.existing_estimate)
-        self.indicator = LoadingIndicator(self.view, self.view.main_box)
 
     def get_timelog_parameters(self):
         self.time_spent = self.view.time_spent_line.text()

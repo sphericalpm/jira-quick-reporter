@@ -2,7 +2,6 @@ from PyQt5.QtWidgets import QMessageBox
 from jira import JIRAError
 
 from config import LOG_TIME
-from controllers.loading_indicator import LoadingIndicator
 from controllers.mixins import ProcessWithThreadsMixin
 from controllers.time_log_controller import TimeLogController
 from workflow_window import WorkflowWindow, CompleteWorflowWindow
@@ -35,7 +34,7 @@ class WorkflowController(ProcessWithThreadsMixin):
             self.assignee,
             self
         )
-        self.indicator = LoadingIndicator(self.view, self.view.main_box)
+        self.set_loading_indicator()
 
     def show(self):
         self.view.show()
@@ -109,7 +108,6 @@ class CompleteWorkflowController(TimeLogController):
             self.possible_versions
         )
         self.view.set_existing_estimate(self.existing_estimate)
-        self.indicator = LoadingIndicator(self.view, self.view.main_box)
 
     def show(self):
         self.view.show()

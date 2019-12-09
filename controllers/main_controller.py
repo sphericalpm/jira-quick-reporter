@@ -5,7 +5,6 @@ from PyQt5.QtWidgets import QMessageBox, QInputDialog
 from jira import JIRAError
 
 from config import REFRESH_TIME, ISSUES_COUNT
-from controllers.loading_indicator import LoadingIndicator
 from controllers.mixins import ProcessWithThreadsMixin
 from controllers.filters import IssueFiltersHandler
 from controllers.time_log_controller import TimeLogController, QuickTimeLog
@@ -31,7 +30,7 @@ class MainController(ProcessWithThreadsMixin):
         self.insert_issue_list = []
         self.update_issue_list = []
         self.delete_issue_list = []
-        self.indicator = LoadingIndicator(self.view, self.view.main_box)
+        self.set_loading_indicator()
 
     def show(self):
         self.start_loading(self.filters_handler.create_filters, self.create_filters_handler)
@@ -142,7 +141,7 @@ class MainController(ProcessWithThreadsMixin):
 
     def auto_refresh_issue_list(self):
         callback = partial(self.get_issues_list, self.current_filter)
-        self.start_loading(callback, self.refresh_issue_list_widget, False)
+        self.start_loading(callback, self.refresh_issue_list_widget, with_indicator=False)
 
     def change_workflow(self, workflow, issue_obj, new_status):
         self.issue = issue_obj
@@ -285,7 +284,6 @@ class MainController(ProcessWithThreadsMixin):
 
     def search_issues_by_query(self):
         self.current_filter = self.view.query_field.text().lower()
-        self.error_message = 'The query is incorrect'
         self.refresh_issue_list(change_filter=True)
 
     def existing_filter_saving_process(self, error_text):
@@ -337,7 +335,6 @@ class MainController(ProcessWithThreadsMixin):
 
     def save_filter(self, is_existing=False):
         self.current_filter = self.view.query_field.text().lower()
-        self.error_message = 'The query is incorrect'
         started_callback = partial(self.jira_client.get_issues, query=self.current_filter)
         if is_existing:
             finished_callback = self.existing_filter_saving_process
