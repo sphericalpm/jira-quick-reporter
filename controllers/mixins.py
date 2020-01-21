@@ -26,7 +26,7 @@ class Thread(QThread):
             self.error_text = str(ex)
         finally:
             self.mutex.unlock()
-        self.finished.emit(self.error_text)
+            self.finished.emit(self.error_text)
 
 
 class ProcessWithThreadsMixin:
