@@ -113,7 +113,7 @@ class MainController(ProcessWithThreadsMixin):
     def refresh_issue_list_widget(self, error):
         if error:
             self.error_messages_count += 1
-            if self.error_messages_count <= 1:
+            if self.error_messages_count == 1:
                 QMessageBox.about(self.view, 'Error', error)
             self.current_issues.clear()
             self.view.show_no_issues(error)
