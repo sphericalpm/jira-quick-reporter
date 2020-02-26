@@ -93,6 +93,7 @@ In this case time from the timer is set in the 'Time spent' field in time loggin
   
 ### Contacts
 -------------
+Max Jekov: <mjekov@spherical.pm>
 
 Maria Filonova: <mfilonova@spherical.pm>
 
