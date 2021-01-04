@@ -509,9 +509,11 @@ class MainWindow(CenterWindow):
                 )[0])
             self.on_filter_selected(self.filters_list.currentItem())
 
-    def show_no_issues(self):
+    def show_no_issues(self, error_text=None):
         self.issue_list_widget.clear()
         self.issue_list_widget.hide()
+        if error_text:
+            self.label_info.setText(error_text)
         self.label_info.show()
 
     def set_workflow_current_state(self, issue_key):

@@ -31,6 +31,7 @@ class MainController(ProcessWithThreadsMixin):
         self.update_issue_list = []
         self.delete_issue_list = []
         self.set_loading_indicator()
+        self.error_messages_count = 0
 
     def show(self):
         self.start_loading(self.filters_handler.create_filters, self.create_filters_handler)
@@ -111,10 +112,13 @@ class MainController(ProcessWithThreadsMixin):
 
     def refresh_issue_list_widget(self, error):
         if error:
+            self.error_messages_count += 1
+            if self.error_messages_count == 1:
+                QMessageBox.about(self.view, 'Error', error)
             self.current_issues.clear()
-            self.view.show_no_issues()
-            QMessageBox.about(self.view, 'Error', error)
+            self.view.show_no_issues(error)
             return
+        self.error_messages_count = 0
         if not self.issues_count:
             self.view.show_no_issues()
             return
